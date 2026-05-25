@@ -41,20 +41,22 @@ const ProductDetailsPage = () => {
         description={`${product.name} from Mini Hobbies. Shop diecast collectibles, scale models, Hot Wheels Sri Lanka finds, and hobby toys.`}
         canonical={`/products/${product.slug}`}
       />
-      <section className="container-page grid gap-10 py-10 lg:grid-cols-[1fr_0.9fr]">
+      <section className="container-page grid gap-8 py-10 lg:grid-cols-[1fr_0.9fr]">
         <div>
           <img src={images[selected].url} alt={images[selected].alt || product.name} className="aspect-square w-full rounded-lg bg-white object-cover shadow-soft" />
-          <div className="mt-4 grid grid-cols-5 gap-3">
-            {images.map((image, index) => (
-              <button key={image.url} onClick={() => setSelected(index)} className={`rounded-md border p-1 ${selected === index ? "border-ember" : "border-gray-200"}`}>
-                <img src={image.url} alt={image.alt || product.name} className="aspect-square rounded object-cover" loading="lazy" />
-              </button>
-            ))}
-          </div>
+          {images.length > 1 && (
+            <div className="mt-4 grid grid-cols-5 gap-2 sm:gap-3">
+              {images.map((image, index) => (
+                <button key={image.url} onClick={() => setSelected(index)} className={`rounded-md border p-1 ${selected === index ? "border-ember" : "border-gray-200"}`}>
+                  <img src={image.url} alt={image.alt || product.name} className="aspect-square rounded object-cover" loading="lazy" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <article>
           <p className="text-sm font-bold uppercase tracking-wide text-ember">{product.category?.name}</p>
-          <h1 className="mt-3 text-3xl font-black text-gray-950 sm:text-5xl">{product.name}</h1>
+          <h1 className="mt-3 text-2xl font-black text-gray-950 sm:text-5xl">{product.name}</h1>
           <p className="mt-4 text-lg font-black">{formatCurrency(activePrice)}</p>
           {product.discountPrice && <p className="text-sm text-gray-500 line-through">{formatCurrency(product.price)}</p>}
           <p className="mt-6 leading-8 text-gray-700">{product.description}</p>
@@ -88,11 +90,11 @@ const ProductDetailsPage = () => {
             </div>
           )}
 
-          <dl className="mt-6 grid grid-cols-2 gap-4 text-sm">
-            <div className="rounded-lg bg-white p-4"><dt className="text-gray-500">Brand</dt><dd className="font-bold">{product.brand}</dd></div>
-            <div className="rounded-lg bg-white p-4"><dt className="text-gray-500">Scale</dt><dd className="font-bold">{product.scale || "N/A"}</dd></div>
-            <div className="rounded-lg bg-white p-4"><dt className="text-gray-500">Material</dt><dd className="font-bold">{product.material || "Mixed"}</dd></div>
-            <div className="rounded-lg bg-white p-4">
+          <dl className="mt-6 grid grid-cols-2 gap-3 text-sm">
+            <div className="rounded-lg bg-white p-3 sm:p-4"><dt className="text-gray-500">Brand</dt><dd className="font-bold">{product.brand}</dd></div>
+            <div className="rounded-lg bg-white p-3 sm:p-4"><dt className="text-gray-500">Scale</dt><dd className="font-bold">{product.scale || "N/A"}</dd></div>
+            <div className="rounded-lg bg-white p-3 sm:p-4"><dt className="text-gray-500">Material</dt><dd className="font-bold">{product.material || "Mixed"}</dd></div>
+            <div className="rounded-lg bg-white p-3 sm:p-4">
               <dt className="text-gray-500">Stock</dt>
               <dd className={`font-bold ${
                 stockStatus === "out_of_stock" ? "text-red-600" :
@@ -113,11 +115,11 @@ const ProductDetailsPage = () => {
             ))}
           </div>
 
-          <div className="mt-8 flex gap-3">
-            <button disabled={activeStock < 1} onClick={handleAddToCart} className="btn-primary flex-1 disabled:bg-gray-300">
+          <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+            <button disabled={activeStock < 1} onClick={handleAddToCart} className="btn-primary w-full sm:flex-1 min-h-[48px] disabled:bg-gray-300">
               <ShoppingCart className="h-4 w-4" /> {activeStock < 1 ? "Sold out" : "Add to cart"}
             </button>
-            <button onClick={() => toggle(product)} className="btn-secondary">
+            <button onClick={() => toggle(product)} className="btn-secondary w-full sm:w-auto min-h-[48px]">
               <Heart className="h-4 w-4" /> Wishlist
             </button>
           </div>

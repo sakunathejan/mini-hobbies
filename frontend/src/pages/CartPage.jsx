@@ -130,12 +130,12 @@ const CartPage = () => {
                     <span className="text-gray-400">{freeShipping ? "Free" : "Calculated at checkout"}</span>
                   </div>
                   <div className="flex justify-between border-t border-gray-100 pt-2 text-base font-black">
-                    <span>Subtotal</span>
+                    <span>Total</span>
                     <span>{formatCurrency(subtotal)}</span>
                   </div>
                 </div>
 
-                <Link to="/checkout" className="btn-primary mt-4 w-full py-2.5 text-sm">
+                <Link to="/checkout" className="btn-primary mt-4 flex w-full items-center justify-center gap-2 min-h-[48px]">
                   <ShoppingBag className="h-4 w-4" /> Proceed to Checkout
                 </Link>
               </div>

@@ -39,10 +39,10 @@ const LoginPage = () => {
           <p className="mt-2 text-sm text-gray-600">Manage products, categories, orders, stock, and uploads.</p>
           {error && <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
           <div className="mt-5 grid gap-3">
-            <input className="input" type="email" placeholder="Email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-            <input className="input" type="password" placeholder="Password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+            <input className="input text-base" type="email" placeholder="Email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
+            <input className="input text-base" type="password" placeholder="Password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
           </div>
-          <button disabled={loading} className="btn-primary mt-5 w-full disabled:bg-gray-300">
+          <button disabled={loading} className="btn-primary mt-5 w-full min-h-[48px] disabled:bg-gray-300">
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>

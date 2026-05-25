@@ -114,20 +114,20 @@ const OrderTrackPage = () => {
           <div className="grid gap-3">
             <input
               required
-              className="input"
+              className="input text-base"
               placeholder="Order number (e.g. MH202605240001)"
               value={form.orderNumber}
               onChange={(event) => setForm({ ...form, orderNumber: event.target.value })}
             />
             <input
               required
-              className="input"
+              className="input text-base"
               placeholder="Phone number used at checkout"
               value={form.phone}
               onChange={(event) => setForm({ ...form, phone: event.target.value })}
             />
           </div>
-          <button className="btn-primary mt-4 w-full sm:w-auto" disabled={loading}>
+          <button className="btn-primary mt-4 w-full sm:w-auto min-h-[48px]" disabled={loading}>
             {loading ? "Looking up..." : "Track order"}
           </button>
         </form>

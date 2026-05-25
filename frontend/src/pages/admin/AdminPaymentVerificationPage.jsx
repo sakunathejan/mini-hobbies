@@ -180,14 +180,14 @@ const AdminPaymentVerificationPage = () => {
           </p>
         )}
 
-        <div className="mt-4 flex gap-3">
-          <button className="btn-primary" disabled={processing === payment._id} onClick={() => handleVerify(payment._id)}>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <button className="btn-primary min-h-[44px]" disabled={processing === payment._id} onClick={() => handleVerify(payment._id)}>
             <Check className="h-4 w-4" /> {processing === payment._id ? "Verifying..." : "Verify Payment"}
           </button>
-          <button className="btn-danger" disabled={processing === payment._id} onClick={() => setRejectTarget(payment._id)}>
+          <button className="btn-danger min-h-[44px]" disabled={processing === payment._id} onClick={() => setRejectTarget(payment._id)}>
             <X className="h-4 w-4" /> Reject
           </button>
-          <button className="btn-secondary ml-auto text-red-600 hover:bg-red-50" disabled={processing === payment._id} onClick={() => setDeleteTarget(payment._id)}>
+          <button className="btn-secondary ml-auto text-red-600 hover:bg-red-50 min-h-[44px]" disabled={processing === payment._id} onClick={() => setDeleteTarget(payment._id)}>
             <Trash2 className="h-4 w-4" />
           </button>
         </div>

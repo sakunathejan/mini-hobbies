@@ -43,7 +43,7 @@ const AdminCategoriesPage = () => {
 
   return (
     <div className="grid gap-6 lg:grid-cols-[380px_1fr]">
-      <form onSubmit={submit} className="h-fit rounded-lg border border-gray-200 bg-white p-5">
+      <form onSubmit={submit} className="order-2 h-fit rounded-lg border border-gray-200 bg-white p-5 lg:order-1">
         <h1 className="text-2xl font-black">Add category</h1>
         <p className="mt-2 text-sm text-gray-600">
           Create new shop categories anytime. They appear in product forms and on the storefront.
@@ -51,13 +51,13 @@ const AdminCategoriesPage = () => {
         <div className="mt-5 grid gap-3">
           <input
             required
-            className="input"
+            className="input text-base"
             placeholder="Category name"
             value={form.name}
             onChange={(event) => setForm({ ...form, name: event.target.value })}
           />
           <textarea
-            className="input min-h-28"
+            className="input min-h-28 text-base"
             placeholder="Description (optional)"
             value={form.description}
             onChange={(event) => setForm({ ...form, description: event.target.value })}
@@ -65,18 +65,19 @@ const AdminCategoriesPage = () => {
           <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
             <input
               type="checkbox"
+              className="h-5 w-5"
               checked={form.featured}
               onChange={(event) => setForm({ ...form, featured: event.target.checked })}
             />
-            Featured on homepage (when using featured filter)
+            Featured on homepage
           </label>
         </div>
-        <button className="btn-primary mt-5 w-full disabled:cursor-not-allowed disabled:bg-gray-300" disabled={saving}>
+        <button className="btn-primary mt-5 w-full min-h-[48px] disabled:cursor-not-allowed disabled:bg-gray-300" disabled={saving}>
           {saving ? "Saving..." : "Add category"}
         </button>
       </form>
 
-      <section className="rounded-lg border border-gray-200 bg-white">
+      <section className="order-1 rounded-lg border border-gray-200 bg-white lg:order-2">
         <div className="border-b p-5">
           <h2 className="font-black">Current categories</h2>
           <p className="mt-1 text-sm text-gray-600">{(data || []).length} total</p>

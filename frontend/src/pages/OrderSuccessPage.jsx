@@ -39,7 +39,7 @@ const OrderSuccessPage = () => {
     <>
       <Seo title="Order Placed" description="Your Mini Hobbies order was received." canonical="/order-success" />
       <section className="container-page py-10">
-        <div className="max-w-2xl rounded-lg border border-gray-200 bg-white p-6 shadow-soft">
+        <div className="mx-auto max-w-2xl rounded-lg border border-gray-200 bg-white p-4 sm:p-6 shadow-soft">
           <p className="text-sm font-bold uppercase tracking-wide text-ember">Order received</p>
           <h1 className="mt-2 text-3xl font-black">Thank you for your order</h1>
           <p className="mt-3 text-gray-600">

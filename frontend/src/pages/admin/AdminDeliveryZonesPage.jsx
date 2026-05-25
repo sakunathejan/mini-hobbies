@@ -122,23 +122,23 @@ const AdminDeliveryZonesPage = () => {
           <form className="mt-4 grid gap-4" onSubmit={handleSubmit}>
             <div>
               <label className="text-sm font-medium">District</label>
-              <input className="input mt-1" value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} placeholder="Colombo" required />
+              <input className="input mt-1 text-base" value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })} placeholder="Colombo" required />
             </div>
             <div>
               <label className="text-sm font-medium">Delivery Fee (LKR)</label>
-              <input className="input mt-1" type="number" min="0" value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} />
+              <input className="input mt-1 text-base" type="number" min="0" value={form.fee} onChange={(e) => setForm({ ...form, fee: e.target.value })} />
             </div>
             <div>
               <label className="text-sm font-medium">Estimated Delivery Days</label>
-              <input className="input mt-1" value={form.estimatedDays} onChange={(e) => setForm({ ...form, estimatedDays: e.target.value })} placeholder="3-5 business days" />
+              <input className="input mt-1 text-base" value={form.estimatedDays} onChange={(e) => setForm({ ...form, estimatedDays: e.target.value })} placeholder="3-5 business days" />
             </div>
             <label className="flex items-center gap-3">
               <input type="checkbox" className="accent-ember h-5 w-5" checked={form.codAvailable} onChange={(e) => setForm({ ...form, codAvailable: e.target.checked })} />
               <span className="text-sm font-medium">Cash on Delivery Available</span>
             </label>
             <div className="flex gap-3">
-              <button className="btn-primary flex-1" disabled={saving}>{saving ? "Saving..." : editId ? "Update Zone" : "Add Zone"}</button>
-              {editId && <button type="button" className="btn-secondary" onClick={resetForm}>Cancel</button>}
+              <button className="btn-primary flex-1 min-h-[48px]" disabled={saving}>{saving ? "Saving..." : editId ? "Update Zone" : "Add Zone"}</button>
+              {editId && <button type="button" className="btn-secondary min-h-[48px]" onClick={resetForm}>Cancel</button>}
             </div>
           </form>
         </div>

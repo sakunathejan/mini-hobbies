@@ -1,4 +1,4 @@
-import { Minus, Plus, ShoppingBag, Trash2, Upload } from "lucide-react";
+import { ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Trash2, Upload, Package } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -22,8 +22,8 @@ const SRI_LANKA_DISTRICTS = [
 const CheckoutPage = () => {
   const { items, updateQuantity, removeItem, clearCart, subtotal } = useCart();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [showSummaryMobile, setShowSummaryMobile] = useState(false);
   const [zones, setZones] = useState([]);
   const [freeShipping, setFreeShipping] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", district: "", address: "", notes: "" });
@@ -178,7 +178,7 @@ const CheckoutPage = () => {
     }
   };
 
-  if (items.length === 0 && step > 0) {
+  if (items.length === 0) {
     return (
       <div className="container-page py-20 text-center">
         <ShoppingBag className="mx-auto h-16 w-16 text-gray-300" />
@@ -195,69 +195,61 @@ const CheckoutPage = () => {
 
       <div className="mt-8 grid gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3 space-y-6">
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-lg border bg-white p-4 sm:p-6">
             <h2 className="text-lg font-bold">Contact Information</h2>
-            <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              <div>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2 lg:col-span-1">
                 <label className="text-sm font-medium">Full Name</label>
-                <input className={`input mt-1 ${errors.name ? "border-red-400" : ""}`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
+                <input className={`input mt-1 text-base ${errors.name ? "border-red-400" : ""}`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
                 {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
               </div>
-              <div>
+              <div className="md:col-span-2 lg:col-span-1">
                 <label className="text-sm font-medium">Email</label>
-                <input className={`input mt-1 ${errors.email ? "border-red-400" : ""}`} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" />
+                <input className={`input mt-1 text-base ${errors.email ? "border-red-400" : ""}`} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" />
                 {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
               </div>
-              <div>
+              <div className="md:col-span-2 lg:col-span-1">
                 <label className="text-sm font-medium">Phone</label>
-                <input className={`input mt-1 ${errors.phone ? "border-red-400" : ""}`} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="077 123 4567" />
+                <input className={`input mt-1 text-base ${errors.phone ? "border-red-400" : ""}`} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="077 123 4567" />
                 {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}
               </div>
-              <div>
+              <div className="md:col-span-2 lg:col-span-1">
                 <label className="text-sm font-medium">District</label>
-                <select className="input mt-1" value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
+                <select className="input mt-1 text-base" value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
                   <option value="">Select district</option>
                   {SRI_LANKA_DISTRICTS.map((d) => (
                     <option key={d} value={d}>{d}</option>
                   ))}
                 </select>
               </div>
-              <div className="sm:col-span-2">
+              <div className="md:col-span-2">
                 <label className="text-sm font-medium">Delivery Address</label>
-                <textarea className={`input mt-1 ${errors.address ? "border-red-400" : ""}`} rows={2} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Street, city, postal code" />
+                <textarea className={`input mt-1 text-base ${errors.address ? "border-red-400" : ""}`} rows={3} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Street, city, postal code" />
                 {errors.address && <p className="mt-1 text-xs text-red-600">{errors.address}</p>}
               </div>
-              <div className="sm:col-span-2">
+              <div className="md:col-span-2">
                 <label className="text-sm font-medium">Order Notes (optional)</label>
-                <textarea className="input mt-1" rows={2} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Special instructions for delivery..." />
+                <textarea className="input mt-1 text-base" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Special instructions for delivery..." />
               </div>
             </div>
           </div>
 
-          <div className="rounded-lg border bg-white p-6">
+          <div className="rounded-lg border bg-white p-4 sm:p-6">
             <h2 className="text-lg font-bold">Payment Method</h2>
             <div className="mt-4 grid gap-3">
-              <label className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition ${paymentMethod === "bank_transfer" ? "border-ember bg-ember/5" : "hover:border-gray-400"}`}>
-                <input type="radio" name="payment" className="accent-ember" checked={paymentMethod === "bank_transfer"} onChange={() => setPaymentMethod("bank_transfer")} />
-                <div>
-                  <p className="font-semibold">Bank Transfer</p>
-                  <p className="text-sm text-gray-600">Pay via bank transfer and upload your payment slip</p>
-                </div>
-              </label>
-              <label className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition ${paymentMethod === "cod" ? "border-ember bg-ember/5" : "hover:border-gray-400"}`}>
-                <input type="radio" name="payment" className="accent-ember" checked={paymentMethod === "cod"} onChange={() => setPaymentMethod("cod")} />
-                <div>
-                  <p className="font-semibold">Cash on Delivery</p>
-                  <p className="text-sm text-gray-600">Pay when you receive your order</p>
-                </div>
-              </label>
-              <label className={`flex cursor-pointer items-center gap-4 rounded-lg border p-4 transition ${paymentMethod === "advance" ? "border-ember bg-ember/5" : "hover:border-gray-400"}`}>
-                <input type="radio" name="payment" className="accent-ember" checked={paymentMethod === "advance"} onChange={() => setPaymentMethod("advance")} />
-                <div>
-                  <p className="font-semibold">50% Advance Payment</p>
-                  <p className="text-sm text-gray-600">Pay 50% now and the remaining 50% before shipping</p>
-                </div>
-              </label>
+              {[
+                { method: "bank_transfer", label: "Bank Transfer", desc: "Pay via bank transfer and upload your payment slip" },
+                { method: "cod", label: "Cash on Delivery", desc: "Pay when you receive your order" },
+                { method: "advance", label: "50% Advance Payment", desc: "Pay 50% now and the remaining 50% before shipping" },
+              ].map(({ method, label, desc }) => (
+                <label key={method} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${paymentMethod === method ? "border-ember bg-ember/5" : "hover:border-gray-400"}`}>
+                  <input type="radio" name="payment" className="accent-ember mt-0.5 shrink-0" checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} />
+                  <div className="min-w-0">
+                    <p className="font-semibold">{label}</p>
+                    <p className="text-sm text-gray-600">{desc}</p>
+                  </div>
+                </label>
+              ))}
             </div>
 
             {paymentMethod === "bank_transfer" && (
@@ -271,13 +263,13 @@ const CheckoutPage = () => {
                 </div>
                 <div className="mt-4">
                   <label className="text-sm font-medium">Upload Payment Slip</label>
-                  <div className="mt-1 flex items-center gap-3">
-                    <label className="btn-secondary cursor-pointer">
+                  <div className="mt-1 flex flex-wrap items-center gap-3">
+                    <label className="btn-secondary cursor-pointer min-h-[44px]">
                       <Upload className="h-4 w-4" />
                       {slipFile ? "Change file" : "Choose file"}
                       <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSlipFile(e.target.files[0] || null)} />
                     </label>
-                    {slipFile && <span className="text-sm text-gray-600">{slipFile.name}</span>}
+                    {slipFile && <span className="max-w-[200px] truncate text-sm text-gray-600">{slipFile.name}</span>}
                   </div>
                 </div>
               </div>
@@ -292,37 +284,56 @@ const CheckoutPage = () => {
                 </p>
                 <div className="mt-4">
                   <label className="text-sm font-medium">Upload Advance Payment Slip <span className="text-red-500">*</span></label>
-                  <div className="mt-1 flex items-center gap-3">
-                    <label className={`btn-secondary cursor-pointer ${errors.slip ? "border-red-400" : ""}`}>
+                  <div className="mt-1 flex flex-wrap items-center gap-3">
+                    <label className={`btn-secondary cursor-pointer min-h-[44px] ${errors.slip ? "border-red-400" : ""}`}>
                       <Upload className="h-4 w-4" />
                       {slipFile ? "Change file" : "Choose file"}
                       <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSlipFile(e.target.files[0] || null)} />
                     </label>
-                    {slipFile && <span className="text-sm text-gray-600">{slipFile.name}</span>}
+                    {slipFile && <span className="max-w-[200px] truncate text-sm text-gray-600">{slipFile.name}</span>}
                   </div>
                   {errors.slip && <p className="mt-1 text-xs text-red-600">{errors.slip}</p>}
                 </div>
               </div>
             )}
+
+            <button
+              className="btn-primary mt-4 w-full min-h-[48px] lg:hidden"
+              disabled={submitting}
+              onClick={() => { setShowSummaryMobile(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+            >
+              Review Order - {formatCurrency(total)}
+            </button>
           </div>
         </div>
 
-        <div className="lg:col-span-2 space-y-6">
-          <div className="rounded-lg border bg-white p-6">
-            <h2 className="text-lg font-bold">Order Summary</h2>
+        <div className={`lg:col-span-2 space-y-6 ${showSummaryMobile ? "fixed inset-0 z-50 overflow-y-auto bg-white p-4 lg:static lg:z-auto lg:overflow-visible lg:bg-transparent lg:p-0" : "hidden lg:block"}`}>
+          {showSummaryMobile && (
+            <button onClick={() => setShowSummaryMobile(false)} className="mb-4 flex items-center gap-1 text-sm font-semibold text-gray-600 lg:hidden">
+              <ChevronDown className="h-4 w-4 rotate-90" /> Back to form
+            </button>
+          )}
+
+          <div className="rounded-lg border bg-white p-4 sm:p-6">
+            <h2 className="text-lg font-bold">
+              Order Summary
+              {showSummaryMobile && (
+                <button onClick={() => setShowSummaryMobile(false)} className="float-right text-sm font-normal text-gray-500">Close</button>
+              )}
+            </h2>
             <div className="mt-4 divide-y">
               {items.map((item) => (
                 <div key={item._id} className="flex items-center gap-3 py-3">
-                  <img src={item.images?.[0]?.url || item.image || ""} alt={item.name} className="h-16 w-16 rounded-lg object-cover" />
+                  <img src={item.images?.[0]?.url || item.image || ""} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{item.name}</p>
                     <p className="text-sm text-gray-600">{formatCurrency(item.discountPrice || item.price)} each</p>
                     <div className="mt-1 flex items-center gap-2">
-                      <button className="rounded border p-0.5 hover:bg-gray-100" onClick={() => { if (item.quantity > 1) updateQuantity(item._id, item.quantity - 1); }}>
+                      <button className="rounded border p-0.5 hover:bg-gray-100 min-h-[28px] min-w-[28px]" onClick={() => { if (item.quantity > 1) updateQuantity(item._id, item.quantity - 1); }}>
                         <Minus className="h-3 w-3" />
                       </button>
                       <span className="w-6 text-center text-xs font-semibold">{item.quantity}</span>
-                      <button className="rounded border p-0.5 hover:bg-gray-100" onClick={() => updateQuantity(item._id, item.quantity + 1)}>
+                      <button className="rounded border p-0.5 hover:bg-gray-100 min-h-[28px] min-w-[28px]" onClick={() => updateQuantity(item._id, item.quantity + 1)}>
                         <Plus className="h-3 w-3" />
                       </button>
                       <button className="ml-auto text-red-500 hover:text-red-700" onClick={() => removeItem(item._id)}>
@@ -330,15 +341,15 @@ const CheckoutPage = () => {
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm font-bold">{formatCurrency((item.discountPrice || item.price) * item.quantity)}</p>
+                  <p className="text-sm font-bold shrink-0">{formatCurrency((item.discountPrice || item.price) * item.quantity)}</p>
                 </div>
               ))}
             </div>
 
             <div className="mt-4 border-t pt-4">
               <div className="flex items-center gap-2">
-                <input className="input flex-1" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Coupon code" />
-                <button className="btn-secondary text-sm" disabled={couponLoading || !couponCode.trim()} onClick={handleApplyCoupon}>
+                <input className="input flex-1 text-base" value={couponCode} onChange={(e) => setCouponCode(e.target.value)} placeholder="Coupon code" />
+                <button className="btn-secondary text-sm min-h-[44px]" disabled={couponLoading || !couponCode.trim()} onClick={handleApplyCoupon}>
                   {couponLoading ? "..." : "Apply"}
                 </button>
               </div>
@@ -369,7 +380,7 @@ const CheckoutPage = () => {
             </div>
 
             <button
-              className="btn-primary mt-6 w-full"
+              className="btn-primary mt-6 w-full min-h-[48px]"
               disabled={submitting}
               onClick={handlePlaceOrder}
             >

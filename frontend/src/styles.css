@@ -67,3 +67,23 @@ img {
 .animate-bounce-in {
   animation: bounce-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+@keyframes slide-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+
+.animate-slide-in {
+  animation: slide-in 0.25s ease-out;
+}
+
+input, select, textarea, button {
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .container-page {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}

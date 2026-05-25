@@ -5,7 +5,7 @@ import ProductCard from "./ProductCard.jsx";
 const ProductGrid = ({ products = [], loading }) => {
   if (loading) {
     return (
-      <div className="grid auto-rows-fr gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid auto-rows-fr gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {Array.from({ length: 8 }).map((_, index) => (
           <SkeletonCard key={index} />
         ))}
@@ -18,7 +18,7 @@ const ProductGrid = ({ products = [], loading }) => {
   }
 
   return (
-    <div className="grid auto-rows-fr gap-5 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid auto-rows-fr gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {products.map((product) => (
         <ProductCard key={product._id} product={product} />
       ))}

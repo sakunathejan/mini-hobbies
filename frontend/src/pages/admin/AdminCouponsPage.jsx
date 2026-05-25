@@ -65,40 +65,40 @@ const AdminCouponsPage = () => {
               <label className="text-sm font-medium">Code</label>
               <input className="input mt-1 uppercase" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} placeholder="SAVE10" required />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Type</label>
-                <select className="input mt-1" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
+                <select className="input mt-1 text-base" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
                   <option value="percentage">Percentage</option>
                   <option value="fixed">Fixed Amount</option>
                 </select>
               </div>
               <div>
                 <label className="text-sm font-medium">Value</label>
-                <input className="input mt-1" type="number" min="0" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percentage" ? "10" : "500"} required />
+                <input className="input mt-1 text-base" type="number" min="0" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder={form.type === "percentage" ? "10" : "500"} required />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Min Order</label>
-                <input className="input mt-1" type="number" min="0" value={form.minOrder} onChange={(e) => setForm({ ...form, minOrder: e.target.value })} />
+                <input className="input mt-1 text-base" type="number" min="0" value={form.minOrder} onChange={(e) => setForm({ ...form, minOrder: e.target.value })} />
               </div>
               <div>
                 <label className="text-sm font-medium">Max Discount (0 = no limit)</label>
-                <input className="input mt-1" type="number" min="0" value={form.maxDiscount} onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })} />
+                <input className="input mt-1 text-base" type="number" min="0" value={form.maxDiscount} onChange={(e) => setForm({ ...form, maxDiscount: e.target.value })} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium">Usage Limit (0 = unlimited)</label>
-                <input className="input mt-1" type="number" min="0" value={form.usageLimit} onChange={(e) => setForm({ ...form, usageLimit: e.target.value })} />
+                <input className="input mt-1 text-base" type="number" min="0" value={form.usageLimit} onChange={(e) => setForm({ ...form, usageLimit: e.target.value })} />
               </div>
               <div>
                 <label className="text-sm font-medium">Expires At</label>
-                <input className="input mt-1" type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} />
+                <input className="input mt-1 text-base" type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} />
               </div>
             </div>
-            <button className="btn-primary mt-2 w-full" disabled={saving}>{saving ? "Saving..." : "Create Coupon"}</button>
+            <button className="btn-primary mt-2 w-full min-h-[48px]" disabled={saving}>{saving ? "Saving..." : "Create Coupon"}</button>
           </form>
         </div>
 

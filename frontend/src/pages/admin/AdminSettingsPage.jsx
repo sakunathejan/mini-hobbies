@@ -86,18 +86,18 @@ const AdminSettingsPage = () => {
           <form onSubmit={handleProfileSubmit} className="grid max-w-lg gap-4">
             <div>
               <label className="mb-1 block text-sm font-semibold text-gray-700">Name</label>
-              <input className="input" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
+              <input className="input text-base" value={profile.name} onChange={(e) => setProfile({ ...profile, name: e.target.value })} />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold text-gray-700">Email</label>
-              <input className="input" type="email" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} />
+              <input className="input text-base" type="email" value={profile.email} onChange={(e) => setProfile({ ...profile, email: e.target.value })} />
             </div>
             <hr className="my-2" />
             <p className="text-sm text-gray-500">Leave password fields empty to keep current password.</p>
             <div>
               <label className="mb-1 block text-sm font-semibold text-gray-700">Current Password</label>
               <div className="relative">
-                <input className="input w-full pr-10" type={showCurrent ? "text" : "password"} value={profile.currentPassword} onChange={(e) => setProfile({ ...profile, currentPassword: e.target.value })} />
+                <input className="input w-full pr-10 text-base" type={showCurrent ? "text" : "password"} value={profile.currentPassword} onChange={(e) => setProfile({ ...profile, currentPassword: e.target.value })} />
                 <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowCurrent(!showCurrent)}>
                   {showCurrent ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -106,7 +106,7 @@ const AdminSettingsPage = () => {
             <div>
               <label className="mb-1 block text-sm font-semibold text-gray-700">New Password</label>
               <div className="relative">
-                <input className="input w-full pr-10" type={showNew ? "text" : "password"} value={profile.newPassword} onChange={(e) => setProfile({ ...profile, newPassword: e.target.value })} />
+                <input className="input w-full pr-10 text-base" type={showNew ? "text" : "password"} value={profile.newPassword} onChange={(e) => setProfile({ ...profile, newPassword: e.target.value })} />
                 <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowNew(!showNew)}>
                   {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
@@ -115,13 +115,13 @@ const AdminSettingsPage = () => {
             <div>
               <label className="mb-1 block text-sm font-semibold text-gray-700">Confirm New Password</label>
               <div className="relative">
-                <input className="input w-full pr-10" type={showConfirm ? "text" : "password"} value={profile.confirmPassword} onChange={(e) => setProfile({ ...profile, confirmPassword: e.target.value })} />
+                <input className="input w-full pr-10 text-base" type={showConfirm ? "text" : "password"} value={profile.confirmPassword} onChange={(e) => setProfile({ ...profile, confirmPassword: e.target.value })} />
                 <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowConfirm(!showConfirm)}>
                   {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-            <button disabled={loading} className="btn-primary inline-flex w-fit items-center gap-2 disabled:bg-gray-300">
+            <button disabled={loading} className="btn-primary inline-flex w-full sm:w-fit items-center justify-center gap-2 min-h-[48px] disabled:bg-gray-300">
               <Save className="h-4 w-4" /> {loading ? "Saving..." : "Save Profile"}
             </button>
           </form>
@@ -145,17 +145,7 @@ const AdminSettingsPage = () => {
                 <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${settings.freeShipping ? "translate-x-6" : "translate-x-1"}`} />
               </button>
             </div>
-            <div className="rounded-md border border-gray-200 p-4">
-              <label className="mb-1 block font-semibold">Low Stock Threshold</label>
-              <p className="mb-2 text-sm text-gray-500">Alert when stock falls at or below this number.</p>
-              <input
-                className="input w-32"
-                type="number"
-                min={1}
-                value={settings.lowStockThreshold}
-                onChange={(e) => handleSettingChange("lowStockThreshold", Math.max(1, parseInt(e.target.value) || 1))}
-              />
-            </div>
+
           </div>
         </section>
       </div>

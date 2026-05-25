@@ -150,12 +150,12 @@ const AdminOrdersPage = () => {
           <h1 className="text-3xl font-black">Orders</h1>
           <p className="mt-1 text-sm text-gray-600">Track customer orders and update delivery status.</p>
         </div>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setShowDelivered(!showDelivered)} className={`btn-secondary text-xs ${showDelivered ? "bg-ember text-white" : ""}`}>
+        <div className="flex flex-wrap items-center gap-2">
+          <button type="button" onClick={() => setShowDelivered(!showDelivered)} className={`btn-secondary text-xs min-h-[44px] ${showDelivered ? "bg-ember text-white" : ""}`}>
             {showDelivered ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             {showDelivered ? "Active orders" : "Delivered only"}
           </button>
-          <select className="input w-56" value={showDelivered ? "Delivered" : statusFilter} disabled={showDelivered} onChange={(e) => setStatusFilter(e.target.value)}>
+          <select className="input w-full sm:w-56 text-base" value={showDelivered ? "Delivered" : statusFilter} disabled={showDelivered} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="All">All statuses</option>
             {statuses.map((status) => (
               <option key={status} value={status}>{status}</option>
@@ -240,9 +240,9 @@ const AdminOrdersPage = () => {
               )}
 
               <div className="mt-4 flex flex-wrap items-center gap-3">
-                <label className="text-sm font-semibold text-gray-700">Update status</label>
+                <label className="w-full text-sm font-semibold text-gray-700 sm:w-auto">Update status</label>
                 <select
-                  className="input max-w-xs"
+                  className="input w-full sm:w-auto sm:max-w-xs text-base"
                   value={order.status}
                   disabled={updatingId === order._id}
                   onChange={(e) => changeStatus(order._id, e.target.value)}
@@ -253,20 +253,20 @@ const AdminOrdersPage = () => {
                 </select>
                 {(order.status === "Fully Paid" || order.status === "Preparing Order" || order.status === "Shipped") && (
                   <input
-                    className="input max-w-[200px]"
+                    className="input w-full sm:w-auto sm:max-w-[200px] text-base"
                     placeholder="Tracking number"
                     value={trackingInputs[order._id] || order.trackingNumber || ""}
                     onChange={(e) => setTrackingInputs({ ...trackingInputs, [order._id]: e.target.value })}
                   />
                 )}
-                <button type="button" onClick={() => openWhatsApp(order)} className="btn-secondary">
+                <button type="button" onClick={() => openWhatsApp(order)} className="btn-secondary min-h-[44px]">
                   <MessageCircle className="h-4 w-4" /> Send Receipt
                 </button>
-                <button type="button" onClick={() => handleRetryWhatsApp(order._id)} className="btn-secondary text-xs" disabled={retryingWhatsApp === order._id}>
+                <button type="button" onClick={() => handleRetryWhatsApp(order._id)} className="btn-secondary text-xs min-h-[44px]" disabled={retryingWhatsApp === order._id}>
                   <RefreshCw className={`h-4 w-4 ${retryingWhatsApp === order._id ? "animate-spin" : ""}`} />
                   {retryingWhatsApp === order._id ? "Opening..." : "Status Update"}
                 </button>
-                <button type="button" onClick={() => setDeleteTarget(order)} className="btn-danger">
+                <button type="button" onClick={() => setDeleteTarget(order)} className="btn-danger min-h-[44px]">
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>

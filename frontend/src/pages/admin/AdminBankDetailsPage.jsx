@@ -49,23 +49,23 @@ const AdminBankDetailsPage = () => {
           <div className="grid gap-4">
             <div>
               <label className="mb-1 block text-sm font-semibold">Bank Name</label>
-              <input className="input" value={form.bankName} onChange={(e) => setForm({ ...form, bankName: e.target.value })} required />
+              <input className="input text-base" value={form.bankName} onChange={(e) => setForm({ ...form, bankName: e.target.value })} required />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold">Account Name</label>
-              <input className="input" value={form.accountName} onChange={(e) => setForm({ ...form, accountName: e.target.value })} required />
+              <input className="input text-base" value={form.accountName} onChange={(e) => setForm({ ...form, accountName: e.target.value })} required />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold">Account Number</label>
-              <input className="input" value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} required />
+              <input className="input text-base" value={form.accountNumber} onChange={(e) => setForm({ ...form, accountNumber: e.target.value })} required />
             </div>
             <div>
               <label className="mb-1 block text-sm font-semibold">Branch</label>
-              <input className="input" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} />
+              <input className="input text-base" value={form.branch} onChange={(e) => setForm({ ...form, branch: e.target.value })} />
             </div>
           </div>
 
-          <button className="btn-primary mt-6 w-full" disabled={saving}>
+          <button className="btn-primary mt-6 w-full min-h-[48px]" disabled={saving}>
             <Save className="h-4 w-4" />
             {saving ? "Saving..." : "Save Bank Details"}
           </button>

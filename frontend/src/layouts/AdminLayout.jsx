@@ -1,82 +1,89 @@
-import { BarChart3, Building2, CreditCard, LogOut, MapPin, Package, Percent, PlusCircle, Settings, ShoppingBag, Tags } from "lucide-react";
+import { BarChart3, Building2, CreditCard, LogOut, MapPin, Menu, Package, Percent, PlusCircle, Settings, ShoppingBag, Tags, X } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 
 const AdminLayout = () => {
   const { logout } = useAuth();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileOpen ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [mobileOpen]);
+
+  const links = [
+    { to: "/admin", end: true, icon: BarChart3, label: "Dashboard" },
+    { to: "/admin/products", icon: Package, label: "Products" },
+    { to: "/admin/products/new", icon: PlusCircle, label: "Add Product" },
+    { to: "/admin/categories", icon: Tags, label: "Categories" },
+    { to: "/admin/orders", icon: ShoppingBag, label: "Orders" },
+    { to: "/admin/payments", icon: CreditCard, label: "Payments" },
+    { to: "/admin/coupons", icon: Percent, label: "Coupons" },
+    { to: "/admin/delivery-zones", icon: MapPin, label: "Delivery Zones" },
+    { to: "/admin/bank-details", icon: Building2, label: "Bank Details" },
+    { to: "/admin/settings", icon: Settings, label: "Settings" },
+  ];
 
   return (
     <div className="min-h-screen bg-gray-100">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white p-5 md:block">
         <h1 className="text-xl font-black">Mini Hobbies Admin</h1>
-        <nav className="mt-8 grid gap-2">
-          <NavLink to="/admin" end className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <BarChart3 className="h-4 w-4" /> Dashboard
-          </NavLink>
-          <NavLink to="/admin/products" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <Package className="h-4 w-4" /> Products
-          </NavLink>
-          <NavLink to="/admin/products/new" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <PlusCircle className="h-4 w-4" /> Add Product
-          </NavLink>
-          <NavLink to="/admin/categories" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <Tags className="h-4 w-4" /> Categories
-          </NavLink>
-          <NavLink to="/admin/orders" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <ShoppingBag className="h-4 w-4" /> Orders
-          </NavLink>
-          <NavLink to="/admin/payments" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <CreditCard className="h-4 w-4" /> Payments
-          </NavLink>
-          <NavLink to="/admin/coupons" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <Percent className="h-4 w-4" /> Coupons
-          </NavLink>
-          <NavLink to="/admin/delivery-zones" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <MapPin className="h-4 w-4" /> Delivery Zones
-          </NavLink>
-          <NavLink to="/admin/bank-details" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <Building2 className="h-4 w-4" /> Bank Details
-          </NavLink>
-          <NavLink to="/admin/settings" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
-            <Settings className="h-4 w-4" /> Settings
-          </NavLink>
+        <nav className="mt-8 grid gap-1">
+          {links.map((link) => {
+            const Icon = link.icon;
+            return (
+              <NavLink key={link.to} to={link.to} end={link.end} className={({ isActive }) => `flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100 ${isActive ? "bg-ember/10 text-ember" : ""}`}>
+                <Icon className="h-4 w-4" /> {link.label}
+              </NavLink>
+            );
+          })}
         </nav>
         <button onClick={logout} className="absolute bottom-5 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-red-600">
           <LogOut className="h-4 w-4" /> Logout
         </button>
       </aside>
-      <header className="border-b border-gray-200 bg-white p-4 md:hidden">
+
+      <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden">
         <p className="text-sm font-black">Mini Hobbies Admin</p>
-        <nav className="mt-3 flex flex-wrap gap-2 text-sm font-semibold">
-          <NavLink to="/admin" end className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Dashboard
-          </NavLink>
-          <NavLink to="/admin/products" className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Products
-          </NavLink>
-          <NavLink to="/admin/categories" className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Categories
-          </NavLink>
-          <NavLink to="/admin/orders" className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Orders
-          </NavLink>
-          <NavLink to="/admin/payments" className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Payments
-          </NavLink>
-          <NavLink to="/admin/coupons" className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Coupons
-          </NavLink>
-          <NavLink to="/admin/delivery-zones" className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Zones
-          </NavLink>
-          <NavLink to="/admin/bank-details" className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Bank
-          </NavLink>
-          <NavLink to="/admin/settings" className="rounded-md px-3 py-2 hover:bg-gray-100">
-            Settings
-          </NavLink>
-        </nav>
+        <button aria-label="Open menu" onClick={() => setMobileOpen(true)} className="rounded-md p-2 hover:bg-gray-100">
+          <Menu className="h-5 w-5" />
+        </button>
       </header>
+
+      {mobileOpen && (
+        <>
+          <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileOpen(false)} />
+          <div className="fixed inset-y-0 right-0 z-50 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl md:hidden">
+            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+              <span className="text-sm font-black">Menu</span>
+              <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="rounded-md p-2 hover:bg-gray-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <nav className="flex-1 overflow-y-auto px-3 py-4">
+              {links.map((link) => {
+                const Icon = link.icon;
+                return (
+                  <NavLink
+                    key={link.to}
+                    to={link.to}
+                    end={link.end}
+                    onClick={() => setMobileOpen(false)}
+                    className={({ isActive }) => `flex items-center gap-2 rounded-md px-4 py-3 text-sm font-semibold transition min-h-[44px] ${isActive ? "bg-ember/10 text-ember" : "text-gray-700 hover:bg-gray-100"}`}
+                  >
+                    <Icon className="h-4 w-4" /> {link.label}
+                  </NavLink>
+                );
+              })}
+              <button onClick={() => { logout(); setMobileOpen(false); }} className="mt-4 flex w-full items-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-red-600 min-h-[44px]">
+                <LogOut className="h-4 w-4" /> Logout
+              </button>
+            </nav>
+          </div>
+        </>
+      )}
+
       <main className="md:pl-64">
         <div className="container-page py-8">
           <Outlet />
