@@ -1,0 +1,31 @@
+### Health check
+GET http://localhost:5000/api/health
+
+### Login admin
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "admin@minihobbies.lk",
+  "password": "ChangeMe123!"
+}
+
+### List products
+GET http://localhost:5000/api/products?search=hot%20wheels&minPrice=1000&maxPrice=10000
+
+### Create category
+POST http://localhost:5000/api/categories
+Authorization: Bearer YOUR_TOKEN
+Content-Type: application/json
+
+{
+  "name": "Limited Editions",
+  "description": "Rare hobby collector releases."
+}
+
+### Upload product images
+POST http://localhost:5000/api/uploads/products
+Authorization: Bearer YOUR_TOKEN
+Content-Type: multipart/form-data
+
+images=@sample-product.jpg
