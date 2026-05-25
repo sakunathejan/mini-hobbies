@@ -1,8 +1,13 @@
 import axios from "axios";
 import { getSessionId } from "../utils/session.js";
 
+const baseURL = import.meta.env.VITE_API_URL;
+if (!baseURL) {
+  console.warn("[api] VITE_API_URL is not set. API calls will fail in production.");
+}
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000/api",
+  baseURL: baseURL || "",
   timeout: 15000
 });
 

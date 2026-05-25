@@ -1,1 +1,0 @@
-import{c as a}from"./index-IEDzx_-c.js";const s=()=>a.get("/categories").then(e=>e.data),r=e=>a.post("/categories",e).then(t=>t.data),c=e=>a.delete(`/categories/${e}`).then(t=>t.data);export{r as c,c as d,s as g};
