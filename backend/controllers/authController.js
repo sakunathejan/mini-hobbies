@@ -25,3 +25,45 @@ export const loginAdmin = asyncHandler(async (req, res) => {
 export const getMe = asyncHandler(async (req, res) => {
   res.json(req.user);
 });
+
+export const updateAdminProfile = asyncHandler(async (req, res) => {
+  const admin = await User.findById(req.user._id);
+  if (!admin) {
+    res.status(404);
+    throw new Error("Admin not found.");
+  }
+
+  const { name, email, currentPassword, newPassword } = req.body;
+
+  if (name) admin.name = name;
+
+  if (email && email !== admin.email) {
+    const existing = await User.findOne({ email });
+    if (existing) {
+      res.status(400);
+      throw new Error("Email already in use.");
+    }
+    admin.email = email;
+  }
+
+  if (currentPassword && newPassword) {
+    const isMatch = await admin.matchPassword(currentPassword);
+    if (!isMatch) {
+      res.status(400);
+      throw new Error("Current password is incorrect.");
+    }
+    admin.password = newPassword;
+  }
+
+  await admin.save();
+
+  res.json({
+    token: generateToken(admin._id),
+    user: {
+      id: admin._id,
+      name: admin.name,
+      email: admin.email,
+      role: admin.role
+    }
+  });
+});

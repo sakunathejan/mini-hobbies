@@ -25,7 +25,12 @@ export const AuthProvider = ({ children }) => {
     toast.success("Logged out.");
   };
 
-  const value = useMemo(() => ({ admin, login, logout, isAdmin: Boolean(admin) }), [admin]);
+  const refreshAdmin = (userData) => {
+    localStorage.setItem("mini_hobbies_admin", JSON.stringify(userData));
+    setAdmin(userData);
+  };
+
+  const value = useMemo(() => ({ admin, login, logout, refreshAdmin, isAdmin: Boolean(admin) }), [admin]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

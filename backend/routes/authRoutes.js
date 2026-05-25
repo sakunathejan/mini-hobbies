@@ -1,6 +1,6 @@
 import express from "express";
 import { body } from "express-validator";
-import { getMe, loginAdmin } from "../controllers/authController.js";
+import { getMe, loginAdmin, updateAdminProfile } from "../controllers/authController.js";
 import { adminOnly, protect } from "../middleware/authMiddleware.js";
 import { validateRequest } from "../middleware/validateRequest.js";
 import { getStats } from "../controllers/dashboardController.js";
@@ -14,6 +14,7 @@ router.post(
   loginAdmin
 );
 router.get("/me", protect, adminOnly, getMe);
+router.put("/profile", protect, adminOnly, updateAdminProfile);
 router.get("/dashboard", protect, adminOnly, getStats);
 
 export default router;

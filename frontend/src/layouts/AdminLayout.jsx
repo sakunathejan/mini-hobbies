@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CreditCard, LogOut, MapPin, Package, Percent, PlusCircle, ShoppingBag, Tags } from "lucide-react";
+import { BarChart3, Building2, CreditCard, LogOut, MapPin, Package, Percent, PlusCircle, Settings, ShoppingBag, Tags } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
@@ -37,6 +37,9 @@ const AdminLayout = () => {
           <NavLink to="/admin/bank-details" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
             <Building2 className="h-4 w-4" /> Bank Details
           </NavLink>
+          <NavLink to="/admin/settings" className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold hover:bg-gray-100">
+            <Settings className="h-4 w-4" /> Settings
+          </NavLink>
         </nav>
         <button onClick={logout} className="absolute bottom-5 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-red-600">
           <LogOut className="h-4 w-4" /> Logout
@@ -68,6 +71,9 @@ const AdminLayout = () => {
           </NavLink>
           <NavLink to="/admin/bank-details" className="rounded-md px-3 py-2 hover:bg-gray-100">
             Bank
+          </NavLink>
+          <NavLink to="/admin/settings" className="rounded-md px-3 py-2 hover:bg-gray-100">
+            Settings
           </NavLink>
         </nav>
       </header>
