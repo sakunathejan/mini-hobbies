@@ -53,7 +53,7 @@ const SplashScreen = ({ onFinish }) => {
       {!exit && (
         <motion.div
           key="splash"
-          exit={{ opacity: 0, scale: 1.05, filter: "blur(8px)", transition: { duration: 0.8, ease: [0.45, 0, 0.1, 1] } }}
+          exit={{ opacity: 0, scale: 1.05, transition: { duration: 0.8, ease: [0.45, 0, 0.1, 1] } }}
           className="fixed inset-0 z-[9999] flex flex-col items-center justify-center overflow-hidden"
           style={{ background: "linear-gradient(135deg, #0a0a0f 0%, #14141f 40%, #1a1a2e 70%, #0f0f1a 100%)" }}
         >

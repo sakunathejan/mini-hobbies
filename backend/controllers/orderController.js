@@ -11,7 +11,7 @@ import { normalizeOrder, toTitleStatus } from "../utils/normalizeOrder.js";
 import { normalizePhone, notifyAdminWhatsApp } from "../utils/whatsapp.js";
 import { uploadPaymentSlip } from "../services/supabaseStorageService.js";
 import { retryCustomerWhatsApp, buildCustomerWhatsAppUrl } from "../services/whatsappService.js";
-import { sendOrderStatusEmail } from "../services/emailService.js";
+import { sendOrderStatusEmail, sendOrderConfirmationEmail } from "../services/emailService.js";
 
 const pushStatusHistory = (order, status, note = "") => {
   if (!order.statusHistory) order.statusHistory = [];
@@ -196,6 +196,8 @@ export const createOrder = asyncHandler(async (req, res) => {
     whatsappUrl = wa.whatsappUrl;
     adminNotified = wa.adminNotified;
   } catch (_) {}
+
+  enqueue("order-confirmation-email", () => sendOrderConfirmationEmail(order));
 
   res.status(201).json({ ...normalized, whatsappUrl, adminNotified });
 });

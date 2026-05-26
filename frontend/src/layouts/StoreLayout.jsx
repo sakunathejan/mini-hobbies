@@ -3,6 +3,7 @@ import { AnnouncementProvider } from "../context/AnnouncementContext.jsx";
 import AnnouncementManager from "../components/announcements/AnnouncementManager.jsx";
 import Footer from "../components/layout/Footer.jsx";
 import Navbar from "../components/layout/Navbar.jsx";
+import PageTransition from "../components/transitions/PageTransition.jsx";
 
 const StoreLayout = () => (
   <AnnouncementProvider>
@@ -10,7 +11,9 @@ const StoreLayout = () => (
       <Navbar />
       <AnnouncementManager />
       <main>
-        <Outlet />
+        <PageTransition>
+          <Outlet />
+        </PageTransition>
       </main>
       <Footer />
     </div>

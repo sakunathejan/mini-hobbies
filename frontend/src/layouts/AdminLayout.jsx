@@ -2,6 +2,7 @@ import { BarChart3, Building2, CreditCard, LogOut, MapPin, Megaphone, Menu, Pack
 import { NavLink, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
+import PageTransition from "../components/transitions/PageTransition.jsx";
 
 const AdminLayout = () => {
   const { logout } = useAuth();
@@ -78,7 +79,9 @@ const AdminLayout = () => {
 
       <main className="md:pl-64">
         <div className="container-page py-8">
-          <Outlet />
+          <PageTransition>
+            <Outlet />
+          </PageTransition>
         </div>
       </main>
     </div>

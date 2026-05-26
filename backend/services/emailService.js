@@ -354,6 +354,20 @@ ${logo ? '<img src="' + logo + '" alt="Mini Hobbies" width="100" style="display:
   await sendMail(user.email, "Mini Hobbies - Password Reset", html);
 };
 
+export const sendOrderConfirmationEmail = async (order) => {
+  const e = order.customer?.email;
+  if (!e) throw new Error("Customer email not available");
+
+  const logo = loadLogo();
+  const { default: orderConfirmationHtml } = await import("../email-templates/orderConfirmation.js");
+
+  await sendMail(
+    e,
+    "Mini Hobbies - Order Confirmed " + order.orderNumber,
+    orderConfirmationHtml(order, logo)
+  );
+};
+
 export const sendVerificationEmail = async (user, rawToken) => {
   const base = process.env.CLIENT_URL || "http://localhost:5173";
   const logo = loadLogo();
