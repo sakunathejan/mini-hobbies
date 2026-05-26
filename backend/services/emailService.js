@@ -2,7 +2,6 @@ import nodemailer from "nodemailer";
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
-import BankDetail from "../models/BankDetail.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -16,7 +15,12 @@ const getTransporter = () => {
   const user = process.env.SMTP_USER;
   const pass = process.env.SMTP_PASS;
   if (!host || !user || !pass) return null;
-  transporter = nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } });
+  transporter = nodemailer.createTransport({
+    host, port, secure: port === 465,
+    auth: { user, pass },
+    connectionTimeout: 5000,
+    greetingTimeout: 5000
+  });
   return transporter;
 };
 
@@ -34,6 +38,8 @@ const loadLogo = () => {
   }
   return "";
 };
+
+const FROM = () => `"${process.env.SMTP_FROM_NAME || "Mini Hobbies"}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "noreply@minihobbies.lk"}>`;
 
 const fmt = (n) => "LKR " + Number(n || 0).toLocaleString("en-LK");
 
@@ -286,12 +292,23 @@ const formatEmailText = (order, note) => {
   return lines.join("\n");
 };
 
-export const sendPaymentVerificationEmail = async (order, action, note) => {
+const sendMail = async (to, subject, html, text) => {
   const t = getTransporter();
   if (!t) throw new Error("EMAIL_NOT_CONFIGURED");
+  await t.sendMail({
+    from: FROM(),
+    to,
+    subject,
+    text: text || "",
+    html
+  });
+};
+
+export const sendPaymentVerificationEmail = async (order, action, note) => {
   const e = order.customer?.email;
   if (!e) throw new Error("Customer email not available");
 
+  const { default: BankDetail } = await import("../models/BankDetail.js");
   const bankDetail = await BankDetail.findOne().sort({ createdAt: -1 }).lean();
   if (bankDetail?.bankName) order.__bankDetails = bankDetail;
 
@@ -299,28 +316,63 @@ export const sendPaymentVerificationEmail = async (order, action, note) => {
     ? "Mini Hobbies - Payment Verified for Order " + order.orderNumber
     : "Mini Hobbies - Payment Rejected for Order " + order.orderNumber;
 
-  await t.sendMail({
-    from: `"${process.env.SMTP_FROM_NAME || "Mini Hobbies"}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "noreply@minihobbies.lk"}>`,
-    to: e,
-    subject,
-    html: formatPaymentVerificationHtml(order, action, note),
-  });
+  await sendMail(e, subject, formatPaymentVerificationHtml(order, action, note));
 };
 
 export const sendOrderStatusEmail = async (order, note) => {
-  const t = getTransporter();
-  if (!t) throw new Error("EMAIL_NOT_CONFIGURED");
   const e = order.customer?.email;
   if (!e) throw new Error("Customer email not available");
 
+  const { default: BankDetail } = await import("../models/BankDetail.js");
   const bankDetail = await BankDetail.findOne().sort({ createdAt: -1 }).lean();
   if (bankDetail?.bankName) order.__bankDetails = bankDetail;
 
-  await t.sendMail({
-    from: `"${process.env.SMTP_FROM_NAME || "Mini Hobbies"}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "noreply@minihobbies.lk"}>`,
-    to: e,
-    subject: "Mini Hobbies - Order " + order.orderNumber + " - " + order.status,
-    text: formatEmailText(order, note),
-    html: formatEmailHtml(order, note),
-  });
+  await sendMail(e, "Mini Hobbies - Order " + order.orderNumber + " - " + order.status, formatEmailHtml(order, note), formatEmailText(order, note));
+};
+
+export const sendPasswordResetEmail = async (user, rawToken) => {
+  const base = process.env.CLIENT_URL || "http://localhost:5173";
+  const logo = loadLogo();
+  const link = `${base}/admin/reset-password?token=${rawToken}`;
+
+  const html = `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
+<center>
+<table width="100%"><tr><td align="center" style="padding:40px 16px;">
+<table width="480" style="background:#fff;border-radius:12px;">
+<tr><td style="padding:32px;text-align:center;">
+${logo ? '<img src="' + logo + '" alt="Mini Hobbies" width="100" style="display:inline-block;margin-bottom:16px;" />' : ""}
+<h2 style="margin:0;font-size:20px;color:#0f172a;">Reset your password</h2>
+<p style="margin:12px 0 0;font-size:14px;color:#475569;">Click below to reset your admin password. This link expires in 1 hour.</p>
+<a href="${link}" style="display:inline-block;margin-top:20px;background:#0f172a;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;">Reset Password</a>
+<p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">If you didn't request this, ignore this email.</p>
+</td></tr></table>
+</td></tr></table>
+</center>
+</body></html>`;
+
+  await sendMail(user.email, "Mini Hobbies - Password Reset", html);
+};
+
+export const sendVerificationEmail = async (user, rawToken) => {
+  const base = process.env.CLIENT_URL || "http://localhost:5173";
+  const logo = loadLogo();
+  const link = `${base}/verify-email?token=${rawToken}`;
+
+  const html = `<!DOCTYPE html>
+<html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
+<center>
+<table width="100%"><tr><td align="center" style="padding:40px 16px;">
+<table width="480" style="background:#fff;border-radius:12px;">
+<tr><td style="padding:32px;text-align:center;">
+${logo ? '<img src="' + logo + '" alt="Mini Hobbies" width="100" style="display:inline-block;margin-bottom:16px;" />' : ""}
+<h2 style="margin:0;font-size:20px;color:#0f172a;">Verify your email</h2>
+<p style="margin:12px 0 0;font-size:14px;color:#475569;">Click below to verify your email address.</p>
+<a href="${link}" style="display:inline-block;margin-top:20px;background:#0f172a;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;">Verify Email</a>
+</td></tr></table>
+</td></tr></table>
+</center>
+</body></html>`;
+
+  await sendMail(user.email, "Mini Hobbies - Verify Your Email", html);
 };

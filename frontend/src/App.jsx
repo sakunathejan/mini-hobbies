@@ -4,7 +4,7 @@ import AppRoutes from "./routes/AppRoutes.jsx";
 import PageLoader from "./components/ui/PageLoader.jsx";
 
 const App = () => (
-  <BrowserRouter>
+  <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
     <Suspense fallback={<PageLoader />}>
       <AppRoutes />
     </Suspense>
