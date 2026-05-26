@@ -4,6 +4,8 @@ import Order from "../models/Order.js";
 import Payment from "../models/Payment.js";
 import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import * as cache from "../utils/cache.js";
+import { enqueue } from "../utils/jobQueue.js";
 import { generateOrderNumber } from "../utils/orderNumber.js";
 import { normalizeOrder, toTitleStatus } from "../utils/normalizeOrder.js";
 import { normalizePhone, notifyAdminWhatsApp } from "../utils/whatsapp.js";
@@ -184,6 +186,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     }
   }
 
+  cache.clear("dashboard:");
   const normalized = normalizeOrder(order);
 
   let whatsappUrl = "";
@@ -259,14 +262,10 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   let emailSent = false;
   let emailError = "";
   try {
-    await sendOrderStatusEmail(order, note || `Status updated to ${newStatus}`);
+    enqueue("order-status-email", () => sendOrderStatusEmail(order, note || `Status updated to ${newStatus}`));
     emailSent = true;
   } catch (err) {
-    if (err.message === "EMAIL_NOT_CONFIGURED") {
-      emailError = "Email not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS in .env to enable automatic email notifications.";
-    } else {
-      emailError = err.message;
-    }
+    emailError = err.message;
   }
 
   const customerWhatsappUrl = buildCustomerWhatsAppUrl(normalizeOrder(order), note || `Status updated to ${newStatus}`);

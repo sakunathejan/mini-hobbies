@@ -1,6 +1,8 @@
 import Payment from "../models/Payment.js";
 import Order from "../models/Order.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import * as cache from "../utils/cache.js";
+import { enqueue } from "../utils/jobQueue.js";
 import { uploadPaymentSlip } from "../services/supabaseStorageService.js";
 import { sendPaymentVerificationEmail } from "../services/emailService.js";
 import { normalizeOrder } from "../utils/normalizeOrder.js";
@@ -145,13 +147,12 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   }
 
   await order.save();
+  cache.clear("dashboard:");
 
   const populatedPayment = await Payment.findById(payment._id).populate("order");
   const normalizedOrder = order.toObject ? normalizeOrder(order) : order;
 
-  try {
-    await sendPaymentVerificationEmail(order, "verified", "Payment verified successfully.");
-  } catch (_) {}
+  enqueue("payment-verification-email", () => sendPaymentVerificationEmail(order, "verified", "Payment verified successfully."));
 
   res.json({ payment: populatedPayment, order: normalizedOrder });
 });
@@ -176,9 +177,8 @@ export const rejectPayment = asyncHandler(async (req, res) => {
 
   let populatedPayment = payment;
   if (order) {
-    try {
-      await sendPaymentVerificationEmail(order, "rejected", req.body.reason || "Payment rejected");
-    } catch (_) {}
+    cache.clear("dashboard:");
+    enqueue("payment-verification-email", () => sendPaymentVerificationEmail(order, "rejected", req.body.reason || "Payment rejected"));
     populatedPayment = await Payment.findById(payment._id).populate("order");
   }
 

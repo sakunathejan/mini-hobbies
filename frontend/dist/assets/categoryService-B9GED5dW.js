@@ -1,0 +1,1 @@
+import{a}from"./index-DwqsrHUM.js";const s=()=>a.get("/categories").then(e=>e.data),r=e=>a.post("/categories",e).then(t=>t.data),g=e=>a.delete(`/categories/${e}`).then(t=>t.data);export{r as c,g as d,s as g};

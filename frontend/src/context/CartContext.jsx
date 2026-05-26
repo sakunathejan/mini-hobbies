@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { useCallback, createContext, useContext, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { getProductById } from "../services/productService.js";
 
@@ -8,19 +8,25 @@ const getItemId = (product, variantId) => variantId ? `${product._id}_${variantI
 
 export const CartProvider = ({ children }) => {
   const [items, setItems] = useState(() => {
-    const stored = localStorage.getItem("mini_hobbies_cart");
-    return stored ? JSON.parse(stored) : [];
+    try {
+      const stored = localStorage.getItem("mini_hobbies_cart");
+      return stored ? JSON.parse(stored) : [];
+    } catch { return []; }
   });
 
-  const persist = (nextItems) => {
-    setItems(nextItems);
-    localStorage.setItem("mini_hobbies_cart", JSON.stringify(nextItems));
-  };
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
 
-  const addItem = (product, quantity = 1, variantId = null) => {
+  const persist = useCallback((nextItems) => {
+    setItems(nextItems);
+    try { localStorage.setItem("mini_hobbies_cart", JSON.stringify(nextItems)); } catch {}
+  }, []);
+
+  const addItem = useCallback((product, quantity = 1, variantId = null) => {
+    const currentItems = itemsRef.current;
     const id = getItemId(product, variantId);
     const variant = variantId ? product.variants?.find((v) => v._id === variantId) : null;
-    const existingItem = items.find((item) => item._cartId === id);
+    const existingItem = currentItems.find((item) => item._cartId === id);
 
     const currentQty = existingItem ? existingItem.quantity : 0;
     const maxStock = variant ? variant.stock : (product.stock || 0);
@@ -40,15 +46,16 @@ export const CartProvider = ({ children }) => {
     };
 
     const nextItems = existingItem
-      ? items.map((item) => (item._cartId === id ? cartItem : item))
-      : [...items, cartItem];
+      ? currentItems.map((item) => (item._cartId === id ? cartItem : item))
+      : [...currentItems, cartItem];
 
     persist(nextItems);
     toast.success("Added to cart.");
-  };
+  }, [persist]);
 
-  const updateQuantity = async (cartId, newQuantity) => {
-    const item = items.find((i) => i._cartId === cartId);
+  const updateQuantity = useCallback(async (cartId, newQuantity) => {
+    const currentItems = itemsRef.current;
+    const item = currentItems.find((i) => i._cartId === cartId);
     if (!item) return;
 
     let maxStock = 0;
@@ -69,32 +76,30 @@ export const CartProvider = ({ children }) => {
       return;
     }
 
-    persist(items.map((i) => (i._cartId === cartId ? { ...i, quantity: Math.max(1, newQuantity) } : i)));
-  };
+    persist(currentItems.map((i) => (i._cartId === cartId ? { ...i, quantity: Math.max(1, newQuantity) } : i)));
+  }, [persist]);
 
-  const removeItem = (cartId) => {
-    const nextItems = items.filter((item) => item._cartId !== cartId);
-    persist(nextItems);
+  const removeItem = useCallback((cartId) => {
+    persist(itemsRef.current.filter((item) => item._cartId !== cartId));
     toast.success("Removed from cart.");
-  };
+  }, [persist]);
 
-  const clearCart = () => persist([]);
+  const clearCart = useCallback(() => persist([]), [persist]);
 
-  const subtotal = items.reduce(
-    (sum, item) => {
+  const subtotal = useMemo(() =>
+    items.reduce((sum, item) => {
       let price = item.discountPrice || item.price;
       if (item.variantId && item.variants) {
         const variant = item.variants.find((v) => v._id === item.variantId);
         if (variant?.price) price = variant.price;
       }
       return sum + price * item.quantity;
-    },
-    0
-  );
+    }, 0),
+  [items]);
 
   const value = useMemo(
     () => ({ items, addItem, updateQuantity, removeItem, clearCart, subtotal }),
-    [items, subtotal]
+    [items, addItem, updateQuantity, removeItem, clearCart, subtotal]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

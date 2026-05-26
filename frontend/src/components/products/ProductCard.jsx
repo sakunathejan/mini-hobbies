@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Heart, ShoppingCart } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext.jsx";
@@ -5,7 +6,7 @@ import { useWishlist } from "../../context/WishlistContext.jsx";
 import { formatCurrency } from "../../utils/formatters.js";
 import { placeholderImage } from "../../utils/constants.js";
 
-const ProductCard = ({ product }) => {
+const ProductCard = memo(({ product }) => {
   const { addItem } = useCart();
   const { items, toggle } = useWishlist();
   const saved = items.some((item) => item._id === product._id);
@@ -70,6 +71,6 @@ const ProductCard = ({ product }) => {
       </div>
     </article>
   );
-};
+});
 
 export default ProductCard;

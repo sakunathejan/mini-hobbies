@@ -1,14 +1,19 @@
 import Category from "../models/Category.js";
 import Product from "../models/Product.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import * as cache from "../utils/cache.js";
 
 export const getCategories = asyncHandler(async (_req, res) => {
-  const categories = await Category.find().sort("name");
+  const cached = cache.get("categories");
+  if (cached) return res.json(cached);
+  const categories = await Category.find().sort("name").lean();
+  cache.set("categories", categories, 5 * 60 * 1000);
   res.json(categories);
 });
 
 export const createCategory = asyncHandler(async (req, res) => {
   const category = await Category.create(req.body);
+  cache.clear("categories");
   res.status(201).json(category);
 });
 
@@ -23,6 +28,7 @@ export const updateCategory = asyncHandler(async (req, res) => {
     throw new Error("Category not found.");
   }
 
+  cache.clear("categories");
   res.json(category);
 });
 
@@ -35,5 +41,6 @@ export const deleteCategory = asyncHandler(async (req, res) => {
   }
 
   await Category.findByIdAndDelete(req.params.id);
+  cache.clear("categories");
   res.json({ message: "Category deleted." });
 });

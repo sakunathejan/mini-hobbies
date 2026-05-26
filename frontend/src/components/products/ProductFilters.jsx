@@ -1,6 +1,7 @@
+import { memo } from "react";
 import { Search, SlidersHorizontal } from "lucide-react";
 
-const ProductFilters = ({ categories, filters, setFilters }) => (
+const ProductFilters = memo(({ categories, filters, setFilters }) => (
   <aside className="rounded-lg border border-gray-200 bg-white p-4">
     <div className="flex items-center gap-2 font-bold text-gray-950">
       <SlidersHorizontal className="h-5 w-5" /> Filters
@@ -39,6 +40,6 @@ const ProductFilters = ({ categories, filters, setFilters }) => (
       </div>
     </div>
   </aside>
-);
+));
 
 export default ProductFilters;

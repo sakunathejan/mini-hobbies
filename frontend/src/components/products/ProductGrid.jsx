@@ -1,8 +1,9 @@
+import { memo } from "react";
 import EmptyState from "../ui/EmptyState.jsx";
 import SkeletonCard from "../ui/SkeletonCard.jsx";
 import ProductCard from "./ProductCard.jsx";
 
-const ProductGrid = ({ products = [], loading }) => {
+const ProductGrid = memo(({ products = [], loading }) => {
   if (loading) {
     return (
       <div className="grid auto-rows-fr gap-4 sm:gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -24,6 +25,6 @@ const ProductGrid = ({ products = [], loading }) => {
       ))}
     </div>
   );
-};
+});
 
 export default ProductGrid;

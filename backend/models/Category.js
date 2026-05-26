@@ -12,6 +12,8 @@ const categorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+categorySchema.index({ featured: -1 });
+
 categorySchema.pre("save", function makeSlug(next) {
   if (!this.slug || this.isModified("name")) {
     this.slug = slugify(this.name, { lower: true, strict: true });

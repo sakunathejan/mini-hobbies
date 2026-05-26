@@ -1,3 +1,5 @@
+import { memo } from "react";
+
 const styles = {
   "Pending Advance Payment": "bg-amber-50 text-amber-800",
   "Pending Payment Verification": "bg-purple-50 text-purple-800",
@@ -12,7 +14,7 @@ const styles = {
   Cancelled: "bg-red-50 text-red-700"
 };
 
-const OrderStatusBadge = ({ status }) => {
+const OrderStatusBadge = memo(({ status }) => {
   const value = String(status);
   const label = value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
   return (
@@ -20,6 +22,6 @@ const OrderStatusBadge = ({ status }) => {
       {status}
     </span>
   );
-};
+});
 
 export default OrderStatusBadge;

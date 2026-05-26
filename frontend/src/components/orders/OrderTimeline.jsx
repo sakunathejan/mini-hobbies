@@ -1,3 +1,4 @@
+import { memo, useMemo } from "react";
 import { CheckCircle, Clock, CreditCard, Home, Package, Truck, Upload, XCircle } from "lucide-react";
 
 const stepConfig = {
@@ -41,7 +42,7 @@ const codSteps = [
   { label: "Delivered", key: "Delivered" }
 ];
 
-const OrderTimeline = ({ order }) => {
+const OrderTimeline = memo(({ order }) => {
   const status = order.status;
   const method = order.paymentMethod;
   const history = order.statusHistory || [];
@@ -127,6 +128,6 @@ const OrderTimeline = ({ order }) => {
       })}
     </div>
   );
-};
+});
 
 export default OrderTimeline;

@@ -1,13 +1,18 @@
 import DeliveryZone from "../models/DeliveryZone.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import * as cache from "../utils/cache.js";
 
 export const getDeliveryZones = asyncHandler(async (_req, res) => {
-  const zones = await DeliveryZone.find().sort("district");
+  const cached = cache.get("delivery-zones");
+  if (cached) return res.json(cached);
+  const zones = await DeliveryZone.find({ isActive: true }).sort("district").lean();
+  cache.set("delivery-zones", zones, 10 * 60 * 1000);
   res.json(zones);
 });
 
 export const createDeliveryZone = asyncHandler(async (req, res) => {
   const zone = await DeliveryZone.create(req.body);
+  cache.clear("delivery-zones");
   res.status(201).json(zone);
 });
 
@@ -17,6 +22,7 @@ export const updateDeliveryZone = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Delivery zone not found.");
   }
+  cache.clear("delivery-zones");
   res.json(zone);
 });
 
@@ -26,6 +32,7 @@ export const deleteDeliveryZone = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Delivery zone not found.");
   }
+  cache.clear("delivery-zones");
   res.json({ message: "Delivery zone deleted." });
 });
 

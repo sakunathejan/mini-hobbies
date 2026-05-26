@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Car, Gamepad2, Gift, Joystick, Shield, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import useFetch from "../../hooks/useFetch.js";
@@ -5,7 +6,7 @@ import { getCategories } from "../../services/categoryService.js";
 
 const icons = [Car, Star, Shield, Gift, Joystick, Gamepad2];
 
-const CategorySection = () => {
+const CategorySection = memo(() => {
   const { data: categories, loading } = useFetch(getCategories, []);
 
   if (loading) {
@@ -56,6 +57,6 @@ const CategorySection = () => {
       </div>
     </section>
   );
-};
+});
 
 export default CategorySection;

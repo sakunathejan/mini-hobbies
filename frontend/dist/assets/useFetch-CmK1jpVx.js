@@ -1,0 +1,1 @@
+import{r as s}from"./helmet-CPNHVl9o.js";const d=(o,n=[])=>{const[u,a]=s.useState(null),[c,r]=s.useState(!0),[l,f]=s.useState("");return s.useEffect(()=>{let e=!0;return r(!0),o().then(t=>e&&a(t)).catch(t=>e&&f(t.response?.data?.message||t.message)).finally(()=>e&&r(!1)),()=>{e=!1}},n),{data:u,loading:c,error:l,setData:a}};export{d as u};
