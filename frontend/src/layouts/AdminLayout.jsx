@@ -49,6 +49,7 @@ const AdminLayout = () => {
   ];
 
   return (
+    <>
     <div className="min-h-screen bg-gray-100">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white p-5 md:block">
         <h1 className="text-xl font-black">Mini Hobbies Admin</h1>
@@ -113,6 +114,7 @@ const AdminLayout = () => {
         </div>
       </>
     )}
+    </>
   );
 };
 
