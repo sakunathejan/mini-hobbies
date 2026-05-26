@@ -20,9 +20,6 @@ const connectDB = async () => {
 
   if (existing) {
     existing.name = adminData.name;
-    if (process.env.ADMIN_PASSWORD) {
-      existing.password = process.env.ADMIN_PASSWORD;
-    }
     await existing.save();
     console.log(`Admin synced: ${adminEmail}`);
   } else {
