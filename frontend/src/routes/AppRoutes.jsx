@@ -2,7 +2,7 @@ import { lazy } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import AdminLayout from "../layouts/AdminLayout.jsx";
 import StoreLayout from "../layouts/StoreLayout.jsx";
-import ProtectedRoute from "./ProtectedRoute.jsx";
+import { AdminRoute, CustomerRoute } from "./RoleBasedRoute.jsx";
 
 const HomePage = lazy(() => import("../pages/HomePage.jsx"));
 const ProductListPage = lazy(() => import("../pages/ProductListPage.jsx"));
@@ -10,7 +10,7 @@ const ProductDetailsPage = lazy(() => import("../pages/ProductDetailsPage.jsx"))
 const CartPage = lazy(() => import("../pages/CartPage.jsx"));
 const CheckoutPage = lazy(() => import("../pages/CheckoutPage.jsx"));
 const WishlistPage = lazy(() => import("../pages/WishlistPage.jsx"));
-const LoginPage = lazy(() => import("../pages/admin/LoginPage.jsx"));
+const AdminLoginPage = lazy(() => import("../pages/admin/LoginPage.jsx"));
 const DashboardPage = lazy(() => import("../pages/admin/DashboardPage.jsx"));
 const AdminProductsPage = lazy(() => import("../pages/admin/AdminProductsPage.jsx"));
 const ProductFormPage = lazy(() => import("../pages/admin/ProductFormPage.jsx"));
@@ -24,6 +24,17 @@ const AdminDeliveryZonesPage = lazy(() => import("../pages/admin/AdminDeliveryZo
 const AdminBankDetailsPage = lazy(() => import("../pages/admin/AdminBankDetailsPage.jsx"));
 const AdminSettingsPage = lazy(() => import("../pages/admin/AdminSettingsPage.jsx"));
 const AdminAnnouncementsPage = lazy(() => import("../pages/admin/AdminAnnouncementsPage.jsx"));
+const AdminUsersPage = lazy(() => import("../pages/admin/AdminUsersPage.jsx"));
+const AdminUserDetailPage = lazy(() => import("../pages/admin/AdminUserDetailPage.jsx"));
+// Unified account pages
+const LoginPage = lazy(() => import("../pages/account/LoginPage.jsx"));
+const ForgotPasswordPage = lazy(() => import("../pages/account/ForgotPasswordPage.jsx"));
+const ResetPasswordPage = lazy(() => import("../pages/account/ResetPasswordPage.jsx"));
+// Customer pages
+const CustomerRegisterPage = lazy(() => import("../pages/customer/RegisterPage.jsx"));
+const CustomerVerifyEmailPage = lazy(() => import("../pages/customer/VerifyEmailPage.jsx"));
+const CustomerDashboardPage = lazy(() => import("../pages/customer/DashboardPage.jsx"));
+import CustomerProtectedRoute from "./CustomerProtectedRoute.jsx";
 
 const AppRoutes = () => (
   <Routes>
@@ -36,9 +47,19 @@ const AppRoutes = () => (
       <Route path="track-order" element={<OrderTrackPage />} />
       <Route path="order-success" element={<OrderSuccessPage />} />
       <Route path="wishlist" element={<WishlistPage />} />
+      {/* Unified auth */}
+      <Route path="login" element={<LoginPage />} />
+      <Route path="register" element={<CustomerRegisterPage />} />
+      <Route path="forgot-password" element={<ForgotPasswordPage />} />
+      <Route path="reset-password" element={<ResetPasswordPage />} />
+      <Route path="verify-email" element={<CustomerVerifyEmailPage />} />
+      {/* Customer account (protected) */}
+      <Route element={<CustomerRoute />}>
+        <Route path="account" element={<CustomerDashboardPage />} />
+      </Route>
     </Route>
-    <Route path="admin/login" element={<LoginPage />} />
-    <Route element={<ProtectedRoute />}>
+    <Route path="admin/login" element={<AdminLoginPage />} />
+    <Route element={<AdminRoute />}>
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<DashboardPage />} />
         <Route path="products" element={<AdminProductsPage />} />
@@ -51,6 +72,8 @@ const AppRoutes = () => (
         <Route path="delivery-zones" element={<AdminDeliveryZonesPage />} />
         <Route path="bank-details" element={<AdminBankDetailsPage />} />
         <Route path="announcements" element={<AdminAnnouncementsPage />} />
+        <Route path="users" element={<AdminUsersPage />} />
+        <Route path="users/:id" element={<AdminUserDetailPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
     </Route>

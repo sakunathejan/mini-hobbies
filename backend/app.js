@@ -18,6 +18,9 @@ import deliveryZoneRoutes from "./routes/deliveryZoneRoutes.js";
 import bankDetailRoutes from "./routes/bankDetailRoutes.js";
 import settingRoutes from "./routes/settingRoutes.js";
 import announcementRoutes from "./routes/announcementRoutes.js";
+import customerAuthRoutes from "./routes/customerAuthRoutes.js";
+import unifiedAuthRoutes from "./routes/unifiedAuthRoutes.js";
+import adminUserRoutes from "./routes/adminUserRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -61,6 +64,7 @@ app.use(express.urlencoded({ extended: true, limit: "1mb" }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 const authLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { message: "Too many login attempts. Try again later." } });
+const customerAuthLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { message: "Too many attempts. Try again later." } });
 const publicLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
 const orderLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
 const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
@@ -71,6 +75,9 @@ app.get("/api/health", (_req, res) => {
 
 app.use("/api/auth/login", authLimiter);
 app.use("/api/auth", publicLimiter, authRoutes);
+app.use("/api/customers/auth/login", customerAuthLimiter);
+app.use("/api/customers/auth/register", customerAuthLimiter);
+app.use("/api/customers", publicLimiter, customerAuthRoutes);
 app.use("/api/products", publicLimiter, productRoutes);
 app.use("/api/categories", publicLimiter, categoryRoutes);
 app.use("/api/orders", orderLimiter, orderRoutes);
@@ -83,6 +90,9 @@ app.use("/api/delivery-zones", publicLimiter, deliveryZoneRoutes);
 app.use("/api/bank-details", publicLimiter, bankDetailRoutes);
 app.use("/api/settings", publicLimiter, settingRoutes);
 app.use("/api/announcements", publicLimiter, announcementRoutes);
+app.use("/api/unified/auth/login", authLimiter);
+app.use("/api/unified", publicLimiter, unifiedAuthRoutes);
+app.use("/api/admin/users", adminLimiter, adminUserRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

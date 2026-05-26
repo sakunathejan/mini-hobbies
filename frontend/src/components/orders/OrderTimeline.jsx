@@ -28,6 +28,7 @@ const advanceSteps = [
 
 const bankSteps = [
   { label: "Pending Payment Verification", key: "Pending Payment Verification" },
+  { label: "Payment Confirmed", key: "Payment Confirmed" },
   { label: "Fully Paid", key: "Fully Paid" },
   { label: "Preparing Order", key: "Preparing Order" },
   { label: "Shipped", key: "Shipped" },
@@ -68,7 +69,11 @@ const OrderTimeline = memo(({ order }) => {
   }
 
   const steps = method === "advance" ? advanceSteps : method === "bank_transfer" ? bankSteps : codSteps;
-  const currentIndex = steps.findIndex((s) => s.key === status);
+  let currentIndex = steps.findIndex((s) => s.key === status);
+  if (currentIndex === -1) {
+    const allSteps = [...advanceSteps, ...bankSteps, ...codSteps];
+    currentIndex = allSteps.findIndex((s) => s.key === status);
+  }
 
   const getDateForStatus = (statusKey) => {
     const entry = history.find((h) => h.status === statusKey);
@@ -106,7 +111,10 @@ const OrderTimeline = memo(({ order }) => {
                 )}
               </div>
               {active && (
-                <span className="absolute -inset-1 animate-ping rounded-full bg-emerald-200 opacity-40" />
+                <>
+                  <span className="absolute -inset-2 animate-ping rounded-full border-2 border-emerald-400/50 bg-emerald-300/20" />
+                  <span className="absolute -inset-1.5 animate-pulse rounded-full border-2 border-emerald-400/80 bg-emerald-200/30" />
+                </>
               )}
             </div>
             <div className="min-w-0 flex-1 pt-1.5">

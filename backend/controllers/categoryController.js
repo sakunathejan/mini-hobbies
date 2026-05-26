@@ -6,9 +6,25 @@ import * as cache from "../utils/cache.js";
 export const getCategories = asyncHandler(async (_req, res) => {
   const cached = cache.get("categories");
   if (cached) return res.json(cached);
+
   const categories = await Category.find().sort("name").lean();
-  cache.set("categories", categories, 5 * 60 * 1000);
-  res.json(categories);
+  const categoryIds = categories.map((c) => c._id);
+
+  const productCounts = await Product.aggregate([
+    { $match: { category: { $in: categoryIds } } },
+    { $group: { _id: "$category", count: { $sum: 1 } } },
+  ]);
+
+  const countMap = {};
+  productCounts.forEach((p) => { countMap[String(p._id)] = p.count; });
+
+  const data = categories.map((c) => ({
+    ...c,
+    productCount: countMap[String(c._id)] || 0,
+  }));
+
+  cache.set("categories", data, 5 * 60 * 1000);
+  res.json(data);
 });
 
 export const createCategory = asyncHandler(async (req, res) => {

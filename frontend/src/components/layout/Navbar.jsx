@@ -1,8 +1,9 @@
-import { Heart, Menu, Moon, ShoppingBag, Sun, X } from "lucide-react";
+import { Heart, Menu, Moon, ShoppingBag, Sun, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useCart } from "../../context/CartContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
+import { useCustomerAuth } from "../../context/CustomerAuthContext.jsx";
 
 const links = [
   { to: "/", label: "Home" },
@@ -16,6 +17,7 @@ const Navbar = () => {
   const [dark, setDark] = useState(false);
   const { items } = useCart();
   const { items: wishlist } = useWishlist();
+  const { customer } = useCustomerAuth();
 
   useEffect(() => {
     if (open) {
@@ -77,6 +79,9 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
+            <Link aria-label={customer ? "Account" : "Sign in"} to={customer ? "/account" : "/login"} className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
+              <User className="h-5 w-5 dark:text-white" />
+            </Link>
             <button aria-label="Toggle theme" onClick={toggleDark} className="rounded-md p-2 hover:bg-gray-100 dark:hover:bg-gray-800">
               {dark ? <Sun className="h-5 w-5 text-white" /> : <Moon className="h-5 w-5" />}
             </button>
@@ -118,6 +123,17 @@ const Navbar = () => {
                   {link.label}
                 </NavLink>
               ))}
+              <hr className="my-2 border-gray-100" />
+              <NavLink
+                onClick={() => setOpen(false)}
+                to={customer ? "/account" : "/login"}
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-md px-4 py-3 min-h-[48px] text-sm font-semibold transition ${isActive ? "bg-ember/10 text-ember" : "text-gray-700 hover:bg-gray-100"}`
+                }
+              >
+                <User className="h-4 w-4" />
+                {customer ? "My account" : "Sign in"}
+              </NavLink>
             </nav>
           </div>
         </>
