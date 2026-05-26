@@ -27,12 +27,17 @@ const ProductDetailsPage = () => {
   const variants = product.variants || [];
   const activeVariant = selectedVariant ? variants.find((v) => v._id === selectedVariant) : null;
   const variantImage = activeVariant?.image?.url;
+  const firstVariantImage = variants.find((v) => v.image?.url)?.image?.url;
+  const hasProductImages = product.images?.length > 0;
   const images = variantImage
     ? [{ url: variantImage, alt: activeVariant.name }]
-    : product.images?.length
+    : hasProductImages
       ? product.images
-      : [{ url: placeholderImage, alt: product.name }];
-  const activePrice = activeVariant?.price || product.discountPrice || product.price;
+      : firstVariantImage
+        ? [{ url: firstVariantImage, alt: product.name }]
+        : [{ url: placeholderImage, alt: product.name }];
+  const lowestVariantPrice = variants.length ? Math.min(...variants.map((v) => v.price).filter(Boolean)) : null;
+  const activePrice = activeVariant?.price || lowestVariantPrice || product.discountPrice || product.price;
   const activeStock = activeVariant?.stock ?? product.stock;
   const stockStatus = activeStock <= 0 ? "out_of_stock" : activeStock <= (product.lowStockThreshold || 3) ? "low_stock" : "in_stock";
 

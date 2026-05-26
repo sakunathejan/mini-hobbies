@@ -9,7 +9,10 @@ const ProductCard = ({ product }) => {
   const { addItem } = useCart();
   const { items, toggle } = useWishlist();
   const saved = items.some((item) => item._id === product._id);
-  const image = product.images?.[0]?.url || placeholderImage;
+  const variantImage = product.variants?.find((v) => v.image?.url)?.image?.url;
+  const image = product.images?.[0]?.url || variantImage || placeholderImage;
+  const lowestVariantPrice = product.hasVariants && product.variants?.length
+    ? Math.min(...product.variants.map((v) => v.price).filter(Boolean)) : null;
 
   return (
     <article className="group flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-soft">
@@ -42,8 +45,12 @@ const ProductCard = ({ product }) => {
         </div>
         <div className="mt-2 sm:mt-3 flex items-center justify-between gap-2">
           <div className="min-h-[2.5rem]">
-            <p className="text-sm font-black text-gray-950 sm:text-base">{formatCurrency(product.discountPrice || product.price)}</p>
-            {product.discountPrice ? (
+            {lowestVariantPrice ? (
+              <p className="text-sm font-black text-gray-950 sm:text-base">From {formatCurrency(lowestVariantPrice)}</p>
+            ) : (
+              <p className="text-sm font-black text-gray-950 sm:text-base">{formatCurrency(product.discountPrice || product.price)}</p>
+            )}
+            {product.discountPrice && !product.hasVariants ? (
               <p className="text-xs text-gray-500 line-through">{formatCurrency(product.price)}</p>
             ) : null}
           </div>
