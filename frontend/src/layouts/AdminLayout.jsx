@@ -8,8 +8,31 @@ const AdminLayout = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    document.body.style.overflow = mobileOpen ? "hidden" : "";
-    return () => { document.body.style.overflow = ""; };
+    if (mobileOpen) {
+      const scrollY = window.scrollY;
+      document.body.style.position = "fixed";
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.left = "0";
+      document.body.style.right = "0";
+      document.body.style.overflow = "hidden";
+    } else {
+      const top = document.body.style.top;
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+      if (top) {
+        window.scrollTo(0, parseInt(top) * -1);
+      }
+    }
+    return () => {
+      document.body.style.position = "";
+      document.body.style.top = "";
+      document.body.style.left = "";
+      document.body.style.right = "";
+      document.body.style.overflow = "";
+    };
   }, [mobileOpen]);
 
   const links = [
@@ -46,43 +69,10 @@ const AdminLayout = () => {
 
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden">
         <p className="text-sm font-black">Mini Hobbies Admin</p>
-        <button aria-label="Open menu" onClick={() => setMobileOpen(true)} className="rounded-md p-2 hover:bg-gray-100">
+        <button aria-label="Open menu" onClick={() => setMobileOpen(true)} className="touch-manipulation rounded-md p-2 hover:bg-gray-100">
           <Menu className="h-5 w-5" />
         </button>
       </header>
-
-      {mobileOpen && (
-        <>
-          <div className="fixed inset-0 z-40 bg-black/50 md:hidden" onClick={() => setMobileOpen(false)} />
-          <div className="fixed inset-y-0 right-0 z-50 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl md:hidden">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
-              <span className="text-sm font-black">Menu</span>
-              <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="rounded-md p-2 hover:bg-gray-100">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <nav className="flex-1 overflow-y-auto px-3 py-4">
-              {links.map((link) => {
-                const Icon = link.icon;
-                return (
-                  <NavLink
-                    key={link.to}
-                    to={link.to}
-                    end={link.end}
-                    onClick={() => setMobileOpen(false)}
-                    className={({ isActive }) => `flex items-center gap-2 rounded-md px-4 py-3 text-sm font-semibold transition min-h-[44px] ${isActive ? "bg-ember/10 text-ember" : "text-gray-700 hover:bg-gray-100"}`}
-                  >
-                    <Icon className="h-4 w-4" /> {link.label}
-                  </NavLink>
-                );
-              })}
-              <button onClick={() => { logout(); setMobileOpen(false); }} className="mt-4 flex w-full items-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-red-600 min-h-[44px]">
-                <LogOut className="h-4 w-4" /> Logout
-              </button>
-            </nav>
-          </div>
-        </>
-      )}
 
       <main className="md:pl-64">
         <div className="container-page py-8">
@@ -90,6 +80,39 @@ const AdminLayout = () => {
         </div>
       </main>
     </div>
+
+    {mobileOpen && (
+      <>
+        <div className="fixed inset-0 z-50 bg-black/50 md:hidden" onClick={() => setMobileOpen(false)} />
+        <div className="fixed inset-y-0 right-0 z-50 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl md:hidden">
+          <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4">
+            <span className="text-sm font-black">Menu</span>
+            <button aria-label="Close menu" onClick={() => setMobileOpen(false)} className="touch-manipulation rounded-md p-2 hover:bg-gray-100">
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <nav className="flex-1 overflow-y-auto px-3 py-4">
+            {links.map((link) => {
+              const Icon = link.icon;
+              return (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.end}
+                  onClick={() => setMobileOpen(false)}
+                  className={({ isActive }) => `flex items-center gap-2 rounded-md px-4 py-3 text-sm font-semibold transition min-h-[44px] ${isActive ? "bg-ember/10 text-ember" : "text-gray-700 hover:bg-gray-100"}`}
+                >
+                  <Icon className="h-4 w-4" /> {link.label}
+                </NavLink>
+              );
+            })}
+            <button onClick={() => { logout(); setMobileOpen(false); }} className="mt-4 flex w-full items-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-red-600 min-h-[44px]">
+              <LogOut className="h-4 w-4" /> Logout
+            </button>
+          </nav>
+        </div>
+      </>
+    )}
   );
 };
 

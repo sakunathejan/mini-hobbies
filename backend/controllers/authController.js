@@ -4,7 +4,7 @@ import User from "../models/User.js";
 
 export const loginAdmin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email: email?.toLowerCase?.() });
 
   if (!user || user.role !== "admin" || !(await user.matchPassword(password))) {
     res.status(401);
@@ -37,8 +37,8 @@ export const updateAdminProfile = asyncHandler(async (req, res) => {
 
   if (name) admin.name = name;
 
-  if (email && email !== admin.email) {
-    const existing = await User.findOne({ email });
+  if (email && email.toLowerCase() !== admin.email) {
+    const existing = await User.findOne({ email: email.toLowerCase() });
     if (existing) {
       res.status(400);
       throw new Error("Email already in use.");

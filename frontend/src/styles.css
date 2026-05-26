@@ -81,6 +81,10 @@ input, select, textarea, button {
   font-size: 16px;
 }
 
+.touch-manipulation {
+  touch-action: manipulation;
+}
+
 @media (max-width: 640px) {
   .container-page {
     padding-left: 1rem;

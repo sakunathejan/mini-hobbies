@@ -1,4 +1,4 @@
-import { Lock } from "lucide-react";
+import { Eye, EyeOff, Lock } from "lucide-react";
 import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 import Seo from "../../components/Seo.jsx";
@@ -10,6 +10,7 @@ const LoginPage = () => {
   const [form, setForm] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   if (isAdmin) return <Navigate to="/admin" replace />;
 
@@ -40,7 +41,12 @@ const LoginPage = () => {
           {error && <p className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</p>}
           <div className="mt-5 grid gap-3">
             <input className="input text-base" type="email" placeholder="Email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} />
-            <input className="input text-base" type="password" placeholder="Password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+            <div className="relative">
+              <input className="input w-full pr-10 text-base" type={showPassword ? "text" : "password"} placeholder="Password" value={form.password} onChange={(event) => setForm({ ...form, password: event.target.value })} />
+              <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowPassword(!showPassword)}>
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
           <button disabled={loading} className="btn-primary mt-5 w-full min-h-[48px] disabled:bg-gray-300">
             {loading ? "Signing in..." : "Sign in"}
