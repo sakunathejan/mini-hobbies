@@ -152,9 +152,7 @@ const CheckoutPage = () => {
           fd.append("branch", bankDetails.branch);
 
           const api = (await import("../services/api.js")).default;
-          await api.post("/payments/bank-transfer", fd, {
-            headers: { "Content-Type": "multipart/form-data" }
-          });
+          await api.post("/payments/bank-transfer", fd);
         }
 
         clearCart();

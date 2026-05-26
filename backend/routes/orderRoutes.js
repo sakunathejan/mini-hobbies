@@ -3,6 +3,7 @@ import { body } from "express-validator";
 import {
   createOrder,
   deleteOrder,
+  deleteOrders,
   getOrderById,
   getOrders,
   retryWhatsApp,
@@ -10,7 +11,7 @@ import {
   updateOrderStatus
 } from "../controllers/orderController.js";
 import { adminOnly, protect } from "../middleware/authMiddleware.js";
-import { upload } from "../middleware/uploadMiddleware.js";
+import { upload, validateFileContent } from "../middleware/uploadMiddleware.js";
 import { validateRequest } from "../middleware/validateRequest.js";
 
 const router = express.Router();
@@ -30,6 +31,7 @@ const orderStatuses = [
 router.post(
   "/",
   upload.single("paymentSlip"),
+  validateFileContent(["image/jpeg", "image/png", "image/webp", "application/pdf"]),
   (req, _res, next) => {
     if (typeof req.body.customer === "string") {
       try { req.body.customer = JSON.parse(req.body.customer); } catch {}
@@ -67,5 +69,6 @@ router.patch(
 
 router.post("/:id/retry-whatsapp", protect, adminOnly, retryWhatsApp);
 router.delete("/:id", protect, adminOnly, deleteOrder);
+router.post("/delete-bulk", protect, adminOnly, deleteOrders);
 
 export default router;

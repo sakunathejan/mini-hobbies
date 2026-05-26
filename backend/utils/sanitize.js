@@ -12,6 +12,7 @@ export const sanitizeFilename = (original) => {
 };
 
 export const detectMagicBytes = (buffer) => {
+  if (!buffer || buffer.length < 8) return null;
   const hex = buffer.toString("hex", 0, 8);
   const signatures = {
     "89504e47": "image/png",

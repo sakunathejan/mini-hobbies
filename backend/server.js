@@ -4,12 +4,20 @@ import connectDB from "./config/db.js";
 
 dotenv.config();
 
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
+
 const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await connectDB();
 
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Mini Hobbies API running on port ${PORT}`);
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
       console.log("");  console.log("\x1b[33m%s\x1b[0m", "----------------------------------------");
@@ -18,6 +26,11 @@ const startServer = async () => {
       console.log("\x1b[33m%s\x1b[0m", " Gmail example: smtp.gmail.com, port 587, your email, app password");
       console.log("\x1b[33m%s\x1b[0m", "----------------------------------------");
     }
+  });
+
+  server.on("error", (err) => {
+    console.error(`Server failed to start on port ${PORT}:`, err.message);
+    process.exit(1);
   });
 };
 

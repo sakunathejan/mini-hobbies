@@ -293,3 +293,13 @@ export const deleteOrder = asyncHandler(async (req, res) => {
   }
   res.json({ message: "Order deleted successfully." });
 });
+
+export const deleteOrders = asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    res.status(400);
+    throw new Error("No order IDs provided.");
+  }
+  const result = await Order.deleteMany({ _id: { $in: ids } });
+  res.json({ message: `${result.deletedCount} order(s) deleted.`, deletedCount: result.deletedCount });
+});
