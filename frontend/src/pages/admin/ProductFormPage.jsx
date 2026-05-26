@@ -1,4 +1,4 @@
-import { Plus, Trash2, UploadCloud } from "lucide-react";
+import { Plus, Trash2, UploadCloud, X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
@@ -88,15 +88,15 @@ const ProductFormPage = () => {
       description: form.description,
       brand: form.brand,
       category: form.category,
-      price: Number(form.price),
+      price: form.hasVariants ? 0 : Number(form.price),
       discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
       stock: form.hasVariants ? 0 : Number(form.stock),
       hasVariants: form.hasVariants,
-      variants: form.hasVariants ? form.variants.map((v) => ({
-        ...v,
-        price: v.price ? Number(v.price) : undefined,
-        stock: Number(v.stock) || 0
-      })) : [],
+      variants: form.hasVariants ? form.variants.map((v) => {
+        const cleaned = { ...v, price: v.price ? Number(v.price) : undefined, stock: Number(v.stock) || 0 };
+        if (!cleaned.image?.url) delete cleaned.image;
+        return cleaned;
+      }) : [],
       images: form.images,
       tags: form.tags.split(",").map((tag) => tag.trim()).filter(Boolean),
       scale: form.scale,
@@ -128,8 +128,12 @@ const ProductFormPage = () => {
             <option value="">Choose category</option>
             {(categories.data || []).map((category) => <option key={category._id} value={category._id}>{category.name}</option>)}
           </select>
-          <input className="input text-base" type="number" placeholder="Price" value={form.price} onChange={(event) => update("price", event.target.value)} required />
-          <input className="input text-base" type="number" placeholder="Discount price" value={form.discountPrice} onChange={(event) => update("discountPrice", event.target.value)} />
+          {!form.hasVariants && (
+            <input className="input text-base" type="number" placeholder="Price" value={form.price} onChange={(event) => update("price", event.target.value)} required />
+          )}
+          {!form.hasVariants && (
+            <input className="input text-base" type="number" placeholder="Discount price" value={form.discountPrice} onChange={(event) => update("discountPrice", event.target.value)} />
+          )}
         </div>
 
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
@@ -174,6 +178,28 @@ const ProductFormPage = () => {
                       <div className="min-w-0 flex-1">
                         <label className="text-xs font-medium text-gray-500">Stock</label>
                         <input className="input mt-1 text-base" type="number" min="0" value={variant.stock} onChange={(e) => updateVariant(i, "stock", e.target.value)} required />
+                      </div>
+                      <div className="min-w-0 w-16">
+                        <label className="text-xs font-medium text-gray-500">Image</label>
+                        {variant.image?.url ? (
+                          <div className="relative mt-1">
+                            <img src={variant.image.url} alt="" className="aspect-square w-full rounded-md border object-cover" />
+                            <button type="button" onClick={() => updateVariant(i, "image", { url: "", path: "", alt: "" })} className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ) : (
+                          <label className="mt-1 flex cursor-pointer items-center justify-center rounded-md border border-dashed border-gray-300 p-2 text-gray-400 hover:border-gray-500 hover:text-gray-600 min-h-[44px]">
+                            <UploadCloud className="h-4 w-4" />
+                            <input className="hidden" type="file" accept="image/*" onChange={async (e) => {
+                              const files = e.target.files;
+                              if (!files?.length) return;
+                              const images = await uploadProductImages(files);
+                              if (images?.[0]) updateVariant(i, "image", images[0]);
+                              e.target.value = "";
+                            }} />
+                          </label>
+                        )}
                       </div>
                       <button type="button" className="mb-1 text-red-500 hover:text-red-700 min-h-[44px]" onClick={() => removeVariant(i)}>
                         <Trash2 className="h-4 w-4" />

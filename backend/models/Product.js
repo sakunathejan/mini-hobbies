@@ -16,6 +16,11 @@ const variantSchema = new mongoose.Schema(
     sku: { type: String, default: "" },
     price: { type: Number, min: 0 },
     stock: { type: Number, required: true, min: 0, default: 0 },
+    image: {
+      url: { type: String, default: "" },
+      path: { type: String, default: "" },
+      alt: { type: String, default: "" }
+    }
   },
   { _id: true }
 );

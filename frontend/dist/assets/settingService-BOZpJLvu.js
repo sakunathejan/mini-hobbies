@@ -1,1 +1,0 @@
-import{d as s}from"./index-B8Gf6kOT.js";const g=t=>s.get(`/settings/${t}`).then(e=>e.data),i=(t,e)=>s.put(`/settings/${t}`,{value:e}).then(a=>a.data),o=()=>s.get("/settings").then(t=>t.data);export{g as a,o as g,i as u};

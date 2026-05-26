@@ -322,9 +322,12 @@ const CheckoutPage = () => {
               )}
             </h2>
             <div className="mt-4 divide-y">
-              {items.map((item) => (
+              {items.map((item) => {
+                const cartItemVariant = item.variantId && item.variants ? item.variants.find((v) => v._id === item.variantId) : null;
+                const cartItemImage = cartItemVariant?.image?.url || item.images?.[0]?.url || item.image || "";
+                return (
                 <div key={item._id} className="flex items-center gap-3 py-3">
-                  <img src={item.images?.[0]?.url || item.image || ""} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16" />
+                  <img src={cartItemImage} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{item.name}</p>
                     <p className="text-sm text-gray-600">{formatCurrency(item.discountPrice || item.price)} each</p>
@@ -343,7 +346,8 @@ const CheckoutPage = () => {
                   </div>
                   <p className="text-sm font-bold shrink-0">{formatCurrency((item.discountPrice || item.price) * item.quantity)}</p>
                 </div>
-              ))}
+              );
+              })}
             </div>
 
             <div className="mt-4 border-t pt-4">

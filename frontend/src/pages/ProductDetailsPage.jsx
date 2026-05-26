@@ -1,5 +1,5 @@
 import { Heart, ShoppingCart, Tag } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Seo from "../components/Seo.jsx";
 import EmptyState from "../components/ui/EmptyState.jsx";
@@ -19,12 +19,19 @@ const ProductDetailsPage = () => {
   const [selected, setSelected] = useState(0);
   const [selectedVariant, setSelectedVariant] = useState(null);
 
+  useEffect(() => { setSelected(0); }, [selectedVariant]);
+
   if (loading) return <PageLoader />;
   if (error || !product) return <EmptyState title="Product not found" message="This product may have been moved or sold." />;
 
-  const images = product.images?.length ? product.images : [{ url: placeholderImage, alt: product.name }];
   const variants = product.variants || [];
   const activeVariant = selectedVariant ? variants.find((v) => v._id === selectedVariant) : null;
+  const variantImage = activeVariant?.image?.url;
+  const images = variantImage
+    ? [{ url: variantImage, alt: activeVariant.name }]
+    : product.images?.length
+      ? product.images
+      : [{ url: placeholderImage, alt: product.name }];
   const activePrice = activeVariant?.price || product.discountPrice || product.price;
   const activeStock = activeVariant?.stock ?? product.stock;
   const stockStatus = activeStock <= 0 ? "out_of_stock" : activeStock <= (product.lowStockThreshold || 3) ? "low_stock" : "in_stock";
