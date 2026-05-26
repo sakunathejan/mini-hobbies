@@ -9,6 +9,7 @@ import {
   getProfile, updateProfile, changePassword, updatePreferences, deleteAccount,
   getAddresses, addAddress, updateAddress, deleteAddress,
 } from "../controllers/customerAuthController.js";
+import { googleAuth } from "../controllers/googleAuthController.js";
 import { getMyOrders, getMyOrder } from "../controllers/customerOrderController.js";
 
 const router = express.Router();
@@ -35,6 +36,7 @@ router.post(
   login
 );
 
+router.post("/auth/google", googleAuth);
 router.post("/auth/refresh", refreshCustomerToken);
 router.post("/auth/logout", logout);
 

@@ -1,5 +1,5 @@
-import { BarChart3, Building2, CreditCard, LogOut, MapPin, Megaphone, Menu, Package, Percent, PlusCircle, Settings, ShoppingBag, Tags, Users, X } from "lucide-react";
-import { NavLink, Outlet } from "react-router-dom";
+import { BarChart3, Building2, CreditCard, ExternalLink, LogOut, MapPin, Megaphone, Menu, Package, Percent, PlusCircle, Settings, ShoppingBag, Tags, X } from "lucide-react";
+import { Link, NavLink, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
 import PageTransition from "../components/transitions/PageTransition.jsx";
@@ -42,7 +42,6 @@ const AdminLayout = () => {
     { to: "/admin/products/new", icon: PlusCircle, label: "Add Product" },
     { to: "/admin/categories", icon: Tags, label: "Categories" },
     { to: "/admin/orders", icon: ShoppingBag, label: "Orders" },
-    { to: "/admin/users", icon: Users, label: "Users" },
     { to: "/admin/payments", icon: CreditCard, label: "Payments" },
     { to: "/admin/coupons", icon: Percent, label: "Coupons" },
     { to: "/admin/delivery-zones", icon: MapPin, label: "Delivery Zones" },
@@ -56,7 +55,10 @@ const AdminLayout = () => {
     <div className="min-h-screen bg-gray-100">
       <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white p-5 md:block">
         <h1 className="text-xl font-black">Mini Hobbies Admin</h1>
-        <nav className="mt-8 grid gap-1">
+        <Link to="/" className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-ember transition-colors">
+          <ExternalLink className="h-3 w-3" /> Visit Store
+        </Link>
+        <nav className="mt-6 grid gap-1">
           {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -98,6 +100,10 @@ const AdminLayout = () => {
             </button>
           </div>
           <nav className="flex-1 overflow-y-auto px-3 py-4">
+            <Link to="/" onClick={() => setMobileOpen(false)} className="flex items-center gap-2 rounded-md px-4 py-3 text-sm font-semibold text-gray-400 hover:bg-gray-100 min-h-[44px]">
+              <ExternalLink className="h-4 w-4" /> Visit Store
+            </Link>
+            <hr className="my-2 border-gray-100" />
             {links.map((link) => {
               const Icon = link.icon;
               return (

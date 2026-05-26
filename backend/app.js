@@ -77,6 +77,7 @@ app.use("/api/auth/login", authLimiter);
 app.use("/api/auth", publicLimiter, authRoutes);
 app.use("/api/customers/auth/login", customerAuthLimiter);
 app.use("/api/customers/auth/register", customerAuthLimiter);
+app.use("/api/customers/auth/google", customerAuthLimiter);
 app.use("/api/customers", publicLimiter, customerAuthRoutes);
 app.use("/api/products", publicLimiter, productRoutes);
 app.use("/api/categories", publicLimiter, categoryRoutes);

@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { Eye, EyeOff, Loader2, ArrowRight, Mail, Lock, User, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Seo from "../../components/Seo.jsx";
+import GoogleSignInButton from "../../components/auth/GoogleSignInButton.jsx";
 import { useCustomerAuth } from "../../context/CustomerAuthContext.jsx";
 
 const strengthConfig = [
@@ -169,6 +170,19 @@ const RegisterPage = () => {
                 {loading ? "Creating account..." : "Create account"}
               </button>
             </form>
+
+            <div className="relative mt-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-4 text-gray-400">or sign up with</span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <GoogleSignInButton redirectTo="/account" />
+            </div>
 
             <p className="mt-6 text-center text-sm text-gray-500">
               Already have an account?{" "}

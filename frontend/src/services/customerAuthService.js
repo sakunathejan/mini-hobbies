@@ -8,6 +8,7 @@ export const refreshCustomerToken = () => customerApi.post(`${PREFIX}/auth/refre
 export const logoutCustomer = () => customerApi.post(`${PREFIX}/auth/logout`).then((r) => r.data);
 export const verifyEmail = (token) => customerApi.get(`${PREFIX}/auth/verify-email/${token}`).then((r) => r.data);
 export const resendVerification = () => customerApi.post(`${PREFIX}/auth/resend-verification`).then((r) => r.data);
+export const googleLogin = (credential) => customerApi.post(`${PREFIX}/auth/google`, { credential }).then((r) => r.data);
 export const forgotPassword = (payload) => customerApi.post(`${PREFIX}/auth/forgot-password`, payload).then((r) => r.data);
 export const resetPassword = (payload) => customerApi.post(`${PREFIX}/auth/reset-password`, payload).then((r) => r.data);
 

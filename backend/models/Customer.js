@@ -39,6 +39,8 @@ const customerSchema = new mongoose.Schema({
   status: { type: String, enum: ["active", "suspended", "banned"], default: "active" },
   statusChangedAt: { type: Date, default: null },
   statusChangedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
+  authProvider: { type: String, enum: ["local", "google", "both"], default: "local" },
+  googleId: { type: String, default: null },
   adminNotes: [{
     text: { type: String, required: true },
     admin: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
@@ -48,6 +50,7 @@ const customerSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 customerSchema.index({ email: 1 });
+customerSchema.index({ googleId: 1 }, { sparse: true });
 customerSchema.index({ refreshToken: 1 });
 customerSchema.index({ emailVerificationToken: 1 });
 customerSchema.index({ passwordResetToken: 1 });

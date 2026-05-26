@@ -3,6 +3,7 @@ import { Eye, EyeOff, Loader2, Mail, Lock, User, Shield, ArrowRight } from "luci
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import Seo from "../../components/Seo.jsx";
+import GoogleSignInButton from "../../components/auth/GoogleSignInButton.jsx";
 import { useUnifiedAuth } from "../../context/UnifiedAuthContext.jsx";
 
 const LoginPage = () => {
@@ -132,6 +133,21 @@ const LoginPage = () => {
                 {loading ? "Signing in..." : "Sign in"}
               </button>
             </form>
+
+            <div className="relative mt-6">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200 dark:border-gray-700" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-4 text-gray-400 dark:bg-graphite/90 dark:text-gray-500">
+                  or continue with
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <GoogleSignInButton />
+            </div>
 
             <div className="mt-6 flex flex-col items-center gap-3">
               <p className="text-sm text-gray-500 dark:text-gray-400">

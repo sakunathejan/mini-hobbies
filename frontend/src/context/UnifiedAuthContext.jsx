@@ -1,7 +1,7 @@
 import { createContext, useContext, useCallback, useMemo, useState, useEffect } from "react";
 import toast from "react-hot-toast";
 import { unifiedLogin, unifiedLogout } from "../services/unifiedAuthService.js";
-import { loginCustomer, logoutCustomer } from "../services/customerAuthService.js";
+import { loginCustomer, logoutCustomer, googleLogin as googleLoginApi } from "../services/customerAuthService.js";
 import { loginAdmin, logoutAdmin } from "../services/authService.js";
 
 const UnifiedAuthContext = createContext(null);
@@ -86,6 +86,21 @@ export const UnifiedAuthProvider = ({ children }) => {
     }
   }, []);
 
+  const loginWithGoogle = useCallback(async (credential) => {
+    setLoading(true);
+    try {
+      const data = await googleLoginApi(credential);
+      localStorage.setItem(CUSTOMER_KEY, data.token);
+      localStorage.setItem(CUSTOMER_DATA_KEY, JSON.stringify(data.customer));
+      localStorage.setItem(ROLE_KEY, "customer");
+      setUser({ ...data.customer, role: "customer" });
+      toast.success("Welcome back!");
+      return data;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const loginAsAdmin = useCallback(async (credentials) => {
     setLoading(true);
     try {
@@ -139,6 +154,7 @@ export const UnifiedAuthProvider = ({ children }) => {
       role: user?.role || null,
       login,
       loginAsCustomer,
+      loginWithGoogle,
       loginAsAdmin,
       logout,
       refreshUser,
@@ -147,7 +163,7 @@ export const UnifiedAuthProvider = ({ children }) => {
       isAdmin: user?.role === "admin",
       isCustomer: user?.role === "customer",
     }),
-    [user, login, loginAsCustomer, loginAsAdmin, logout, refreshUser, loading]
+    [user, login, loginAsCustomer, loginWithGoogle, loginAsAdmin, logout, refreshUser, loading]
   );
 
   return (

@@ -334,24 +334,9 @@ export const sendPasswordResetEmail = async (user, rawToken) => {
   const base = process.env.CLIENT_URL || "http://localhost:5173";
   const logo = loadLogo();
   const link = `${base}/admin/reset-password?token=${rawToken}`;
+  const { default: passwordResetHtml } = await import("../email-templates/passwordResetEmail.js");
 
-  const html = `<!DOCTYPE html>
-<html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
-<center>
-<table width="100%"><tr><td align="center" style="padding:40px 16px;">
-<table width="480" style="background:#fff;border-radius:12px;">
-<tr><td style="padding:32px;text-align:center;">
-${logo ? '<img src="' + logo + '" alt="Mini Hobbies" width="100" style="display:inline-block;margin-bottom:16px;" />' : ""}
-<h2 style="margin:0;font-size:20px;color:#0f172a;">Reset your password</h2>
-<p style="margin:12px 0 0;font-size:14px;color:#475569;">Click below to reset your admin password. This link expires in 1 hour.</p>
-<a href="${link}" style="display:inline-block;margin-top:20px;background:#0f172a;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;">Reset Password</a>
-<p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">If you didn't request this, ignore this email.</p>
-</td></tr></table>
-</td></tr></table>
-</center>
-</body></html>`;
-
-  await sendMail(user.email, "Mini Hobbies - Password Reset", html);
+  await sendMail(user.email, "Mini Hobbies - Password Reset", passwordResetHtml(user.name, link, logo));
 };
 
 export const sendOrderConfirmationEmail = async (order) => {
@@ -427,22 +412,7 @@ export const sendCustomerPasswordResetEmail = async (customer, rawToken) => {
   const base = process.env.CLIENT_URL || "http://localhost:5173";
   const logo = loadLogo();
   const link = `${base}/reset-password?token=${rawToken}`;
-
-  const html = `<!DOCTYPE html>
-<html><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,sans-serif;">
-<center>
-<table width="100%"><tr><td align="center" style="padding:40px 16px;">
-<table width="480" style="background:#fff;border-radius:12px;">
-<tr><td style="padding:32px;text-align:center;">
-${logo ? '<img src="'+logo+'" alt="Mini Hobbies" width="100" style="display:inline-block;margin-bottom:16px;" />' : ""}
-<h2 style="margin:0;font-size:20px;color:#0f172a;">Reset your password</h2>
-<p style="margin:12px 0 0;font-size:14px;color:#475569;">Click below to reset your password. This link expires in 1 hour.</p>
-<a href="${link}" style="display:inline-block;margin-top:20px;background:#0f172a;color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;">Reset Password</a>
-<p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">If you didn't request this, ignore this email.</p>
-</td></tr></table>
-</td></tr></table>
-</center>
-</body></html>`;
+  const { default: passwordResetHtml } = await import("../email-templates/passwordResetEmail.js");
 
   const text = `Reset your Mini Hobbies password
 
@@ -451,7 +421,7 @@ ${link}
 
 If you didn't request this, ignore this email.`;
 
-  await sendMail(customer.email, "Mini Hobbies - Password Reset", html, text);
+  await sendMail(customer.email, "Mini Hobbies - Password Reset", passwordResetHtml(customer.name, link, logo), text);
 };
 
 export const sendVerificationEmail = async (user, rawToken) => {

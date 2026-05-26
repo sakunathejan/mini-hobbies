@@ -9,7 +9,6 @@ const links = [
   { to: "/", label: "Home" },
   { to: "/products", label: "Products" },
   { to: "/track-order", label: "Track order" },
-  { to: "/admin", label: "Admin" }
 ];
 
 const Navbar = () => {
