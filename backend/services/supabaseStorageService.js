@@ -32,6 +32,28 @@ export const uploadPaymentSlip = async (file) => {
   return { url: data.publicUrl, path: fileName };
 };
 
+export const uploadAnnouncementImage = async (file) => {
+  const supabase = getSupabaseClient();
+  const bucket = process.env.SUPABASE_BUCKET || "product-images";
+  await ensureBucket(supabase, bucket);
+  const ext = path.extname(file.originalname) || ".jpg";
+  const fileName = `announcements/${Date.now()}-${randomUUID()}${ext}`;
+
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(fileName, file.buffer, {
+      contentType: file.mimetype,
+      cacheControl: "31536000",
+      upsert: false
+    });
+
+  if (error) throw error;
+
+  const { data } = supabase.storage.from(bucket).getPublicUrl(fileName);
+
+  return { url: data.publicUrl, path: fileName };
+};
+
 export const uploadImagesToSupabase = async (files = []) => {
   const supabase = getSupabaseClient();
   const bucket = process.env.SUPABASE_BUCKET || "product-images";

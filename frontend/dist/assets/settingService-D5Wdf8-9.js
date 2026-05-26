@@ -1,1 +1,0 @@
-import{a}from"./index-Bco4USHC.js";const g=t=>a.get(`/settings/${t}`).then(e=>e.data),i=(t,e)=>a.put(`/settings/${t}`,{value:e}).then(s=>s.data),o=()=>a.get("/settings").then(t=>t.data);export{g as a,o as g,i as u};

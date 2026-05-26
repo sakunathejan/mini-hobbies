@@ -1,0 +1,1 @@
+import{a}from"./index-DNi-bLjM.js";const s=(o,t)=>a.post("/coupons/validate",{code:o,subtotal:t}).then(e=>e.data),p=()=>a.get("/coupons").then(o=>o.data),c=o=>a.post("/coupons",o).then(t=>t.data),d=o=>a.delete(`/coupons/${o}`).then(t=>t.data);export{c,d,p as g,s as v};

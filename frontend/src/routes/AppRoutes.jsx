@@ -23,6 +23,7 @@ const AdminCouponsPage = lazy(() => import("../pages/admin/AdminCouponsPage.jsx"
 const AdminDeliveryZonesPage = lazy(() => import("../pages/admin/AdminDeliveryZonesPage.jsx"));
 const AdminBankDetailsPage = lazy(() => import("../pages/admin/AdminBankDetailsPage.jsx"));
 const AdminSettingsPage = lazy(() => import("../pages/admin/AdminSettingsPage.jsx"));
+const AdminAnnouncementsPage = lazy(() => import("../pages/admin/AdminAnnouncementsPage.jsx"));
 
 const AppRoutes = () => (
   <Routes>
@@ -49,6 +50,7 @@ const AppRoutes = () => (
         <Route path="coupons" element={<AdminCouponsPage />} />
         <Route path="delivery-zones" element={<AdminDeliveryZonesPage />} />
         <Route path="bank-details" element={<AdminBankDetailsPage />} />
+        <Route path="announcements" element={<AdminAnnouncementsPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
         </Route>
     </Route>

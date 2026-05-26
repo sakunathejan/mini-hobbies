@@ -17,6 +17,7 @@ import couponRoutes from "./routes/couponRoutes.js";
 import deliveryZoneRoutes from "./routes/deliveryZoneRoutes.js";
 import bankDetailRoutes from "./routes/bankDetailRoutes.js";
 import settingRoutes from "./routes/settingRoutes.js";
+import announcementRoutes from "./routes/announcementRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -81,6 +82,7 @@ app.use("/api/coupons", publicLimiter, couponRoutes);
 app.use("/api/delivery-zones", publicLimiter, deliveryZoneRoutes);
 app.use("/api/bank-details", publicLimiter, bankDetailRoutes);
 app.use("/api/settings", publicLimiter, settingRoutes);
+app.use("/api/announcements", publicLimiter, announcementRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

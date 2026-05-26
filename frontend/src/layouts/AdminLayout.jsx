@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CreditCard, LogOut, MapPin, Menu, Package, Percent, PlusCircle, Settings, ShoppingBag, Tags, X } from "lucide-react";
+import { BarChart3, Building2, CreditCard, LogOut, MapPin, Megaphone, Menu, Package, Percent, PlusCircle, Settings, ShoppingBag, Tags, X } from "lucide-react";
 import { NavLink, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -45,6 +45,7 @@ const AdminLayout = () => {
     { to: "/admin/coupons", icon: Percent, label: "Coupons" },
     { to: "/admin/delivery-zones", icon: MapPin, label: "Delivery Zones" },
     { to: "/admin/bank-details", icon: Building2, label: "Bank Details" },
+    { to: "/admin/announcements", icon: Megaphone, label: "Announcements" },
     { to: "/admin/settings", icon: Settings, label: "Settings" },
   ];
 
