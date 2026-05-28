@@ -39,6 +39,7 @@ export const unifiedLogin = asyncHandler(async (req, res) => {
 
     return res.json({
       token,
+      refreshToken,
       role: "admin",
       user: { id: user._id, name: user.name, email: user.email, role: user.role }
     });

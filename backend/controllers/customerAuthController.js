@@ -78,6 +78,8 @@ export const login = asyncHandler(async (req, res) => {
     throw new Error("Invalid email or password.");
   }
 
+
+
   if (customer.isLocked()) {
     LoginHistory.create({
       customer: customer._id,

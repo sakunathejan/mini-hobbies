@@ -22,3 +22,4 @@ export const getAddresses = () => customerApi.get(`${PREFIX}/auth/addresses`).th
 export const addAddress = (payload) => customerApi.post(`${PREFIX}/auth/addresses`, payload).then((r) => r.data);
 export const updateAddress = (id, payload) => customerApi.put(`${PREFIX}/auth/addresses/${id}`, payload).then((r) => r.data);
 export const deleteAddress = (id) => customerApi.delete(`${PREFIX}/auth/addresses/${id}`).then((r) => r.data);
+

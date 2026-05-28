@@ -30,6 +30,7 @@ export const protect = async (req, res, next) => {
       res.status(401);
       return next(new Error("Invalid token."));
     }
+    res.status(res.statusCode === 200 ? 401 : res.statusCode);
     next(error);
   }
 };

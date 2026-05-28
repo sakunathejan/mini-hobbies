@@ -292,9 +292,14 @@ const formatEmailText = (order, note) => {
   return lines.join("\n");
 };
 
-const sendMail = async (to, subject, html, text) => {
+export const sendMail = async (to, subject, html, text) => {
   const t = getTransporter();
-  if (!t) throw new Error("EMAIL_NOT_CONFIGURED");
+  if (!t) {
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[EMAIL] Would send to ${to}: ${subject}`);
+    }
+    return;
+  }
   await t.sendMail({
     from: FROM(),
     to,
@@ -424,6 +429,8 @@ If you didn't request this, ignore this email.`;
   await sendMail(customer.email, "Mini Hobbies - Password Reset", passwordResetHtml(customer.name, link, logo), text);
 };
 
+
+
 export const sendVerificationEmail = async (user, rawToken) => {
   const base = process.env.CLIENT_URL || "http://localhost:5173";
   const logo = loadLogo();
@@ -446,3 +453,5 @@ ${logo ? '<img src="' + logo + '" alt="Mini Hobbies" width="100" style="display:
 
   await sendMail(user.email, "Mini Hobbies - Verify Your Email", html);
 };
+
+

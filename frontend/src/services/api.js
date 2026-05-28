@@ -50,8 +50,13 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        const { data } = await axios.post(`${baseURL}/auth/refresh`, {}, { withCredentials: true });
+        const storedRefresh = localStorage.getItem("mini_hobbies_admin_refresh");
+        const { data } = await axios.post(`${baseURL}/auth/refresh`,
+          storedRefresh ? { refreshToken: storedRefresh } : {},
+          { withCredentials: true }
+        );
         localStorage.setItem("mini_hobbies_admin_token", data.token);
+        if (data.refreshToken) localStorage.setItem("mini_hobbies_admin_refresh", data.refreshToken);
         localStorage.setItem("mini_hobbies_admin", JSON.stringify(data.user));
         processQueue(null, data.token);
         originalRequest.headers.Authorization = `Bearer ${data.token}`;
@@ -60,6 +65,7 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         localStorage.removeItem("mini_hobbies_admin_token");
         localStorage.removeItem("mini_hobbies_admin");
+        localStorage.removeItem("mini_hobbies_admin_refresh");
         window.location.href = "/admin/login";
         return Promise.reject(refreshError);
       } finally {

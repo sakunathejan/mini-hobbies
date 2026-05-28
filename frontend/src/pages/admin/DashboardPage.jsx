@@ -1,8 +1,9 @@
-import { AlertTriangle, CircleDollarSign, Package, Plus, ShoppingBag, Tags } from "lucide-react";
+import { AlertTriangle, CircleDollarSign, Package, Plus, ShoppingBag, Tags, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import useFetch from "../../hooks/useFetch.js";
 import { getDashboardStats } from "../../services/authService.js";
 import { getLowStockProducts } from "../../services/productService.js";
+
 import { formatCurrency } from "../../utils/formatters.js";
 
 const DashboardPage = () => {
@@ -50,6 +51,7 @@ const DashboardPage = () => {
           );
         })}
       </div>
+
       <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link
           to="/admin/orders"
@@ -79,6 +81,16 @@ const DashboardPage = () => {
           <div>
             <h2 className="font-black">Add product</h2>
             <p className="mt-1 text-sm text-gray-600">Create a listing and assign it to a category.</p>
+          </div>
+        </Link>
+        <Link
+          to="/admin/users"
+          className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-5 transition hover:border-ember"
+        >
+          <Users className="h-6 w-6 text-ember" />
+          <div>
+            <h2 className="font-black">User management</h2>
+            <p className="mt-1 text-sm text-gray-600">Manage accounts and moderation.</p>
           </div>
         </Link>
       </section>

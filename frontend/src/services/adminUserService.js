@@ -1,5 +1,8 @@
 import api from "./api.js";
 
+export const getUserStats = () =>
+  api.get("/admin/users/stats").then((r) => r.data);
+
 export const getUsers = (params = {}) =>
   api.get("/admin/users", { params }).then((r) => r.data);
 
@@ -8,12 +11,6 @@ export const getUserById = (id) =>
 
 export const updateUser = (id, data) =>
   api.patch(`/admin/users/${id}`, data).then((r) => r.data);
-
-export const suspendUser = (id) =>
-  api.post(`/admin/users/${id}/suspend`).then((r) => r.data);
-
-export const reactivateUser = (id) =>
-  api.post(`/admin/users/${id}/reactivate`).then((r) => r.data);
 
 export const deleteUser = (id) =>
   api.delete(`/admin/users/${id}`).then((r) => r.data);
@@ -33,15 +30,6 @@ export const addAdminNote = (id, text) =>
 export const getUserOrders = (id, params = {}) =>
   api.get(`/admin/users/${id}/orders`, { params }).then((r) => r.data);
 
-export const getUserLoginHistory = (id, params = {}) =>
-  api.get(`/admin/users/${id}/login-history`, { params }).then((r) => r.data);
-
-export const bulkSuspendUsers = (ids) =>
-  api.post("/admin/users/bulk-suspend", { ids }).then((r) => r.data);
-
-export const bulkActivateUsers = (ids) =>
-  api.post("/admin/users/bulk-activate", { ids }).then((r) => r.data);
-
 export const bulkDeleteUsers = (ids) =>
   api.post("/admin/users/bulk-delete", { ids }).then((r) => r.data);
 
@@ -57,5 +45,4 @@ export const exportUsers = (params = {}) =>
     window.URL.revokeObjectURL(url);
   });
 
-export const getUserStats = () =>
-  api.get("/admin/users/stats").then((r) => r.data);
+

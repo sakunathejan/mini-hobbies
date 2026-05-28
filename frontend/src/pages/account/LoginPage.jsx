@@ -18,13 +18,21 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     try {
-      const { role } = await login(form);
-      if (role === "admin") {
+      const result = await login(form);
+      if (result?.user?.suspension) {
+        navigate("/suspended", { replace: true });
+        return;
+      }
+      if (result?.role === "admin") {
         navigate(state?.from || "/admin", { replace: true });
       } else {
         navigate(state?.from || "/account", { replace: true });
       }
     } catch (err) {
+      if (err.response?.data?.suspended) {
+        navigate("/suspended", { replace: true });
+        return;
+      }
       const status = err.response?.status;
       if (status === 429) {
         setError("Too many attempts. Account temporarily locked for 15 minutes.");

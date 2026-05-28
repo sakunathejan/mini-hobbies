@@ -1,6 +1,7 @@
 import express from "express";
 import { body } from "express-validator";
-import { protectCustomer } from "../middleware/customerAuth.js";
+import { protectCustomer, identifyCustomer } from "../middleware/customerAuth.js";
+import { requireActiveAccount } from "../moderation-system/middleware/enforcement.js";
 import { validateRequest, PASSWORD_VALIDATOR } from "../middleware/validateRequest.js";
 import {
   register, login, refreshCustomerToken, logout,
@@ -44,7 +45,7 @@ router.get("/auth/verify-email/:token", verifyEmail);
 
 router.post(
   "/auth/resend-verification",
-  protectCustomer,
+  protectCustomer, requireActiveAccount,
   resendVerification
 );
 
@@ -67,7 +68,7 @@ router.get("/auth/me", protectCustomer, getProfile);
 
 router.put(
   "/auth/me",
-  protectCustomer,
+  protectCustomer, requireActiveAccount,
   [
     body("name").optional().trim().isLength({ min: 1, max: 100 }),
     body("phone").optional().trim(),
@@ -79,7 +80,7 @@ router.put(
 
 router.put(
   "/auth/me/password",
-  protectCustomer,
+  protectCustomer, requireActiveAccount,
   [
     body("currentPassword").notEmpty().withMessage("Current password is required."),
     body("newPassword").custom(PASSWORD_VALIDATOR),
@@ -90,7 +91,7 @@ router.put(
 
 router.put(
   "/auth/me/preferences",
-  protectCustomer,
+  protectCustomer, requireActiveAccount,
   [
     body("emailNotifications").optional().isBoolean(),
     body("marketingEmails").optional().isBoolean(),
@@ -101,18 +102,18 @@ router.put(
 
 router.post(
   "/auth/me/delete",
-  protectCustomer,
+  protectCustomer, requireActiveAccount,
   [body("password").notEmpty().withMessage("Password is required.")],
   validateRequest,
   deleteAccount
 );
 
 // --- Address routes ---
-router.get("/auth/addresses", protectCustomer, getAddresses);
+router.get("/auth/addresses", protectCustomer, requireActiveAccount, getAddresses);
 
 router.post(
   "/auth/addresses",
-  protectCustomer,
+  protectCustomer, requireActiveAccount,
   [
     body("label").optional().trim(),
     body("fullName").trim().notEmpty().withMessage("Full name is required."),
@@ -126,11 +127,11 @@ router.post(
   addAddress
 );
 
-router.put("/auth/addresses/:addressId", protectCustomer, updateAddress);
-router.delete("/auth/addresses/:addressId", protectCustomer, deleteAddress);
+router.put("/auth/addresses/:addressId", protectCustomer, requireActiveAccount, updateAddress);
+router.delete("/auth/addresses/:addressId", protectCustomer, requireActiveAccount, deleteAddress);
 
 // --- Customer order routes ---
-router.get("/auth/orders", protectCustomer, getMyOrders);
-router.get("/auth/orders/:id", protectCustomer, getMyOrder);
+router.get("/auth/orders", protectCustomer, requireActiveAccount, getMyOrders);
+router.get("/auth/orders/:id", protectCustomer, requireActiveAccount, getMyOrder);
 
 export default router;

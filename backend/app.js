@@ -21,6 +21,8 @@ import announcementRoutes from "./routes/announcementRoutes.js";
 import customerAuthRoutes from "./routes/customerAuthRoutes.js";
 import unifiedAuthRoutes from "./routes/unifiedAuthRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
+import moderationRoutes from "./moderation-system/routes/moderationRoutes.js";
+import customerModerationRoutes from "./moderation-system/routes/customerRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -36,11 +38,12 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://accounts.google.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://accounts.google.com"],
       fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      imgSrc: ["'self'", "data:", "blob:", "https://hkaosngsasoezxsgrour.supabase.co", "https://images.unsplash.com"],
-      connectSrc: ["'self'", "https://hkaosngsasoezxsgrour.supabase.co", "https://mini-hobbies.onrender.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://hkaosngsasoezxsgrour.supabase.co", "https://images.unsplash.com", "https://lh3.googleusercontent.com"],
+      connectSrc: ["'self'", "https://hkaosngsasoezxsgrour.supabase.co", "https://mini-hobbies.onrender.com", "https://accounts.google.com"],
+      frameSrc: ["'self'", "https://accounts.google.com"],
       frameAncestors: ["'none'"],
       formAction: ["'self'"],
       upgradeInsecureRequests: []
@@ -67,7 +70,7 @@ const authLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: t
 const customerAuthLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false, message: { message: "Too many attempts. Try again later." } });
 const publicLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
 const orderLimiter = rateLimit({ windowMs: 60 * 1000, max: 10, standardHeaders: true, legacyHeaders: false });
-const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 60, standardHeaders: true, legacyHeaders: false });
+const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 120, standardHeaders: true, legacyHeaders: false });
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", service: "Mini Hobbies API" });
@@ -94,6 +97,8 @@ app.use("/api/announcements", publicLimiter, announcementRoutes);
 app.use("/api/unified/auth/login", authLimiter);
 app.use("/api/unified", publicLimiter, unifiedAuthRoutes);
 app.use("/api/admin/users", adminLimiter, adminUserRoutes);
+app.use("/api/admin/moderation", adminLimiter, moderationRoutes);
+app.use("/api/customers/moderation", publicLimiter, customerModerationRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

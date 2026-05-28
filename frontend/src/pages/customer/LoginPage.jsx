@@ -16,9 +16,17 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     try {
-      await login(form);
+      const result = await login(form);
+      if (result?.user?.suspension) {
+        navigate("/suspended", { replace: true });
+        return;
+      }
       navigate(state?.from || "/account", { replace: true });
     } catch (err) {
+      if (err.response?.data?.suspended) {
+        navigate("/suspended", { replace: true });
+        return;
+      }
       setError(err.response?.data?.message || "Invalid email or password.");
     }
   };

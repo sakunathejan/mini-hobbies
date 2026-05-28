@@ -3,6 +3,8 @@ import toast from "react-hot-toast";
 import { unifiedLogin, unifiedLogout } from "../services/unifiedAuthService.js";
 import { loginCustomer, logoutCustomer, googleLogin as googleLoginApi } from "../services/customerAuthService.js";
 import { loginAdmin, logoutAdmin } from "../services/authService.js";
+import api from "../services/api.js";
+import customerApi from "../services/customerApi.js";
 
 const UnifiedAuthContext = createContext(null);
 
@@ -56,6 +58,7 @@ export const UnifiedAuthProvider = ({ children }) => {
 
       if (role === "admin") {
         localStorage.setItem(ADMIN_KEY, data.token);
+        if (data.refreshToken) localStorage.setItem("mini_hobbies_admin_refresh", data.refreshToken);
         localStorage.setItem(ADMIN_DATA_KEY, JSON.stringify(data.user));
       } else {
         localStorage.setItem(CUSTOMER_KEY, data.token);
@@ -79,8 +82,12 @@ export const UnifiedAuthProvider = ({ children }) => {
       localStorage.setItem(CUSTOMER_KEY, data.token);
       localStorage.setItem(CUSTOMER_DATA_KEY, JSON.stringify(data.customer));
       localStorage.setItem(ROLE_KEY, "customer");
-      setUser({ ...data.customer, role: "customer" });
+      const userData = { ...data.customer, role: "customer" };
+      setUser(userData);
       toast.success("Welcome back!");
+      return { role: "customer", user: userData };
+    } catch (err) {
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -96,6 +103,8 @@ export const UnifiedAuthProvider = ({ children }) => {
       setUser({ ...data.customer, role: "customer" });
       toast.success("Welcome back!");
       return data;
+    } catch (err) {
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -106,6 +115,7 @@ export const UnifiedAuthProvider = ({ children }) => {
     try {
       const data = await loginAdmin(credentials);
       localStorage.setItem(ADMIN_KEY, data.token);
+      if (data.refreshToken) localStorage.setItem("mini_hobbies_admin_refresh", data.refreshToken);
       localStorage.setItem(ADMIN_DATA_KEY, JSON.stringify(data.user));
       localStorage.setItem(ROLE_KEY, "admin");
       setUser({ ...data.user, role: "admin" });
@@ -116,6 +126,14 @@ export const UnifiedAuthProvider = ({ children }) => {
   }, []);
 
   const logout = useCallback(async () => {
+    localStorage.removeItem(CUSTOMER_KEY);
+    localStorage.removeItem(CUSTOMER_DATA_KEY);
+    localStorage.removeItem(ADMIN_KEY);
+    localStorage.removeItem(ADMIN_DATA_KEY);
+    localStorage.removeItem(ROLE_KEY);
+    localStorage.removeItem("mini_hobbies_admin_refresh");
+    setUser(null);
+    toast.success("Logged out.");
     try {
       await unifiedLogout();
     } catch {}
@@ -125,13 +143,6 @@ export const UnifiedAuthProvider = ({ children }) => {
     try {
       await logoutCustomer();
     } catch {}
-    localStorage.removeItem(CUSTOMER_KEY);
-    localStorage.removeItem(CUSTOMER_DATA_KEY);
-    localStorage.removeItem(ADMIN_KEY);
-    localStorage.removeItem(ADMIN_DATA_KEY);
-    localStorage.removeItem(ROLE_KEY);
-    setUser(null);
-    toast.success("Logged out.");
   }, []);
 
   const refreshUser = useCallback((userData) => {

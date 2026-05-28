@@ -51,12 +51,13 @@ export const loginAdmin = asyncHandler(async (req, res) => {
 
   res.json({
     token: generateAccessToken(user._id),
+    refreshToken,
     user: { id: user._id, name: user.name, email: user.email, role: user.role }
   });
 });
 
 export const refreshToken = asyncHandler(async (req, res) => {
-  const token = req.cookies?.refreshToken;
+  const token = req.cookies?.refreshToken || req.body?.refreshToken;
 
   if (!token) {
     res.status(401);
@@ -80,6 +81,7 @@ export const refreshToken = asyncHandler(async (req, res) => {
 
   res.json({
     token: generateAccessToken(user._id),
+    refreshToken: newRefresh,
     user: { id: user._id, name: user.name, email: user.email, role: user.role }
   });
 });

@@ -34,7 +34,6 @@ customerApi.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 &&
-        error.response?.data?.message?.includes("Token expired") &&
         !originalRequest._retry) {
       originalRequest._retry = true;
 

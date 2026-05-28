@@ -16,5 +16,7 @@ const auditLogSchema = new mongoose.Schema(
 auditLogSchema.index({ createdAt: -1 });
 auditLogSchema.index({ admin: 1, createdAt: -1 });
 auditLogSchema.index({ action: 1 });
+auditLogSchema.index({ action: 1, createdAt: -1 });
+auditLogSchema.index({ resource: 1, resourceId: 1 });
 
 export default mongoose.model("AuditLog", auditLogSchema);

@@ -1,8 +1,12 @@
 import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 import app from "./app.js";
 import connectDB from "./config/db.js";
+import { startExpiryProcessor } from "./moderation-system/events/expiryProcessor.js";
 
-dotenv.config();
+const __dirname = dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: join(__dirname, ".env") });
 
 process.on("unhandledRejection", (reason) => {
   console.error("Unhandled Rejection:", reason);
@@ -16,25 +20,29 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await connectDB();
+  startExpiryProcessor();
 
   const server = app.listen(PORT, () => {
     console.log(`Mini Hobbies API running on port ${PORT}`);
     if (!process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASS) {
       console.log("");  console.log("\x1b[33m%s\x1b[0m", "----------------------------------------");
-      console.log("\x1b[33m%s\x1b[0m", " Email auto-notify NOT configured.");
-      console.log("\x1b[33m%s\x1b[0m", " To enable, set SMTP_HOST, SMTP_USER, and SMTP_PASS in .env");
-      console.log("\x1b[33m%s\x1b[0m", " Gmail example: smtp.gmail.com, port 587, your email, app password");
+      console.log("\x1b[33m%s\x1b[0m", "  SMTP not configured — emails will not be sent.");
+      console.log("\x1b[33m%s\x1b[0m", "  Set SMTP_HOST, SMTP_USER, SMTP_PASS in .env");
       console.log("\x1b[33m%s\x1b[0m", "----------------------------------------");
     }
   });
 
-  server.on("error", (err) => {
-    console.error(`Server failed to start on port ${PORT}:`, err.message);
-    process.exit(1);
-  });
+  const shutdown = (signal) => {
+    console.log(`\n${signal} received. Shutting down gracefully...`);
+    server.close(() => {
+      console.log("Server closed.");
+      process.exit(0);
+    });
+    setTimeout(() => { console.log("Forced shutdown."); process.exit(1); }, 10000);
+  };
+
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
+  process.on("SIGINT", () => shutdown("SIGINT"));
 };
 
-startServer().catch((error) => {
-  console.error("Server failed to start:", error);
-  process.exit(1);
-});
+startServer();

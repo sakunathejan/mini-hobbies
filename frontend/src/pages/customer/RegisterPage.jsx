@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Eye, EyeOff, Loader2, ArrowRight, Mail, Lock, User, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Seo from "../../components/Seo.jsx";
@@ -31,7 +31,7 @@ const requirements = [
 ];
 
 const RegisterPage = () => {
-  const { setCustomerData } = useCustomerAuth();
+  const { setCustomerData, loading } = useCustomerAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
   const [showPassword, setShowPassword] = useState(false);

@@ -35,10 +35,13 @@ const customerSchema = new mongoose.Schema({
   lastLoginIp: { type: String },
   lastLoginAt: { type: Date },
   lastLoginDevice: { type: String },
+  moderationStatus: {
+    type: String,
+    enum: ["active", "warned", "suspended", "banned"],
+    default: "active",
+    index: true
+  },
   deletedAt: { type: Date, default: null },
-  status: { type: String, enum: ["active", "suspended", "banned"], default: "active" },
-  statusChangedAt: { type: Date, default: null },
-  statusChangedBy: { type: mongoose.Schema.Types.ObjectId, ref: "User", default: null },
   authProvider: { type: String, enum: ["local", "google", "both"], default: "local" },
   googleId: { type: String, default: null },
   adminNotes: [{
@@ -49,13 +52,11 @@ const customerSchema = new mongoose.Schema({
   }],
 }, { timestamps: true });
 
-customerSchema.index({ email: 1 });
 customerSchema.index({ googleId: 1 }, { sparse: true });
 customerSchema.index({ refreshToken: 1 });
 customerSchema.index({ emailVerificationToken: 1 });
 customerSchema.index({ passwordResetToken: 1 });
-customerSchema.index({ deletedAt: 1 });
-customerSchema.index({ status: 1 });
+customerSchema.index({ deletedAt: 1, email: 1 });
 customerSchema.index({ name: 1 });
 customerSchema.index({ createdAt: -1 });
 customerSchema.index({ lastLoginAt: -1 });

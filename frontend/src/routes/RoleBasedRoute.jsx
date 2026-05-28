@@ -8,7 +8,8 @@ export const AdminRoute = () => {
 
 export const CustomerRoute = () => {
   const { isCustomer } = useUnifiedAuth();
-  return isCustomer ? <Outlet /> : <Navigate to="/login" replace />;
+  if (!isCustomer) return <Navigate to="/login" replace />;
+  return <Outlet />;
 };
 
 export const GuestRoute = () => {

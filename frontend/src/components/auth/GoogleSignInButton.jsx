@@ -4,6 +4,7 @@ import { Loader2, AlertCircle, WifiOff } from "lucide-react";
 import { useUnifiedAuth } from "../../context/UnifiedAuthContext.jsx";
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
+let gsiInitialized = false;
 
 const isValidClientId = (id) =>
   id &&
@@ -15,7 +16,7 @@ const GoogleSignInButton = ({ redirectTo = "/account" }) => {
   const { loginWithGoogle, loading } = useUnifiedAuth();
   const navigate = useNavigate();
   const btnRef = useRef(null);
-  const initializedRef = useRef(false);
+  const scriptAddedRef = useRef(false);
   const [badConfig, setBadConfig] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
 
@@ -34,35 +35,41 @@ const GoogleSignInButton = ({ redirectTo = "/account" }) => {
       return;
     }
 
-    if (initializedRef.current) return;
-    initializedRef.current = true;
-
     const initGIS = () => {
       if (!window.google?.accounts?.id) return;
-      try {
-        window.google.accounts.id.initialize({
-          client_id: CLIENT_ID,
-          callback: handleCredentialResponse,
-          cancel_on_tap_outside: false,
-          locale: "en_US",
-        });
+      if (!gsiInitialized) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: CLIENT_ID,
+            callback: handleCredentialResponse,
+            cancel_on_tap_outside: false,
+            locale: "en_US",
+          });
+          gsiInitialized = true;
+        } catch {
+          setBadConfig(true);
+          return;
+        }
+      }
 
-        if (btnRef.current) {
+      if (btnRef.current) {
+        try {
           window.google.accounts.id.renderButton(btnRef.current, {
             theme: "outline",
             size: "large",
             shape: "pill",
             width: btnRef.current.offsetWidth || 320,
           });
+        } catch {
+          setBadConfig(true);
         }
-      } catch {
-        setBadConfig(true);
       }
     };
 
     if (window.google?.accounts?.id) {
       initGIS();
-    } else {
+    } else if (!scriptAddedRef.current) {
+      scriptAddedRef.current = true;
       const script = document.createElement("script");
       script.src = "https://accounts.google.com/gsi/client";
       script.async = true;
@@ -71,10 +78,6 @@ const GoogleSignInButton = ({ redirectTo = "/account" }) => {
       script.onerror = () => setLoadFailed(true);
       document.body.appendChild(script);
     }
-
-    return () => {
-      initializedRef.current = false;
-    };
   }, [handleCredentialResponse]);
 
   if (loading) {

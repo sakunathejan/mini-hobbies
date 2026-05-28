@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { User, Mail, Phone, MapPin, Lock, Bell, Trash2, LogOut, Loader2, Plus, Pencil, X, Eye, EyeOff, Package } from "lucide-react";
+import { AlertTriangle, Shield, User, Mail, Phone, MapPin, Lock, Bell, Trash2, LogOut, Loader2, Plus, Pencil, X, Eye, EyeOff, Package } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Seo from "../../components/Seo.jsx";
 import { useCustomerAuth } from "../../context/CustomerAuthContext.jsx";
@@ -9,6 +9,8 @@ import {
   resendVerification,
 } from "../../services/customerAuthService.js";
 import MyOrdersSection from "../../components/orders/MyOrdersSection.jsx";
+import WarningBanner from "../../moderation-system/components/WarningBanner.jsx";
+import { getMyModerationStatus } from "../../moderation-system/services/moderationService.js";
 
 const TABS = ["Profile", "Orders", "Addresses", "Security", "Preferences"];
 
@@ -37,6 +39,9 @@ const DashboardPage = () => {
   // Preferences
   const [prefs, setPrefs] = useState({ emailNotifications: true, marketingEmails: false });
 
+  // Moderation
+  const [activeWarnings, setActiveWarnings] = useState([]);
+
   // Delete
   const [deletePw, setDeletePw] = useState("");
   const [showDelete, setShowDelete] = useState(false);
@@ -49,7 +54,19 @@ const DashboardPage = () => {
     if (!customer) { navigate("/login", { replace: true }); return; }
     setProfile({ name: customer.name || "", phone: customer.phone || "" });
     setPrefs({ emailNotifications: customer.preferences?.emailNotifications ?? true, marketingEmails: customer.preferences?.marketingEmails ?? false });
+    getMyModerationStatus().then((s) => {
+      if (s.status === "suspended" || s.status === "banned") {
+        navigate("/account/suspended", { replace: true });
+        return;
+      }
+      if (s.status === "warned" && s.case) setActiveWarnings([s.case]);
+      else setActiveWarnings([]);
+    }).catch(() => {});
   }, [customer, navigate]);
+
+  useEffect(() => {
+    refreshCustomer();
+  }, [refreshCustomer]);
 
   const loadAddresses = useCallback(async () => {
     try { setAddresses(await getAddresses()); } catch {}
@@ -169,6 +186,12 @@ const DashboardPage = () => {
             </div>
           )}
 
+          {activeWarnings.length > 0 && (
+            <div className="mt-4">
+              <WarningBanner cases={activeWarnings} />
+            </div>
+          )}
+
           {!customer.emailVerified && (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <span>Please verify your email address.</span>
@@ -185,6 +208,13 @@ const DashboardPage = () => {
                 {t}
               </button>
             ))}
+          </div>
+
+          <div className="mt-3 flex items-center justify-end">
+            <Link to="/account/moderation" className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-blue-600 transition-colors">
+              <Shield className="h-3.5 w-3.5" />
+              Moderation History
+            </Link>
           </div>
 
           <div className="mt-6">
