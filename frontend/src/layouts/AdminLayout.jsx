@@ -48,6 +48,7 @@ const AdminLayout = () => {
     { to: "/admin/bank-details", icon: Building2, label: "Bank Details" },
     { to: "/admin/announcements", icon: Megaphone, label: "Announcements" },
     { to: "/admin/users", icon: User, label: "Users" },
+    { to: "/admin/reviews", icon: MessageSquare, label: "Reviews" },
     { to: "/admin/moderation", icon: Shield, label: "Moderation" },
     { to: "/admin/settings", icon: Settings, label: "Settings" },
   ];

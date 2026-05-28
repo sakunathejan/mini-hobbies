@@ -1,6 +1,7 @@
 import { ExternalLink, Eye, EyeOff, MessageCircle, Package, RefreshCw, Trash2, CheckSquare, Square } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import toast from "react-hot-toast";
+import KoombiyoDeliveryPanel from "../../components/orders/KoombiyoDeliveryPanel.jsx";
 import OrderStatusBadge from "../../components/orders/OrderStatusBadge.jsx";
 import ConfirmDialog from "../../components/ui/ConfirmDialog.jsx";
 import ViewToggle from "../../components/ui/ViewToggle.jsx";
@@ -110,6 +111,10 @@ const AdminOrdersPage = () => {
     } finally {
       setRetryingWhatsApp("");
     }
+  };
+
+  const handleShipmentCreated = (updatedOrder) => {
+    setData(orders.map((o) => (o._id === updatedOrder._id ? updatedOrder : o)));
   };
 
   const handleDelete = useCallback(async () => {
@@ -227,6 +232,7 @@ const AdminOrdersPage = () => {
                 <th className="p-4">Customer</th>
                 <th className="p-4">Total</th>
                 <th className="p-4">Payment</th>
+                <th className="p-4">Delivery</th>
                 <th className="p-4">Status</th>
                 <th className="p-4">Actions</th>
               </tr>
@@ -254,6 +260,9 @@ const AdminOrdersPage = () => {
                       <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
                         {order.paymentMethod === "bank_transfer" ? "Bank" : order.paymentMethod === "cod" ? "COD" : "Advance"}
                       </span>
+                    </td>
+                    <td className="p-4">
+                      <KoombiyoDeliveryPanel order={order} onShipmentCreated={handleShipmentCreated} compact />
                     </td>
                     <td className="p-4"><OrderStatusBadge status={order.status} /></td>
                     <td className="p-4">
@@ -331,6 +340,10 @@ const AdminOrdersPage = () => {
                     <ExternalLink className="h-3 w-3" /> View slip
                   </a>
                 )}
+
+                <div className="mt-2">
+                  <KoombiyoDeliveryPanel order={order} onShipmentCreated={handleShipmentCreated} compact />
+                </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
                   <select

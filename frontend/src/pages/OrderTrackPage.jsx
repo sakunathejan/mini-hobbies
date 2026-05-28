@@ -1,7 +1,8 @@
-import { CheckCircle, Clock, Copy, MessageCircle, Package, PackageSearch, Phone, RefreshCw, Truck, Upload } from "lucide-react";
+import { CheckCircle, Clock, Copy, ExternalLink, MessageCircle, Package, PackageSearch, Phone, RefreshCw, Truck, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import KoombiyoDeliveryPanel from "../components/orders/KoombiyoDeliveryPanel.jsx";
 import OrderStatusBadge from "../components/orders/OrderStatusBadge.jsx";
 import OrderTimeline from "../components/orders/OrderTimeline.jsx";
 import Seo from "../components/Seo.jsx";
@@ -293,6 +294,20 @@ const OrderTrackPage = () => {
                   <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm">
                     <span className="font-semibold text-blue-700">Tracking number:</span>{" "}
                     <span className="text-blue-800">{order.trackingNumber}</span>
+                  </div>
+                )}
+
+                {order.delivery?.shipmentCreated && (
+                  <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-blue-700">Koombiyo waybill:</span>{" "}
+                      <span className="text-blue-800">{order.delivery.waybillId || "—"}</span>
+                    </div>
+                    {order.delivery.trackingUrl && (
+                      <a href={order.delivery.trackingUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-ember hover:underline">
+                        <ExternalLink className="h-3.5 w-3.5" /> Track on Koombiyo
+                      </a>
+                    )}
                   </div>
                 )}
 

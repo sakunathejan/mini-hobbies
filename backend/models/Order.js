@@ -80,6 +80,22 @@ const orderSchema = new mongoose.Schema(
     },
     statusHistory: [statusHistorySchema],
     notes: { type: String, default: "" },
+    delivery: {
+      provider: { type: String, default: "koombiyo" },
+      shipmentCreated: { type: Boolean, default: false },
+      waybillId: { type: String, default: "" },
+      trackingUrl: { type: String, default: "" },
+      deliveryStatus: { type: String, default: "pending" },
+      history: [{
+        status: String,
+        label: String,
+        location: String,
+        timestamp: Date,
+        source: String,
+        raw: mongoose.Schema.Types.Mixed
+      }],
+      rawResponse: mongoose.Schema.Types.Mixed
+    },
     whatsappMessageId: { type: String, default: "" },
     whatsappStatus: { type: String, enum: ["", "sent", "failed", "retrying"], default: "" },
     whatsappSentAt: { type: Date },

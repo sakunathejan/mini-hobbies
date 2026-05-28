@@ -1,6 +1,8 @@
-import { Heart, ShoppingCart, Tag } from "lucide-react";
+import { Heart, ShoppingCart, Star, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import ReviewSection from "../components/reviews/ReviewSection.jsx";
+import StarRating from "../components/reviews/StarRating.jsx";
 import Seo from "../components/Seo.jsx";
 import EmptyState from "../components/ui/EmptyState.jsx";
 import PageLoader from "../components/ui/PageLoader.jsx";
@@ -69,6 +71,12 @@ const ProductDetailsPage = () => {
         <article>
           <p className="text-sm font-bold uppercase tracking-wide text-ember">{product.category?.name}</p>
           <h1 className="mt-3 text-2xl font-black text-gray-950 sm:text-5xl">{product.name}</h1>
+          {product.totalReviews > 0 && (
+            <div className="mt-2 flex items-center gap-2">
+              <StarRating rating={product.averageRating} size="sm" />
+              <span className="text-sm text-gray-500">({product.totalReviews})</span>
+            </div>
+          )}
           <p className="mt-4 text-lg font-black">{formatCurrency(activePrice)}</p>
           {product.discountPrice && <p className="text-sm text-gray-500 line-through">{formatCurrency(product.price)}</p>}
           <p className="mt-6 leading-8 text-gray-700">{product.description}</p>
@@ -136,6 +144,9 @@ const ProductDetailsPage = () => {
             </button>
           </div>
         </article>
+      </section>
+      <section className="container-page py-10">
+        <ReviewSection productId={product._id} />
       </section>
     </>
   );

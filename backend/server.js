@@ -4,6 +4,8 @@ import { dirname, join } from "path";
 import app from "./app.js";
 import connectDB from "./config/db.js";
 import { startExpiryProcessor } from "./moderation-system/events/expiryProcessor.js";
+import { initKoombiyo } from "./integrations/koombiyo-sdk-wrapper/koombiyoClient.js";
+import { syncAllActiveDeliveries } from "./integrations/koombiyo-sdk-wrapper/koombiyoTrackingService.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, ".env") });
@@ -21,6 +23,8 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   await connectDB();
   startExpiryProcessor();
+  initKoombiyo(process.env.KOOMBIYO_API_KEY);
+  syncAllActiveDeliveries();
 
   const server = app.listen(PORT, () => {
     console.log(`Mini Hobbies API running on port ${PORT}`);

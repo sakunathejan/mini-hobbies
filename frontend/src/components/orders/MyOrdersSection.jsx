@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Package, Search, X, ChevronDown, Clock, MapPin, CreditCard, Phone, User, ShoppingBag, Truck, Home, CheckCircle, XCircle, Loader2, AlertCircle, ArrowUpDown, Eye, Download, RefreshCw } from "lucide-react";
 import { getMyOrders, getMyOrder } from "../../services/customerOrderService.js";
+import KoombiyoDeliveryPanel from "./KoombiyoDeliveryPanel.jsx";
 import OrderStatusBadge from "./OrderStatusBadge.jsx";
 import OrderTimeline from "./OrderTimeline.jsx";
 
@@ -153,6 +154,11 @@ const DetailModal = ({ order, onClose }) => {
               {order.paymentMethod === "bank_transfer" ? "Bank Transfer" : order.paymentMethod === "cod" ? "Cash on Delivery" : order.paymentMethod === "advance" ? "50% Advance" : order.paymentMethod}
             </div>
           </div>
+
+          {/* Delivery tracking */}
+          {order.delivery?.shipmentCreated && (
+            <KoombiyoDeliveryPanel order={order} />
+          )}
 
           {/* Shipping */}
           <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5">

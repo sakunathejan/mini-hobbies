@@ -44,6 +44,8 @@ const productSchema = new mongoose.Schema(
     scale: { type: String, default: "" },
     material: { type: String, default: "" },
     featured: { type: Boolean, default: false },
+    averageRating: { type: Number, default: 0, min: 0, max: 5 },
+    totalReviews: { type: Number, default: 0, min: 0 },
     condition: {
       type: String,
       enum: ["New", "Pre-owned", "Limited Edition"],

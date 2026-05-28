@@ -38,6 +38,7 @@ const CustomerDashboardPage = lazy(() => import("../pages/customer/DashboardPage
 const SuspendedPage = lazy(() => import("../moderation-system/pages/SuspendedPage.jsx"));
 const AppealPage = lazy(() => import("../moderation-system/pages/AppealPage.jsx"));
 const AdminModerationPage = lazy(() => import("../moderation-system/pages/AdminModerationPage.jsx"));
+const AdminReviewsPage = lazy(() => import("../pages/admin/AdminReviewsPage.jsx"));
 const ModerationHistoryPage = lazy(() => import("../moderation-system/pages/ModerationHistoryPage.jsx"));
 
 const AppRoutes = () => (
@@ -82,6 +83,7 @@ const AppRoutes = () => (
         <Route path="users" element={<AdminUsersPage />} />
         <Route path="users/:id" element={<AdminUserDetailPage />} />
         <Route path="settings" element={<AdminSettingsPage />} />
+        <Route path="reviews" element={<AdminReviewsPage />} />
         <Route path="moderation" element={<AdminModerationPage />} />
         </Route>
     </Route>

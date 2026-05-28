@@ -23,6 +23,10 @@ import unifiedAuthRoutes from "./routes/unifiedAuthRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
 import moderationRoutes from "./moderation-system/routes/moderationRoutes.js";
 import customerModerationRoutes from "./moderation-system/routes/customerRoutes.js";
+import koombiyoRoutes from "./integrations/koombiyo-sdk-wrapper/koombiyoRoutes.js";
+import reviewRoutes from "./reviews/routes/reviewRoutes.js";
+import reviewReactionRoutes from "./reviews/routes/reviewReactionRoutes.js";
+import reviewReplyRoutes from "./reviews/routes/reviewReplyRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -99,6 +103,12 @@ app.use("/api/unified", publicLimiter, unifiedAuthRoutes);
 app.use("/api/admin/users", adminLimiter, adminUserRoutes);
 app.use("/api/admin/moderation", adminLimiter, moderationRoutes);
 app.use("/api/customers/moderation", publicLimiter, customerModerationRoutes);
+
+app.use("/api/integrations/koombiyo", adminLimiter, koombiyoRoutes);
+
+app.use("/api/reviews", reviewRoutes);
+app.use("/api/reviews/reactions", reviewReactionRoutes);
+app.use("/api/reviews/replies", reviewReplyRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

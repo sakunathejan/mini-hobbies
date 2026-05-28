@@ -9,10 +9,11 @@ import {
   resendVerification,
 } from "../../services/customerAuthService.js";
 import MyOrdersSection from "../../components/orders/MyOrdersSection.jsx";
+import MyReviewsSection from "../../components/reviews/MyReviewsSection.jsx";
 import WarningBanner from "../../moderation-system/components/WarningBanner.jsx";
 import { getMyModerationStatus } from "../../moderation-system/services/moderationService.js";
 
-const TABS = ["Profile", "Orders", "Addresses", "Security", "Preferences"];
+const TABS = ["Profile", "Orders", "Reviews", "Addresses", "Security", "Preferences"];
 
 const initialAddress = { label: "Home", fullName: "", phone: "", addressLine: "", city: "", district: "", isDefault: false };
 
@@ -258,6 +259,14 @@ const DashboardPage = () => {
                 <h2 className="mb-2 text-lg font-black">My orders</h2>
                 <p className="mb-5 text-sm text-gray-500">View and track all your orders.</p>
                 <MyOrdersSection />
+              </div>
+            )}
+
+            {tab === "Reviews" && (
+              <div>
+                <h2 className="mb-2 text-lg font-black">My reviews</h2>
+                <p className="mb-5 text-sm text-gray-500">Reviews you have written for products.</p>
+                <MyReviewsSection />
               </div>
             )}
 
