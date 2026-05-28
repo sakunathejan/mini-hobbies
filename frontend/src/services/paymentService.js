@@ -11,6 +11,7 @@ export const verifyPayment = (id) => api.patch(`/payments/${id}/verify`).then((r
 export const rejectPayment = (id, reason) =>
   api.patch(`/payments/${id}/reject`, { reason }).then((res) => res.data);
 export const deletePayment = (id) => api.delete(`/payments/${id}`).then((res) => res.data);
+export const bulkDeletePayments = (ids) => api.post("/payments/bulk-delete", { ids }).then((res) => res.data);
 
 export const submitBalancePayment = (formData) =>
   api.post("/payments/balance-payment", formData, {

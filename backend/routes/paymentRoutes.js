@@ -10,7 +10,8 @@ import {
   getPaymentById,
   verifyPayment,
   rejectPayment,
-  deletePayment
+  deletePayment,
+  bulkDeletePayments
 } from "../controllers/paymentController.js";
 
 const router = express.Router();
@@ -43,5 +44,6 @@ router.get("/:id", protect, adminOnly, getPaymentById);
 router.patch("/:id/verify", protect, adminOnly, verifyPayment);
 router.patch("/:id/reject", protect, adminOnly, rejectPayment);
 router.delete("/:id", protect, adminOnly, deletePayment);
+router.post("/bulk-delete", protect, adminOnly, bulkDeletePayments);
 
 export default router;

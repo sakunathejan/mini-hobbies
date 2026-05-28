@@ -206,3 +206,30 @@ export const deletePayment = asyncHandler(async (req, res) => {
 
   res.json({ message: "Payment deleted." });
 });
+
+export const bulkDeletePayments = asyncHandler(async (req, res) => {
+  const { ids } = req.body;
+  if (!ids || !Array.isArray(ids) || ids.length === 0) {
+    res.status(400);
+    throw new Error("No payment IDs provided.");
+  }
+
+  const payments = await Payment.find({ _id: { $in: ids } });
+
+  for (const payment of payments) {
+    const order = await Order.findById(payment.order);
+    if (order) {
+      order.payment = undefined;
+      if (order.status === "Advance Payment Submitted") {
+        const revertStatus = order.paymentMethod === "advance" ? "Pending Advance Payment" : "Pending Payment Verification";
+        order.status = revertStatus;
+        order.statusHistory.push({ status: revertStatus, note: "Payment record deleted by admin", updatedAt: new Date() });
+      }
+      await order.save();
+    }
+  }
+
+  await Payment.deleteMany({ _id: { $in: ids } });
+
+  res.json({ message: `${ids.length} payment(s) deleted.` });
+});

@@ -1,4 +1,4 @@
-import { Check, ExternalLink, Trash2, X } from "lucide-react";
+import { Check, ExternalLink, Square, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 import OrderStatusBadge from "../../components/orders/OrderStatusBadge.jsx";
@@ -6,7 +6,7 @@ import ConfirmDialog from "../../components/ui/ConfirmDialog.jsx";
 import PromptDialog from "../../components/ui/PromptDialog.jsx";
 import ViewToggle from "../../components/ui/ViewToggle.jsx";
 import useFetch from "../../hooks/useFetch.js";
-import { deletePayment, getPayments, rejectPayment, verifyPayment } from "../../services/paymentService.js";
+import { bulkDeletePayments, deletePayment, getPayments, rejectPayment, verifyPayment } from "../../services/paymentService.js";
 import { formatCurrency } from "../../utils/formatters.js";
 
 const AdminPaymentVerificationPage = () => {
@@ -15,8 +15,23 @@ const AdminPaymentVerificationPage = () => {
   const [rejectTarget, setRejectTarget] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [view, setView] = useState(() => localStorage.getItem("admin_payments_view") || "list");
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null);
 
   const payments = Array.isArray(data) ? data : [];
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    setBulkDeleteTarget(null);
+    try {
+      await bulkDeletePayments(selectedIds);
+      setData(payments.filter((p) => !selectedIds.includes(p._id)));
+      setSelectedIds([]);
+      toast.success(`${selectedIds.length} payment(s) deleted.`);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Bulk delete failed.");
+    }
+  };
 
   const handleVerify = async (id) => {
     setProcessing(id);
@@ -89,6 +104,21 @@ const AdminPaymentVerificationPage = () => {
         <ViewToggle view={view} onChange={setView} storageKey="admin_payments_view" />
       </div>
 
+      {selectedIds.length > 0 && (
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-gray-200 bg-white p-3 shadow-sm">
+          <Square className="h-4 w-4 text-gray-500" />
+          <span className="text-sm font-medium text-gray-700">{selectedIds.length} selected</span>
+          <button onClick={() => setBulkDeleteTarget(true)}
+            className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 transition">
+            <Trash2 className="mr-1 inline-block h-3.5 w-3.5" /> Delete Selected
+          </button>
+          <button onClick={() => setSelectedIds([])}
+            className="ml-auto text-xs text-gray-500 hover:text-gray-700 underline">
+            Clear selection
+          </button>
+        </div>
+      )}
+
       {loading && <p className="mt-6 text-sm text-gray-600">Loading payments...</p>}
       {error && <p className="mt-6 text-sm text-red-600">{error}</p>}
 
@@ -107,6 +137,15 @@ const AdminPaymentVerificationPage = () => {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                     <tr>
+                      <th className="w-10 p-4">
+                        <input type="checkbox" className="h-4 w-4 accent-gray-900 cursor-pointer"
+                          checked={pending.length > 0 && pending.every((p) => selectedIds.includes(p._id))}
+                          onChange={() => setSelectedIds(
+                            pending.every((p) => selectedIds.includes(p._id))
+                              ? selectedIds.filter((id) => !pending.some((p) => p._id === id))
+                              : [...selectedIds, ...pending.map((p) => p._id).filter((id) => !selectedIds.includes(id))]
+                          )} />
+                      </th>
                       <th className="p-4">Order</th>
                       <th className="p-4">Customer</th>
                       <th className="p-4">Amount</th>
@@ -122,7 +161,16 @@ const AdminPaymentVerificationPage = () => {
                       const customer = order.customer || {};
                       const bt = payment.bankTransfer || {};
                       return (
-                        <tr key={payment._id} className="border-t">
+                        <tr key={payment._id} className={`border-t ${selectedIds.includes(payment._id) ? "bg-blue-50" : ""}`}>
+                          <td className="w-10 p-4">
+                            <input type="checkbox" className="h-4 w-4 accent-gray-900 cursor-pointer"
+                              checked={selectedIds.includes(payment._id)}
+                              onChange={() => setSelectedIds(
+                                selectedIds.includes(payment._id)
+                                  ? selectedIds.filter((id) => id !== payment._id)
+                                  : [...selectedIds, payment._id]
+                              )} />
+                          </td>
                           <td className="p-4 font-medium">{order.orderNumber || "—"}</td>
                           <td className="p-4">
                             <p className="font-medium">{customer.name || "—"}</p>
@@ -169,6 +217,15 @@ const AdminPaymentVerificationPage = () => {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                     <tr>
+                      <th className="w-10 p-4">
+                        <input type="checkbox" className="h-4 w-4 accent-gray-900 cursor-pointer"
+                          checked={history.length > 0 && history.every((p) => selectedIds.includes(p._id))}
+                          onChange={() => setSelectedIds(
+                            history.every((p) => selectedIds.includes(p._id))
+                              ? selectedIds.filter((id) => !history.some((p) => p._id === id))
+                              : [...selectedIds, ...history.map((p) => p._id).filter((id) => !selectedIds.includes(id))]
+                          )} />
+                      </th>
                       <th className="p-4">Order</th>
                       <th className="p-4">Customer</th>
                       <th className="p-4">Amount</th>
@@ -184,7 +241,16 @@ const AdminPaymentVerificationPage = () => {
                       const order = payment.order || {};
                       const customer = order.customer || {};
                       return (
-                        <tr key={payment._id} className="border-t last:border-0">
+                        <tr key={payment._id} className={`border-t last:border-0 ${selectedIds.includes(payment._id) ? "bg-blue-50" : ""}`}>
+                          <td className="w-10 p-4">
+                            <input type="checkbox" className="h-4 w-4 accent-gray-900 cursor-pointer"
+                              checked={selectedIds.includes(payment._id)}
+                              onChange={() => setSelectedIds(
+                                selectedIds.includes(payment._id)
+                                  ? selectedIds.filter((id) => id !== payment._id)
+                                  : [...selectedIds, payment._id]
+                              )} />
+                          </td>
                           <td className="p-4 font-medium">{order.orderNumber || "—"}</td>
                           <td className="p-4">{customer.name || "—"}</td>
                           <td className="p-4">{getPaymentAmount(payment)}</td>
@@ -284,6 +350,17 @@ const AdminPaymentVerificationPage = () => {
         destructive
         onConfirm={handleDelete}
         onCancel={() => setDeleteTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={!!bulkDeleteTarget}
+        title={`Delete ${selectedIds.length} payments?`}
+        message={`This will permanently remove ${selectedIds.length} payment records. Related orders will be reverted if applicable. This cannot be undone.`}
+        confirmLabel={`Delete ${selectedIds.length} payments`}
+        cancelLabel="Cancel"
+        destructive
+        onConfirm={handleBulkDelete}
+        onCancel={() => setBulkDeleteTarget(null)}
       />
     </div>
   );
