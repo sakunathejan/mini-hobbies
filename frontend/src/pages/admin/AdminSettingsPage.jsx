@@ -148,6 +148,18 @@ const AdminSettingsPage = () => {
 
           </div>
         </section>
+
+        <section className="rounded-lg border border-gray-200 bg-white p-6">
+          <div className="mb-5 flex items-center gap-2 text-lg font-bold">
+            <Settings className="h-5 w-5" /> Payment Methods Control
+          </div>
+          <p className="mb-4 text-sm text-gray-500">
+            Manage dynamic payment methods from the dedicated page. Changes take effect immediately without page refresh.
+          </p>
+          <a href="/admin/payment-methods" className="btn-primary inline-flex items-center gap-2 min-h-[44px]">
+            <Settings className="h-4 w-4" /> Go to Payment Methods Manager
+          </a>
+        </section>
       </div>
     </>
   );

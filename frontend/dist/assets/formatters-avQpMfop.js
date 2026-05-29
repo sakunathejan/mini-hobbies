@@ -1,0 +1,1 @@
+const n=t=>{const r=Number(t||0);if(isNaN(r))return"Rs. 0";try{return new Intl.NumberFormat("en-LK",{style:"currency",currency:"LKR",maximumFractionDigits:0}).format(r)}catch{return"Rs. "+r.toLocaleString()}};export{n as f};

@@ -43,6 +43,7 @@ const AdminLayout = () => {
     { to: "/admin/categories", icon: Tags, label: "Categories" },
     { to: "/admin/orders", icon: ShoppingBag, label: "Orders" },
     { to: "/admin/payments", icon: CreditCard, label: "Payments" },
+    { to: "/admin/payment-methods", icon: Settings, label: "Payment Methods" },
     { to: "/admin/coupons", icon: Percent, label: "Coupons" },
     { to: "/admin/delivery-zones", icon: MapPin, label: "Delivery Zones" },
     { to: "/admin/bank-details", icon: Building2, label: "Bank Details" },

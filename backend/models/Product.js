@@ -50,7 +50,8 @@ const productSchema = new mongoose.Schema(
       type: String,
       enum: ["New", "Pre-owned", "Limited Edition"],
       default: "New"
-    }
+    },
+    weightKg: { type: Number, default: 0.5, min: 0 }
   },
   { timestamps: true }
 );

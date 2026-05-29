@@ -18,6 +18,7 @@ const statusProgress = {
   "Pending Advance Payment": 5,
   "Pending Payment Verification": 5,
   "Advance Payment Submitted": 10,
+  "Fully Paid Pending Verification": 10,
   "Payment Confirmed": 15,
   "Advance Payment Confirmed": 20,
   "Awaiting Final Payment": 25,
@@ -32,6 +33,7 @@ const estimateLabel = {
   "Pending Advance Payment": "Awaiting initial payment",
   "Pending Payment Verification": "Awaiting payment verification",
   "Advance Payment Submitted": "Verifying your advance payment",
+  "Fully Paid Pending Verification": "Verifying your full payment",
   "Payment Confirmed": "Payment confirmed",
   "Advance Payment Confirmed": "Advance confirmed",
   "Awaiting Final Payment": "Awaiting final payment",
@@ -327,7 +329,7 @@ const OrderTrackPage = () => {
                 </div>
               </div>
 
-              {order.paymentMethod === "advance" && (
+              {(order.paymentType === "advance_50" || order.paymentMethod === "advance") && (
                 <div className="rounded-xl border border-purple-100 bg-white p-5 shadow-sm">
                   <h2 className="flex items-center gap-2 text-sm font-black text-purple-800">
                     <Package className="h-4 w-4" /> Payment progress

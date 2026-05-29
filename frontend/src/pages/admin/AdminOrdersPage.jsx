@@ -16,6 +16,7 @@ const statuses = [
   "Pending Advance Payment",
   "Pending Payment Verification",
   "Advance Payment Submitted",
+  "Fully Paid Pending Verification",
   "Payment Confirmed",
   "Advance Payment Confirmed",
   "Awaiting Final Payment",

@@ -2,7 +2,9 @@ import Coupon from "../models/Coupon.js";
 import DeliveryZone from "../models/DeliveryZone.js";
 import Order from "../models/Order.js";
 import Payment from "../models/Payment.js";
+import PaymentMethod from "../models/PaymentMethod.js";
 import Product from "../models/Product.js";
+import Setting from "../models/Setting.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import * as cache from "../utils/cache.js";
 import { enqueue } from "../utils/jobQueue.js";
@@ -12,6 +14,24 @@ import { normalizePhone, notifyAdminWhatsApp } from "../utils/whatsapp.js";
 import { uploadPaymentSlip } from "../services/supabaseStorageService.js";
 import { retryCustomerWhatsApp, buildCustomerWhatsAppUrl } from "../services/whatsappService.js";
 import { sendOrderStatusEmail, sendOrderConfirmationEmail } from "../services/emailService.js";
+import { normalizeTo } from "../utils/normalizeAddress.js";
+
+const calcShipping = (totalWeightKg, zone) => {
+  if (!zone) return null;
+  if (totalWeightKg <= 1) return zone.firstKgCharge;
+  return zone.firstKgCharge + Math.ceil((totalWeightKg - 1)) * zone.additionalKgCharge;
+};
+
+const getDefaultOrigin = async () => {
+  try {
+    const zones = await DeliveryZone.distinct("from", { isActive: true });
+    if (zones.length === 1) return zones[0];
+    const setting = await Setting.findOne({ key: "defaultShippingOrigin" }).lean();
+    return setting?.value || "Colombo";
+  } catch {
+    return "Colombo";
+  }
+};
 
 const pushStatusHistory = (order, status, note = "") => {
   if (!order.statusHistory) order.statusHistory = [];
@@ -19,7 +39,6 @@ const pushStatusHistory = (order, status, note = "") => {
 };
 
 export const createOrder = asyncHandler(async (req, res) => {
-  // Parse JSON-stringified fields from FormData (multipart)
   let customer = typeof req.body.customer === "string" ? JSON.parse(req.body.customer) : req.body.customer;
   let items = typeof req.body.items === "string" ? JSON.parse(req.body.items) : req.body.items;
   const { notes, paymentMethod, couponCode } = req.body;
@@ -27,6 +46,14 @@ export const createOrder = asyncHandler(async (req, res) => {
   if (!items?.length) {
     res.status(400);
     throw new Error("Order must include at least one item.");
+  }
+
+  if (paymentMethod) {
+    const pm = await PaymentMethod.findOne({ code: paymentMethod.toLowerCase(), enabled: true }).lean();
+    if (!pm) {
+      res.status(400);
+      throw new Error("Selected payment method is currently unavailable.");
+    }
   }
 
   const productIds = items.map((item) => item.product);
@@ -62,9 +89,24 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   let deliveryFee = 650;
   let district = customer.district || "";
-  if (district) {
-    const zone = await DeliveryZone.findOne({ district: { $regex: new RegExp(`^${district}$`, "i") }, isActive: true });
-    if (zone) deliveryFee = zone.fee;
+  const destinationTo = normalizeTo(district);
+
+  if (destinationTo && orderItems.length > 0) {
+    const origin = await getDefaultOrigin();
+    const zone = await DeliveryZone.findOne({
+      normalizedFrom: normalizeTo(origin),
+      normalizedTo: destinationTo,
+      isActive: true
+    }).lean();
+
+    if (zone) {
+      const totalWeight = orderItems.reduce((sum, item) => {
+        const product = products.find((p) => p._id.toString() === item.product);
+        return sum + (product?.weightKg || 0.5) * item.quantity;
+      }, 0);
+      const calculated = calcShipping(totalWeight, zone);
+      if (calculated !== null) deliveryFee = calculated;
+    }
   }
   if (subtotal > 25000) deliveryFee = 0;
 
@@ -103,6 +145,7 @@ export const createOrder = asyncHandler(async (req, res) => {
   let initialStatus = "Pending Advance Payment";
   let initialNote = "Order placed";
 
+  const paymentType = paymentMethod === "advance" ? "advance_50" : paymentMethod === "bank_transfer" ? "full_payment" : "cod";
   const advanceAmount = paymentMethod === "advance" ? Math.round(total * 0.5) : 0;
   const remainingBalance = advanceAmount > 0 ? total - advanceAmount : 0;
 
@@ -125,6 +168,7 @@ export const createOrder = asyncHandler(async (req, res) => {
     advanceAmount,
     remainingBalance,
     paymentMethod: paymentMethod || "bank_transfer",
+    paymentType,
     coupon: couponData,
     notes: notes || "",
     status: initialStatus,
@@ -143,7 +187,6 @@ export const createOrder = asyncHandler(async (req, res) => {
     await order.save();
   }
 
-  // For advance with payment slip uploaded at checkout
   if (paymentMethod === "advance" && req.file) {
     const upload = await uploadPaymentSlip(req.file);
     const slipUrl = upload.url;

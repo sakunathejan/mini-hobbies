@@ -79,13 +79,13 @@ const AdminPaymentVerificationPage = () => {
   const getPaymentType = (payment) => {
     const order = payment.order || {};
     if (payment.advance) return "Advance (50%)";
-    if (order.paymentMethod === "advance") return "Advance (50%)";
+    if (order.paymentType === "advance_50" || order.paymentMethod === "advance") return "Advance (50%)";
     return "Full Payment";
   };
 
   const getPaymentAmount = (payment) => {
     const order = payment.order || {};
-    if (payment.advance || order.paymentMethod === "advance") {
+    if (payment.advance || order.paymentType === "advance_50" || order.paymentMethod === "advance") {
       return formatCurrency(order.advanceAmount || Math.round((order.total || 0) / 2));
     }
     return formatCurrency(order.total || 0);
@@ -424,7 +424,7 @@ const PaymentCard = ({ payment, getPaymentAmount, getPaymentType, handleVerify, 
         )}
       </div>
 
-      {order.remainingBalance > 0 && type !== "Full Payment" && (
+      {order.remainingBalance > 0 && type === "Advance (50%)" && (
         <p className="mt-2 text-sm text-purple-600">
           On verify, order will be marked as "Awaiting Final Payment" ({formatCurrency(order.remainingBalance)} remaining)
         </p>

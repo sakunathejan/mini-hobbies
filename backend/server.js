@@ -6,6 +6,7 @@ import connectDB from "./config/db.js";
 import { startExpiryProcessor } from "./moderation-system/events/expiryProcessor.js";
 import { initKoombiyo } from "./integrations/koombiyo-sdk-wrapper/koombiyoClient.js";
 import { syncAllActiveDeliveries } from "./integrations/koombiyo-sdk-wrapper/koombiyoTrackingService.js";
+import { seedDefaultPaymentMethods } from "./controllers/paymentMethodController.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, ".env") });
@@ -25,6 +26,7 @@ const startServer = async () => {
   startExpiryProcessor();
   initKoombiyo(process.env.KOOMBIYO_API_KEY);
   syncAllActiveDeliveries();
+  seedDefaultPaymentMethods();
 
   const server = app.listen(PORT, () => {
     console.log(`Mini Hobbies API running on port ${PORT}`);

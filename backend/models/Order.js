@@ -55,6 +55,7 @@ const orderSchema = new mongoose.Schema(
     partialPayments: [partialPaymentSchema],
     fullyPaidAt: { type: Date },
     paymentMethod: { type: String, enum: ["bank_transfer", "cod", "advance"], default: "bank_transfer" },
+    paymentType: { type: String, enum: ["advance_50", "full_payment", "cod"], default: "full_payment" },
     payment: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
     coupon: {
       code: { type: String },
@@ -67,6 +68,7 @@ const orderSchema = new mongoose.Schema(
         "Pending Advance Payment",
         "Pending Payment Verification",
         "Advance Payment Submitted",
+        "Fully Paid Pending Verification",
         "Payment Confirmed",
         "Advance Payment Confirmed",
         "Awaiting Final Payment",

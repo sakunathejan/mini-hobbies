@@ -24,8 +24,8 @@ export const submitBankTransferPayment = asyncHandler(async (req, res) => {
     slipPath = upload.path;
   }
 
-  const paymentMethod = order.paymentMethod;
-  const isAdvance = paymentMethod === "advance";
+  const paymentType = order.paymentType || (order.paymentMethod === "advance" ? "advance_50" : "full_payment");
+  const isAdvance = paymentType === "advance_50";
 
   const payment = await Payment.create({
     order: order._id,
@@ -36,7 +36,7 @@ export const submitBankTransferPayment = asyncHandler(async (req, res) => {
   });
 
   order.payment = payment._id;
-  const payStatus = isAdvance ? "Advance Payment Submitted" : "Advance Payment Submitted";
+  const payStatus = isAdvance ? "Advance Payment Submitted" : "Fully Paid Pending Verification";
   order.status = payStatus;
   order.statusHistory.push({ status: payStatus, note: "Payment slip submitted, awaiting verification", updatedAt: new Date() });
   await order.save();
@@ -115,7 +115,9 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     return;
   }
 
-  if (order.paymentMethod === "advance") {
+  const paymentType = order.paymentType || (order.paymentMethod === "advance" ? "advance_50" : order.paymentMethod === "cod" ? "cod" : "full_payment");
+
+  if (paymentType === "advance_50") {
     const hasUnverifiedBalance = order.partialPayments.some(
       (pp) => pp.type === "balance" && !pp.verifiedBy
     );
@@ -141,9 +143,14 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       order.status = "Awaiting Final Payment";
       order.statusHistory.push({ status: "Awaiting Final Payment", note: "Advance payment verified. Awaiting final payment.", updatedAt: new Date() });
     }
-  } else {
+  } else if (paymentType === "cod") {
     order.status = "Fully Paid";
     order.statusHistory.push({ status: "Fully Paid", note: "Payment verified by admin", updatedAt: new Date() });
+  } else {
+    order.remainingBalance = 0;
+    order.fullyPaidAt = new Date();
+    order.status = "Fully Paid";
+    order.statusHistory.push({ status: "Fully Paid", note: "Full payment verified by admin", updatedAt: new Date() });
   }
 
   await order.save();
@@ -169,7 +176,8 @@ export const rejectPayment = asyncHandler(async (req, res) => {
 
   const order = await Order.findById(payment.order);
   if (order) {
-    const rejectStatus = order.paymentMethod === "advance" ? "Advance Payment Submitted" : "Pending Payment Verification";
+    const paymentType = order.paymentType || (order.paymentMethod === "advance" ? "advance_50" : "full_payment");
+    const rejectStatus = paymentType === "advance_50" ? "Pending Advance Payment" : "Pending Payment Verification";
     order.status = rejectStatus;
     order.statusHistory.push({ status: rejectStatus, note: req.body.reason || "Payment rejected, please resubmit", updatedAt: new Date() });
     await order.save();
@@ -196,8 +204,9 @@ export const deletePayment = asyncHandler(async (req, res) => {
   const order = await Order.findById(payment.order);
   if (order) {
     order.payment = undefined;
-    if (order.status === "Advance Payment Submitted") {
-      const revertStatus = order.paymentMethod === "advance" ? "Pending Advance Payment" : "Pending Payment Verification";
+    const paymentType = order.paymentType || (order.paymentMethod === "advance" ? "advance_50" : "full_payment");
+    if (order.status === "Advance Payment Submitted" || order.status === "Fully Paid Pending Verification") {
+      const revertStatus = paymentType === "advance_50" ? "Pending Advance Payment" : "Pending Payment Verification";
       order.status = revertStatus;
       order.statusHistory.push({ status: revertStatus, note: "Payment record deleted by admin", updatedAt: new Date() });
     }

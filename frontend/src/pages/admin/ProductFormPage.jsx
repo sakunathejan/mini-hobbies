@@ -30,7 +30,8 @@ const ProductFormPage = () => {
     scale: "1:64",
     material: "Die-cast metal",
     featured: false,
-    condition: "New"
+    condition: "New",
+    weightKg: "0.5"
   });
 
   useFetch(
@@ -102,7 +103,8 @@ const ProductFormPage = () => {
       scale: form.scale,
       material: form.material,
       featured: form.featured,
-      condition: form.condition
+      condition: form.condition,
+      weightKg: parseFloat(form.weightKg) || 0.5
     };
     if (editing) {
       await updateProduct(id, payload);
@@ -148,6 +150,10 @@ const ProductFormPage = () => {
             <option>Pre-owned</option>
             <option>Limited Edition</option>
           </select>
+          <div className="col-span-2 sm:col-span-1">
+            <label className="text-xs font-medium text-gray-500">Weight per unit (kg)</label>
+            <input className="input mt-1 text-base" type="number" min="0" step="0.01" value={form.weightKg} onChange={(event) => update("weightKg", event.target.value)} />
+          </div>
         </div>
 
         <div className="rounded-lg border border-gray-200 p-4">

@@ -6,6 +6,7 @@ const stepConfig = {
   "Advance Payment Submitted": { icon: Upload, color: "text-purple-600", bg: "bg-purple-100" },
   "Advance Payment Confirmed": { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-100" },
   "Pending Payment Verification": { icon: Clock, color: "text-purple-600", bg: "bg-purple-100" },
+  "Fully Paid Pending Verification": { icon: Upload, color: "text-orange-600", bg: "bg-orange-100" },
   "Payment Confirmed": { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-100" },
   "Awaiting Final Payment": { icon: CreditCard, color: "text-indigo-600", bg: "bg-indigo-100" },
   "Fully Paid": { icon: CheckCircle, color: "text-emerald-600", bg: "bg-emerald-100" },
@@ -28,7 +29,7 @@ const advanceSteps = [
 
 const bankSteps = [
   { label: "Pending Payment Verification", key: "Pending Payment Verification" },
-  { label: "Payment Confirmed", key: "Payment Confirmed" },
+  { label: "Fully Paid Pending Verification", key: "Fully Paid Pending Verification" },
   { label: "Fully Paid", key: "Fully Paid" },
   { label: "Preparing Order", key: "Preparing Order" },
   { label: "Shipped", key: "Shipped" },

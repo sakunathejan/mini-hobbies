@@ -5,6 +5,13 @@ import * as cache from "../utils/cache.js";
 const DEFAULTS = {
   freeShipping: false,
   lowStockThreshold: 3,
+  paymentSettings: {
+    advancePaymentEnabled: true,
+    fullPaymentEnabled: true,
+    codEnabled: true,
+    advancePercentage: 50,
+    defaultMethod: "full_payment"
+  }
 };
 
 export const getSetting = asyncHandler(async (req, res) => {

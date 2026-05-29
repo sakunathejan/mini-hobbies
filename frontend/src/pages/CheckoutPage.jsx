@@ -1,32 +1,125 @@
-import { ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Trash2, Upload, Package } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Trash2, Upload, Package, Weight, MapPin, Search, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Seo from "../components/Seo.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { validateCoupon } from "../services/couponService.js";
 import { getBankDetails } from "../services/bankDetailService.js";
-import { getDeliveryZones } from "../services/deliveryZoneService.js";
+import { getCities, calculateDelivery } from "../services/deliveryService.js";
 import { createOrder } from "../services/orderService.js";
 import { getSetting } from "../services/settingService.js";
+import { getEnabledPaymentMethods } from "../services/paymentMethodService.js";
 import { formatCurrency } from "../utils/formatters.js";
 
-const SRI_LANKA_DISTRICTS = [
-  "Ampara", "Anuradhapura", "Badulla", "Batticaloa", "Colombo", "Galle",
-  "Gampaha", "Hambantota", "Jaffna", "Kalutara", "Kandy", "Kegalle",
-  "Kilinochchi", "Kurunegala", "Mannar", "Matale", "Matara", "Moneragala",
-  "Mullaitivu", "Nuwara Eliya", "Polonnaruwa", "Puttalam", "Ratnapura",
-  "Trincomalee", "Vavuniya"
-];
+const SearchableSelect = ({ label, options, value, onChange, placeholder, loading, error }) => {
+  const [search, setSearch] = useState("");
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  const inputRef = useRef(null);
+
+  const safeOptions = useMemo(() => {
+    if (!Array.isArray(options)) return [];
+    return options.filter((o) => o != null && typeof o === "string");
+  }, [options]);
+
+  const filtered = useMemo(() => {
+    if (!safeOptions.length) return safeOptions;
+    if (!search) return safeOptions;
+    const q = search.toLowerCase();
+    return safeOptions.filter((o) => o.toLowerCase().includes(q));
+  }, [safeOptions, search]);
+
+  useEffect(() => {
+    const handleClick = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const selectedLabel = value || "";
+
+  const handleFocus = useCallback(() => {
+    setSearch("");
+    setOpen(true);
+  }, []);
+
+  const handleChange = useCallback((e) => {
+    setSearch(e.target.value);
+    setOpen(true);
+  }, []);
+
+  const handleSelect = useCallback((opt) => {
+    onChange(opt);
+    setOpen(false);
+    setSearch("");
+  }, [onChange]);
+
+  const handleClear = useCallback(() => {
+    onChange("");
+    setSearch("");
+  }, [onChange]);
+
+  return (
+    <div ref={ref} className="relative">
+      <label className="text-sm font-medium">{label}</label>
+      <div className="relative mt-1">
+        <input
+          ref={inputRef}
+          className="input w-full text-base pr-8"
+          value={open ? search : selectedLabel}
+          placeholder={placeholder || "Search..."}
+          onFocus={handleFocus}
+          onChange={handleChange}
+          autoComplete="off"
+        />
+        {value && !open && (
+          <button
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 min-h-[32px] min-w-[32px] flex items-center justify-center"
+            onClick={handleClear}
+            type="button"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      {open && (
+        <div className="absolute z-50 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border bg-white shadow-lg">
+          {loading && <p className="p-3 text-sm text-gray-500">Loading...</p>}
+          {error && <p className="p-3 text-sm text-red-500">{error}</p>}
+          {!loading && !error && filtered.length === 0 && (
+            <p className="p-3 text-sm text-gray-400">{search ? "No results found" : "No options available"}</p>
+          )}
+          {!loading && !error && filtered.map((opt) => (
+            <button
+              key={opt}
+              className={`w-full text-left px-3 py-3 text-sm transition hover:bg-ember/10 min-h-[44px] flex items-center ${opt === value ? "bg-ember/10 font-semibold text-ember" : ""}`}
+              onClick={() => handleSelect(opt)}
+              type="button"
+            >
+              <MapPin className="mr-2 h-4 w-4 shrink-0 text-gray-400" />
+              {opt}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
 const CheckoutPage = () => {
   const { items, updateQuantity, removeItem, clearCart, subtotal } = useCart();
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [showSummaryMobile, setShowSummaryMobile] = useState(false);
-  const [zones, setZones] = useState([]);
   const [freeShipping, setFreeShipping] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", phone: "", district: "", address: "", notes: "" });
+  const [cities, setCities] = useState([]);
+  const [citiesLoading, setCitiesLoading] = useState(false);
+  const [deliveryCity, setDeliveryCity] = useState("");
+  const [deliveryCalc, setDeliveryCalc] = useState(null);
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", notes: "" });
   const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
@@ -35,22 +128,44 @@ const CheckoutPage = () => {
   const [slipFile, setSlipFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [bankDetails, setBankDetails] = useState({ bankName: "Bank of Ceylon", accountName: "Mini Hobbies", accountNumber: "1234567890", branch: "Colombo Main" });
+  const [paymentSettings, setPaymentSettings] = useState(null);
+  const [paymentMethods, setPaymentMethods] = useState([]);
 
-  useEffect(() => {
-    getDeliveryZones().then(setZones).catch(() => {});
-    getBankDetails().then((d) => {
-      if (d.bankName) setBankDetails(d);
+  const fetchPaymentMethods = useCallback(() => {
+    getEnabledPaymentMethods().then((list) => {
+      setPaymentMethods(list);
+      if (list.length > 0) {
+        setPaymentMethod((prev) => list.some((m) => m.code === prev) ? prev : list[0].code);
+      }
     }).catch(() => {});
-    getSetting("freeShipping").then((s) => setFreeShipping(s.value)).catch(() => {});
   }, []);
 
-  const zoneFee = useMemo(() => {
-    if (!form.district) return 0;
-    const zone = zones.find((z) => z.district.toLowerCase() === form.district.toLowerCase());
-    return zone ? zone.fee : 0;
-  }, [form.district, zones]);
+  useEffect(() => {
+    setCitiesLoading(true);
+    getCities().then(setCities).catch(() => setCities([])).finally(() => setCitiesLoading(false));
+    getBankDetails().then((d) => { if (d.bankName) setBankDetails(d); }).catch(() => {});
+    getSetting("freeShipping").then((s) => setFreeShipping(s.value)).catch(() => {});
+    getSetting("paymentSettings").then((s) => setPaymentSettings(s.value)).catch(() => {});
+    fetchPaymentMethods();
+    const interval = setInterval(fetchPaymentMethods, 10000);
+    return () => clearInterval(interval);
+  }, [fetchPaymentMethods]);
 
-  const deliveryFee = freeShipping ? 0 : zoneFee;
+  useEffect(() => {
+    if (!deliveryCity) { setDeliveryCalc(null); return; }
+    setDeliveryLoading(true);
+    const payload = items.map((item) => ({
+      weightKg: item.weightKg || 0.5,
+      quantity: item.quantity,
+      price: item.discountPrice || item.price
+    }));
+    calculateDelivery(deliveryCity, payload)
+      .then(setDeliveryCalc)
+      .catch(() => setDeliveryCalc(null))
+      .finally(() => setDeliveryLoading(false));
+  }, [deliveryCity, items]);
+
+  const deliveryFee = freeShipping ? 0 : (deliveryCalc?.fee ?? 0);
   const total = subtotal + deliveryFee - couponDiscount;
 
   const validate = useCallback(() => {
@@ -60,12 +175,15 @@ const CheckoutPage = () => {
     else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Invalid email";
     if (!form.phone.trim()) e.phone = "Phone is required";
     else if (!/^(?:\+94|0)?[0-9]{9,10}$/.test(form.phone.replace(/\s/g, ""))) e.phone = "Invalid Sri Lankan phone number";
+    if (!deliveryCity) e.deliveryCity = "Please select a delivery city";
     if (!form.address.trim()) e.address = "Address is required";
     if (items.length === 0) e.items = "Cart is empty";
-    if (paymentMethod === "advance" && !slipFile) e.slip = "Please upload the advance payment slip";
+    const selectedMethod = paymentMethods.find((m) => m.code === paymentMethod);
+    if (selectedMethod?.requiresSlipUpload && !slipFile) e.slip = "Please upload the payment slip";
+    if (deliveryCalc && !deliveryCalc.available) e.deliveryUnavailable = "Delivery not available to this location";
     setErrors(e);
     return Object.keys(e).length === 0;
-  }, [form, items, paymentMethod, slipFile]);
+  }, [form, items, paymentMethod, slipFile, deliveryCity, deliveryCalc, paymentMethods]);
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -87,8 +205,9 @@ const CheckoutPage = () => {
   const handlePlaceOrder = async () => {
     if (!validate()) return;
 
-    if (paymentMethod === "bank_transfer" && !slipFile) {
-      toast.error("Please upload the payment slip screenshot.");
+    const selectedMethod = paymentMethods.find((m) => m.code === paymentMethod);
+    if (selectedMethod?.requiresSlipUpload && !slipFile) {
+      toast.error("Please upload the payment slip.");
       return;
     }
 
@@ -99,17 +218,17 @@ const CheckoutPage = () => {
         email: form.email,
         phone: form.phone,
         address: form.address,
-        district: form.district
+        district: deliveryCity
       };
 
       const itemsPayload = items.map((item) => ({ product: item._id, quantity: item.quantity, variantId: item.variantId || "" }));
 
-      if (paymentMethod === "advance" && slipFile) {
+      if (selectedMethod?.supportsPartialPayment && slipFile) {
         const fd = new FormData();
         fd.append("customer", JSON.stringify(customerPayload));
         fd.append("items", JSON.stringify(itemsPayload));
         fd.append("notes", form.notes);
-        fd.append("paymentMethod", "advance");
+        fd.append("paymentMethod", paymentMethod);
         fd.append("couponCode", appliedCoupon ? appliedCoupon.code : "");
         fd.append("paymentSlip", slipFile);
         fd.append("bankName", bankDetails.bankName);
@@ -127,6 +246,7 @@ const CheckoutPage = () => {
             advanceAmount: order.advanceAmount,
             remainingBalance: order.remainingBalance,
             paymentMethod,
+            paymentType: order.paymentType,
             status: order.status,
             whatsappUrl: order.whatsappUrl
           }
@@ -142,7 +262,7 @@ const CheckoutPage = () => {
 
         const order = await createOrder(payload);
 
-        if (paymentMethod === "bank_transfer" && slipFile) {
+        if (selectedMethod?.requiresSlipUpload && slipFile && !selectedMethod.supportsPartialPayment) {
           const fd = new FormData();
           fd.append("orderId", order._id);
           fd.append("slip", slipFile);
@@ -164,6 +284,7 @@ const CheckoutPage = () => {
             advanceAmount: order.advanceAmount,
             remainingBalance: order.remainingBalance,
             paymentMethod,
+            paymentType: order.paymentType,
             status: order.status,
             whatsappUrl: order.whatsappUrl
           }
@@ -211,14 +332,26 @@ const CheckoutPage = () => {
                 <input className={`input mt-1 text-base ${errors.phone ? "border-red-400" : ""}`} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="077 123 4567" />
                 {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}
               </div>
-              <div className="md:col-span-2 lg:col-span-1">
-                <label className="text-sm font-medium">District</label>
-                <select className="input mt-1 text-base" value={form.district} onChange={(e) => setForm({ ...form, district: e.target.value })}>
-                  <option value="">Select district</option>
-                  {SRI_LANKA_DISTRICTS.map((d) => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-                </select>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-white p-4 sm:p-6">
+            <h2 className="text-lg font-bold flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-ember" />
+              Delivery Location
+            </h2>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div>
+                <SearchableSelect
+                  label="City"
+                  options={cities}
+                  value={deliveryCity}
+                  onChange={(v) => { setDeliveryCity(v); setDeliveryCalc(null); }}
+                  placeholder="Search city..."
+                  loading={citiesLoading}
+                  error={!citiesLoading && cities.length === 0 ? "No delivery cities available" : ""}
+                />
+                {errors.deliveryCity && <p className="mt-1 text-xs text-red-600">{errors.deliveryCity}</p>}
               </div>
               <div className="md:col-span-2">
                 <label className="text-sm font-medium">Delivery Address</label>
@@ -230,27 +363,64 @@ const CheckoutPage = () => {
                 <textarea className="input mt-1 text-base" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Special instructions for delivery..." />
               </div>
             </div>
+
+            {deliveryLoading && (
+              <div className="mt-4 flex items-center gap-2 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                Calculating delivery...
+              </div>
+            )}
+
+            {deliveryCalc && !deliveryLoading && (
+              <div className={`mt-4 rounded-lg border p-4 ${deliveryCalc.available ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+                {deliveryCalc.available ? (
+                  <div className="space-y-1 text-sm">
+                    <p className="font-semibold text-emerald-800">Delivery Available</p>
+                    <div className="flex items-center gap-2 text-emerald-700">
+                      <Package className="h-4 w-4" />
+                      <span>Package Weight: <strong>{deliveryCalc.totalWeight} kg</strong></span>
+                    </div>
+                    <div className="flex items-center gap-2 text-emerald-700">
+                      <MapPin className="h-4 w-4" />
+                      <span>Route: {deliveryCalc.zone.from} → {deliveryCalc.zone.to}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-emerald-700">
+                      <span className="text-base font-bold">Delivery Fee: {formatCurrency(deliveryCalc.fee)}</span>
+                    </div>
+                    {deliveryCalc.totalWeight > 1 && (
+                      <p className="text-xs text-emerald-600">
+                        {formatCurrency(deliveryCalc.firstKgCharge)} for 1st kg + {formatCurrency(deliveryCalc.additionalKgCharge)} per additional kg
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <p className="text-sm font-medium text-red-700">{deliveryCalc.message || "Delivery not available to this location."}</p>
+                )}
+              </div>
+            )}
+
+            {errors.deliveryUnavailable && (
+              <p className="mt-1 text-xs text-red-600">{errors.deliveryUnavailable}</p>
+            )}
           </div>
 
           <div className="rounded-lg border bg-white p-4 sm:p-6">
             <h2 className="text-lg font-bold">Payment Method</h2>
             <div className="mt-4 grid gap-3">
-              {[
-                { method: "bank_transfer", label: "Bank Transfer", desc: "Pay via bank transfer and upload your payment slip" },
-                { method: "cod", label: "Cash on Delivery", desc: "Pay when you receive your order" },
-                { method: "advance", label: "50% Advance Payment", desc: "Pay 50% now and the remaining 50% before shipping" },
-              ].map(({ method, label, desc }) => (
-                <label key={method} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${paymentMethod === method ? "border-ember bg-ember/5" : "hover:border-gray-400"}`}>
-                  <input type="radio" name="payment" className="accent-ember mt-0.5 shrink-0" checked={paymentMethod === method} onChange={() => setPaymentMethod(method)} />
+              {paymentMethods.length === 0 && (
+                <p className="text-sm text-gray-400">Loading payment methods...</p>
+              )}
+              {paymentMethods.map((method) => (
+                <label key={method.code} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${paymentMethod === method.code ? "border-ember bg-ember/5" : "hover:border-gray-400"}`}>
+                  <input type="radio" name="payment" className="accent-ember mt-0.5 shrink-0" checked={paymentMethod === method.code} onChange={() => setPaymentMethod(method.code)} />
                   <div className="min-w-0">
-                    <p className="font-semibold">{label}</p>
-                    <p className="text-sm text-gray-600">{desc}</p>
+                    <p className="font-semibold">{method.name}</p>
                   </div>
                 </label>
               ))}
             </div>
 
-            {paymentMethod === "bank_transfer" && (
+            {paymentMethod && paymentMethods.find((m) => m.code === paymentMethod)?.requiresSlipUpload && (
               <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                 <p className="font-semibold text-emerald-800">Bank Details for Transfer</p>
                 <div className="mt-2 space-y-1 text-sm text-emerald-700">
@@ -273,7 +443,7 @@ const CheckoutPage = () => {
               </div>
             )}
 
-            {paymentMethod === "advance" && (
+            {paymentMethod && paymentMethods.find((m) => m.code === paymentMethod)?.supportsPartialPayment && (
               <div className="mt-4 rounded-lg border border-purple-200 bg-purple-50 p-4">
                 <p className="text-sm text-purple-700">
                   A 50% advance of <strong>{formatCurrency(Math.round(total * 0.5))}</strong> is required to place this order.
@@ -319,6 +489,20 @@ const CheckoutPage = () => {
                 <button onClick={() => setShowSummaryMobile(false)} className="float-right text-sm font-normal text-gray-500">Close</button>
               )}
             </h2>
+
+            {deliveryCity && deliveryCalc?.available && (
+              <div className="mt-3 rounded-lg bg-ember/5 p-3 text-sm">
+                <div className="flex items-center gap-1 text-ember">
+                  <MapPin className="h-3.5 w-3.5" />
+                  <span className="font-medium">{deliveryCalc.zone.from} → {deliveryCalc.zone.to}</span>
+                </div>
+                <div className="mt-1 flex items-center gap-1 text-gray-600">
+                  <Package className="h-3.5 w-3.5" />
+                  <span>{deliveryCalc.totalWeight} kg</span>
+                </div>
+              </div>
+            )}
+
             <div className="mt-4 divide-y">
               {items.map((item) => {
                 const cartItemVariant = item.variantId && item.variants ? item.variants.find((v) => v._id === item.variantId) : null;
@@ -328,7 +512,7 @@ const CheckoutPage = () => {
                   <img src={cartItemImage} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{item.name}</p>
-                    <p className="text-sm text-gray-600">{formatCurrency(item.discountPrice || item.price)} each</p>
+                    <p className="text-sm text-gray-600">{formatCurrency(cartItemVariant?.price || item.discountPrice || item.price)} each</p>
                     <div className="mt-1 flex items-center gap-2">
                       <button className="rounded border p-0.5 hover:bg-gray-100 min-h-[28px] min-w-[28px]" onClick={() => { if (item.quantity > 1) updateQuantity(item._id, item.quantity - 1); }}>
                         <Minus className="h-3 w-3" />
@@ -342,7 +526,7 @@ const CheckoutPage = () => {
                       </button>
                     </div>
                   </div>
-                  <p className="text-sm font-bold shrink-0">{formatCurrency((item.discountPrice || item.price) * item.quantity)}</p>
+                  <p className="text-sm font-bold shrink-0">{formatCurrency((cartItemVariant?.price || item.discountPrice || item.price) * item.quantity)}</p>
                 </div>
               );
               })}
@@ -373,7 +557,12 @@ const CheckoutPage = () => {
               )}
               <div className="flex justify-between">
                 <span>Delivery</span>
-                <span>{freeShipping ? <span className="text-emerald-600">Free</span> : formatCurrency(deliveryFee)}</span>
+                <span>
+                  {freeShipping ? <span className="text-emerald-600">Free</span> :
+                   deliveryLoading ? <span className="text-gray-400">Calculating...</span> :
+                   deliveryCalc ? formatCurrency(deliveryFee) :
+                   <span className="text-gray-400">—</span>}
+                </span>
               </div>
               <div className="flex justify-between border-t pt-2 text-base font-bold">
                 <span>Total</span>
@@ -383,10 +572,14 @@ const CheckoutPage = () => {
 
             <button
               className="btn-primary mt-6 w-full min-h-[48px]"
-              disabled={submitting}
+              disabled={submitting || !deliveryCalc?.available}
               onClick={handlePlaceOrder}
             >
-              {submitting ? "Placing order..." : `Place Order - ${formatCurrency(total)}`}
+              {submitting ? "Placing order..." :
+               !deliveryCity ? "Select delivery location" :
+               !deliveryCalc ? "Calculating..." :
+               !deliveryCalc.available ? "Delivery unavailable" :
+               `Place Order - ${formatCurrency(total)}`}
             </button>
           </div>
         </div>

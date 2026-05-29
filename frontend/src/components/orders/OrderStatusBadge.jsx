@@ -3,8 +3,9 @@ import { memo } from "react";
 const styles = {
   "Pending Advance Payment": "bg-amber-50 text-amber-800",
   "Pending Payment Verification": "bg-purple-50 text-purple-800",
-  "Payment Confirmed": "bg-emerald-50 text-emerald-800",
   "Advance Payment Submitted": "bg-purple-50 text-purple-800",
+  "Fully Paid Pending Verification": "bg-orange-50 text-orange-800",
+  "Payment Confirmed": "bg-emerald-50 text-emerald-800",
   "Advance Payment Confirmed": "bg-emerald-50 text-emerald-800",
   "Awaiting Final Payment": "bg-indigo-50 text-indigo-800",
   "Fully Paid": "bg-emerald-50 text-emerald-800",

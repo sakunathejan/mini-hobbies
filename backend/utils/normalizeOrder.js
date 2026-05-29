@@ -1,8 +1,9 @@
 const STATUS_MAP = {
   "pending advance payment": "Pending Advance Payment",
   "pending payment verification": "Pending Payment Verification",
-  "payment confirmed": "Payment Confirmed",
   "advance payment submitted": "Advance Payment Submitted",
+  "fully paid pending verification": "Fully Paid Pending Verification",
+  "payment confirmed": "Payment Confirmed",
   "advance payment confirmed": "Advance Payment Confirmed",
   "awaiting final payment": "Awaiting Final Payment",
   "fully paid": "Fully Paid",
@@ -77,6 +78,7 @@ export const normalizeOrder = (order) => {
     partialPayments: doc.partialPayments || [],
     fullyPaidAt: doc.fullyPaidAt || null,
     paymentMethod: doc.paymentMethod || "",
+    paymentType: doc.paymentType || (doc.paymentMethod === "advance" ? "advance_50" : doc.paymentMethod === "bank_transfer" ? "full_payment" : "cod"),
     payment: doc.payment || null,
     coupon: doc.coupon || null,
     trackingNumber: doc.trackingNumber || "",
