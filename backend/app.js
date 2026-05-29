@@ -25,7 +25,7 @@ import unifiedAuthRoutes from "./routes/unifiedAuthRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
 import moderationRoutes from "./moderation-system/routes/moderationRoutes.js";
 import customerModerationRoutes from "./moderation-system/routes/customerRoutes.js";
-import koombiyoRoutes from "./integrations/koombiyo-sdk-wrapper/koombiyoRoutes.js";
+import koombiyoRoutes from "./Integrations/koombiyo-sdk-wrapper/koombiyoRoutes.js";
 import reviewRoutes from "./reviews/routes/reviewRoutes.js";
 import reviewReactionRoutes from "./reviews/routes/reviewReactionRoutes.js";
 import reviewReplyRoutes from "./reviews/routes/reviewReplyRoutes.js";
