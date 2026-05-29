@@ -4,8 +4,9 @@ import { dirname, join } from "path";
 import app from "./app.js";
 import connectDB from "./config/db.js";
 import { startExpiryProcessor } from "./moderation-system/events/expiryProcessor.js";
-import { initKoombiyo } from "./Integrations/koombiyo-sdk-wrapper/koombiyoClient.js";
-import { syncAllActiveDeliveries } from "./Integrations/koombiyo-sdk-wrapper/koombiyoTrackingService.js";
+// KOOMBIYO DISABLED — SDK not yet built/deployed. Re-enable when ready.
+// import { initKoombiyo } from "./Integrations/koombiyo-sdk-wrapper/koombiyoClient.js";
+// import { syncAllActiveDeliveries } from "./Integrations/koombiyo-sdk-wrapper/koombiyoTrackingService.js";
 import { seedDefaultPaymentMethods } from "./controllers/paymentMethodController.js";
 import { preloadLogo } from "./services/emailService.js";
 
@@ -25,8 +26,9 @@ const PORT = process.env.PORT || 5000;
 const startServer = async () => {
   await connectDB();
   startExpiryProcessor();
-  initKoombiyo(process.env.KOOMBIYO_API_KEY);
-  syncAllActiveDeliveries();
+  // KOOMBIYO DISABLED — re-enable when SDK is ready:
+  // initKoombiyo(process.env.KOOMBIYO_API_KEY);
+  // syncAllActiveDeliveries();
   seedDefaultPaymentMethods();
   preloadLogo();
 
