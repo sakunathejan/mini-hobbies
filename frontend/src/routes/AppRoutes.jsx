@@ -41,6 +41,13 @@ const AppealPage = lazy(() => import("../moderation-system/pages/AppealPage.jsx"
 const AdminModerationPage = lazy(() => import("../moderation-system/pages/AdminModerationPage.jsx"));
 const AdminReviewsPage = lazy(() => import("../pages/admin/AdminReviewsPage.jsx"));
 const ModerationHistoryPage = lazy(() => import("../moderation-system/pages/ModerationHistoryPage.jsx"));
+const AdminChatDashboardPage = lazy(() => import("../pages/admin/chat/AdminChatDashboardPage.jsx"));
+const AdminChatConversationsPage = lazy(() => import("../pages/admin/chat/AdminChatConversationsPage.jsx"));
+const AdminChatConversationDetailPage = lazy(() => import("../pages/admin/chat/AdminChatConversationDetailPage.jsx"));
+const AdminChatKnowledgeBasePage = lazy(() => import("../pages/admin/chat/AdminChatKnowledgeBasePage.jsx"));
+const AdminChatConfigPage = lazy(() => import("../pages/admin/chat/AdminChatConfigPage.jsx"));
+const AdminChatUnansweredPage = lazy(() => import("../pages/admin/chat/AdminChatUnansweredPage.jsx"));
+const AdminChatAnalyticsPage = lazy(() => import("../pages/admin/chat/AdminChatAnalyticsPage.jsx"));
 
 const AppRoutes = () => (
   <Routes>
@@ -87,6 +94,13 @@ const AppRoutes = () => (
         <Route path="settings" element={<AdminSettingsPage />} />
         <Route path="reviews" element={<AdminReviewsPage />} />
         <Route path="moderation" element={<AdminModerationPage />} />
+        <Route path="chat" element={<AdminChatDashboardPage />} />
+        <Route path="chat/conversations" element={<AdminChatConversationsPage />} />
+        <Route path="chat/conversations/:sessionId" element={<AdminChatConversationDetailPage />} />
+        <Route path="chat/knowledge" element={<AdminChatKnowledgeBasePage />} />
+        <Route path="chat/config" element={<AdminChatConfigPage />} />
+        <Route path="chat/unanswered" element={<AdminChatUnansweredPage />} />
+        <Route path="chat/analytics" element={<AdminChatAnalyticsPage />} />
         </Route>
     </Route>
     <Route path="*" element={<Navigate to="/" replace />} />

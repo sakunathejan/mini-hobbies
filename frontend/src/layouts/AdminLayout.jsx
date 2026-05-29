@@ -1,4 +1,4 @@
-import { BarChart3, Building2, CreditCard, ExternalLink, LogOut, MapPin, Megaphone, Menu, MessageSquare, Package, Percent, PlusCircle, Settings, Shield, ShoppingBag, Tags, TrendingUp, User, X } from "lucide-react";
+import { BarChart3, Bot, Building2, CreditCard, ExternalLink, LogOut, MapPin, Megaphone, Menu, MessageSquare, Package, Percent, PlusCircle, Settings, Shield, ShoppingBag, Tags, TrendingUp, User, X } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -51,18 +51,22 @@ const AdminLayout = () => {
     { to: "/admin/users", icon: User, label: "Users" },
     { to: "/admin/reviews", icon: MessageSquare, label: "Reviews" },
     { to: "/admin/moderation", icon: Shield, label: "Moderation" },
+    { to: "/admin/chat", icon: Bot, label: "Chat Bot" },
+    { to: "/admin/chat/knowledge", icon: MessageSquare, label: "Bot Knowledge" },
     { to: "/admin/settings", icon: Settings, label: "Settings" },
   ];
 
   return (
     <>
     <div className="min-h-screen bg-gray-100">
-      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white p-5 md:block">
-        <h1 className="text-xl font-black">Mini Hobbies Admin</h1>
-        <Link to="/" className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-ember transition-colors">
-          <ExternalLink className="h-3 w-3" /> Visit Store
-        </Link>
-        <nav className="mt-6 grid gap-1">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 border-r border-gray-200 bg-white md:flex md:flex-col">
+        <div className="shrink-0 px-5 pt-5 pb-3">
+          <h1 className="text-xl font-black">Mini Hobbies Admin</h1>
+          <Link to="/" className="mt-2 flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-ember transition-colors">
+            <ExternalLink className="h-3 w-3" /> Visit Store
+          </Link>
+        </div>
+        <nav className="flex-1 overflow-y-auto px-5 grid gap-1">
           {links.map((link) => {
             const Icon = link.icon;
             return (
@@ -72,9 +76,11 @@ const AdminLayout = () => {
             );
           })}
         </nav>
-        <button onClick={logout} className="absolute bottom-5 flex items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-red-600">
-          <LogOut className="h-4 w-4" /> Logout
-        </button>
+        <div className="shrink-0 border-t border-gray-200 px-5 py-4">
+          <button onClick={logout} className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">
+            <LogOut className="h-4 w-4" /> Logout
+          </button>
+        </div>
       </aside>
 
       <header className="sticky top-0 z-30 flex items-center justify-between border-b border-gray-200 bg-white px-4 py-3 md:hidden">

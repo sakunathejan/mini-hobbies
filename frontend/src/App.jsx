@@ -4,6 +4,7 @@ import AppRoutes from "./routes/AppRoutes.jsx";
 import PageLoader from "./components/ui/PageLoader.jsx";
 import SplashScreen from "./components/splash/SplashScreen.jsx";
 import { CustomerAuthProvider } from "./context/CustomerAuthContext.jsx";
+import ChatWidget from "./components/chat/ChatWidget.jsx";
 
 const App = () => {
   const [showSplash, setShowSplash] = useState(true);
@@ -16,6 +17,7 @@ const App = () => {
           <Suspense fallback={<PageLoader />}>
             <AppRoutes />
           </Suspense>
+          <ChatWidget />
         </CustomerAuthProvider>
       </BrowserRouter>
     </>

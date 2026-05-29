@@ -16,6 +16,10 @@ export const set = (key, data, ttl = DEFAULT_TTL) => {
   store.set(key, { data, expiresAt: Date.now() + ttl });
 };
 
+export const del = (key) => {
+  store.delete(key);
+};
+
 export const clear = (pattern) => {
   if (!pattern) {
     store.clear();
