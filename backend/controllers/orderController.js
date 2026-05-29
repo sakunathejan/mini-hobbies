@@ -48,16 +48,17 @@ export const createOrder = asyncHandler(async (req, res) => {
     throw new Error("Order must include at least one item.");
   }
 
-  if (paymentMethod) {
-    const pm = await PaymentMethod.findOne({ code: paymentMethod.toLowerCase(), enabled: true }).lean();
-    if (!pm) {
-      res.status(400);
-      throw new Error("Selected payment method is currently unavailable.");
-    }
-  }
-
   const productIds = items.map((item) => item.product);
-  const products = await Product.find({ _id: { $in: productIds } });
+
+  const [{ products }, pm] = await Promise.all([
+    Product.find({ _id: { $in: productIds } }).lean().then((products) => ({ products })),
+    paymentMethod ? PaymentMethod.findOne({ code: paymentMethod.toLowerCase(), enabled: true }).lean() : Promise.resolve(null)
+  ]);
+
+  if (paymentMethod && !pm) {
+    res.status(400);
+    throw new Error("Selected payment method is currently unavailable.");
+  }
 
   const orderItems = items.map((item) => {
     const product = products.find((p) => p._id.toString() === item.product);
@@ -246,7 +247,7 @@ export const createOrder = asyncHandler(async (req, res) => {
 });
 
 export const getOrders = asyncHandler(async (_req, res) => {
-  const orders = await Order.find().sort("-createdAt").populate("payment").lean();
+  const orders = await Order.find().sort("-createdAt").populate("payment", "status method").lean();
   res.json(orders.map(normalizeOrder));
 });
 

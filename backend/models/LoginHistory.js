@@ -11,5 +11,6 @@ const loginHistorySchema = new mongoose.Schema({
 
 loginHistorySchema.index({ customer: 1, createdAt: -1 });
 loginHistorySchema.index({ createdAt: -1 });
+loginHistorySchema.index({ customer: 1, success: 1 });
 
 export default mongoose.model("LoginHistory", loginHistorySchema);

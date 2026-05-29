@@ -24,6 +24,9 @@ const userSchema = new mongoose.Schema(
 );
 
 userSchema.index({ refreshToken: 1 });
+userSchema.index({ role: 1 });
+userSchema.index({ passwordResetToken: 1, passwordResetExpires: 1 });
+userSchema.index({ emailVerificationToken: 1 });
 
 userSchema.pre("save", async function hashPassword(next) {
   if (!this.isModified("password")) return next();

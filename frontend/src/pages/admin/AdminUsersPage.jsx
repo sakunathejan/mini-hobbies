@@ -250,7 +250,7 @@ const AdminUsersPage = () => {
                       <Link to={`/admin/users/${user._id}`} className="flex items-center gap-3 hover:underline">
                         <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">
                           {user.avatar ? (
-                            <img src={user.avatar} alt="" className="h-full w-full rounded-full object-cover" />
+                            <img src={user.avatar} alt="" className="h-full w-full rounded-full object-cover" loading="lazy" />
                           ) : (
                             (user.name || "U")[0].toUpperCase()
                           )}

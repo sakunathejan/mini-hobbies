@@ -362,7 +362,7 @@ const AdminAnnouncementsPage = () => {
                           <span className="shrink-0 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">{a.type}</span>
                         </div>
                         <div className="mt-1 flex items-start gap-3">
-                          {a.image && <img src={a.image} alt="" className="mt-1 h-10 w-16 shrink-0 rounded object-cover" />}
+                          {a.image && <img src={a.image} alt="" className="mt-1 h-10 w-16 shrink-0 rounded object-cover" loading="lazy" />}
                           <div className="text-sm text-gray-600 break-words overflow-hidden max-h-[3em]">{a.content.replace(/<[^>]*>/g, "")}</div>
                         </div>
                         <div className="mt-2 flex items-center gap-3 text-xs text-gray-500">

@@ -33,7 +33,7 @@ export const createDeliveryZone = asyncHandler(async (req, res) => {
     courierProvider: String(req.body.courierProvider || "koombiyo").toLowerCase(),
     isActive: true
   });
-  cache.clear("delivery-zones");
+  cache.clear("delivery-zones"); cache.clear("delivery-cities"); cache.clear("delivery:");
   res.status(201).json(zone);
 });
 
@@ -47,7 +47,7 @@ export const updateDeliveryZone = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Delivery zone not found.");
   }
-  cache.clear("delivery-zones");
+  cache.clear("delivery-zones"); cache.clear("delivery-cities"); cache.clear("delivery:");
   res.json(zone);
 });
 
@@ -57,7 +57,7 @@ export const deleteDeliveryZone = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Delivery zone not found.");
   }
-  cache.clear("delivery-zones");
+  cache.clear("delivery-zones"); cache.clear("delivery-cities"); cache.clear("delivery:");
   res.json({ message: "Delivery zone deleted." });
 });
 
@@ -72,7 +72,7 @@ export const bulkDeleteZones = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("No matching zones found.");
   }
-  cache.clear("delivery-zones");
+  cache.clear("delivery-zones"); cache.clear("delivery-cities"); cache.clear("delivery:");
   res.json({ message: `${result.deletedCount} zone(s) deleted.`, deletedCount: result.deletedCount });
 });
 
@@ -179,7 +179,7 @@ export const importCSV = asyncHandler(async (req, res) => {
     }).catch(() => {});
   }
 
-  cache.clear("delivery-zones");
+  cache.clear("delivery-zones"); cache.clear("delivery-cities"); cache.clear("delivery:");
   res.json(report);
 });
 
@@ -210,30 +210,36 @@ export const toggleZoneActive = asyncHandler(async (req, res) => {
   }
   zone.isActive = !zone.isActive;
   await zone.save();
-  cache.clear("delivery-zones");
+  cache.clear("delivery-zones"); cache.clear("delivery-cities"); cache.clear("delivery:");
   res.json(zone);
 });
 
 export const getZoneStats = asyncHandler(async (_req, res) => {
-  const [totalZones, activeZones, latestImport] = await Promise.all([
+  const cached = cache.get("delivery-zones:stats");
+  if (cached) return res.json(cached);
+
+  const [totalZones, activeZones, latestImport, origins, providers] = await Promise.all([
     DeliveryZone.countDocuments(),
     DeliveryZone.countDocuments({ isActive: true }),
-    AuditLog.findOne({ action: "delivery-zones.import" }).sort("-createdAt").lean()
+    AuditLog.findOne({ action: "delivery-zones.import" }).sort("-createdAt").lean(),
+    DeliveryZone.distinct("normalizedFrom"),
+    DeliveryZone.distinct("courierProvider")
   ]);
 
-  const origins = await DeliveryZone.distinct("normalizedFrom");
-  const providers = await DeliveryZone.distinct("courierProvider");
-
+  const counts = await DeliveryZone.aggregate([
+    { $match: { courierProvider: { $in: providers } } },
+    { $group: { _id: "$courierProvider", count: { $sum: 1 } } }
+  ]);
   const zonesByProvider = {};
-  for (const provider of providers) {
-    zonesByProvider[provider] = await DeliveryZone.countDocuments({ courierProvider: provider });
-  }
+  for (const c of counts) zonesByProvider[c._id] = c.count;
 
-  res.json({
+  const result = {
     totalZones,
     activeZones,
     origins: origins.sort(),
     latestImport: latestImport || null,
     zonesByProvider
-  });
+  };
+  cache.set("delivery-zones:stats", result, 5 * 60 * 1000);
+  res.json(result);
 });

@@ -189,7 +189,7 @@ const ProductFormPage = () => {
                         <label className="text-xs font-medium text-gray-500">Image</label>
                         {variant.image?.url ? (
                           <div className="relative mt-1">
-                            <img src={variant.image.url} alt="" className="aspect-square w-full rounded-md border object-cover" />
+                            <img src={variant.image.url} alt="" className="aspect-square w-full rounded-md border object-cover" loading="lazy" />
                             <button type="button" onClick={() => updateVariant(i, "image", { url: "", path: "", alt: "" })} className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white shadow">
                               <X className="h-3 w-3" />
                             </button>
@@ -231,7 +231,7 @@ const ProductFormPage = () => {
         </label>
         {form.images.length > 0 && (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {form.images.map((image) => <img key={image.url} src={image.url} alt={image.alt} className="aspect-square w-full rounded-md object-cover" />)}
+            {form.images.map((image) => <img key={image.url} src={image.url} alt={image.alt} className="aspect-square w-full rounded-md object-cover" loading="lazy" />)}
           </div>
         )}
         <label className="flex items-center gap-2 text-sm font-semibold">

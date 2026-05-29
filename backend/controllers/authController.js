@@ -2,6 +2,7 @@ import crypto from "crypto";
 import asyncHandler from "../utils/asyncHandler.js";
 import { generateAccessToken, generateRefreshToken, createPasswordResetToken } from "../utils/tokens.js";
 import { COOKIE_OPTIONS } from "../utils/sanitize.js";
+import { enqueue } from "../utils/jobQueue.js";
 import User from "../models/User.js";
 
 const setRefreshCookie = (res, token) => {
@@ -163,16 +164,10 @@ export const forgotPassword = asyncHandler(async (req, res) => {
   user.passwordResetExpires = expiresAt;
   await user.save();
 
-  const { sendPasswordResetEmail } = await import("../services/emailService.js");
-  try {
+  enqueue("admin-password-reset-email", async () => {
+    const { sendPasswordResetEmail } = await import("../services/emailService.js");
     await sendPasswordResetEmail(user, raw);
-  } catch {
-    user.passwordResetToken = undefined;
-    user.passwordResetExpires = undefined;
-    await user.save();
-    res.status(500);
-    throw new Error("Could not send reset email. Try again later.");
-  }
+  });
 
   res.json({ message: "If the email exists, a reset link has been sent." });
 });

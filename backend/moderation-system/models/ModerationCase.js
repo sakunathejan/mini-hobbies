@@ -50,5 +50,8 @@ const moderationCaseSchema = new mongoose.Schema({
 
 moderationCaseSchema.index({ customer: 1, status: 1 });
 moderationCaseSchema.index({ status: 1, endAt: 1 });
+moderationCaseSchema.index({ appealStatus: 1 });
+moderationCaseSchema.index({ status: 1, appealStatus: 1 });
+moderationCaseSchema.index({ moderator: 1, createdAt: -1 });
 
 export default mongoose.model("ModerationCase", moderationCaseSchema);

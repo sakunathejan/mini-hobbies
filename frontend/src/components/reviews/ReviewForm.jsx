@@ -55,7 +55,7 @@ const ReviewForm = ({ productId, onSuccess, onCancel }) => {
         <div className="mt-1 flex flex-wrap gap-2">
           {images.map((img, i) => (
             <div key={i} className="relative">
-              <img src={img.url} alt="" className="h-16 w-16 rounded-lg border object-cover" />
+              <img src={img.url} alt="" className="h-16 w-16 rounded-lg border object-cover" loading="lazy" />
               <button type="button" onClick={() => setImages(images.filter((_, j) => j !== i))} className="absolute -right-1.5 -top-1.5 rounded-full bg-red-500 p-0.5 text-white"><X className="h-3 w-3" /></button>
             </div>
           ))}

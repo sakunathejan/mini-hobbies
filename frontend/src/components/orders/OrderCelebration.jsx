@@ -290,7 +290,7 @@ export default function OrderCelebration({ customerName = "", items = [], total 
                     animate={{ opacity: 1, y: 0, scale: 1, transition: { delay: 1.7 + i * 0.1, duration: 0.35 } }}
                   >
                     {item.image && (
-                      <img src={item.image} alt={item.name} className="h-8 w-8 flex-shrink-0 rounded-md object-cover" />
+                      <img src={item.image} alt={item.name} className="h-8 w-8 flex-shrink-0 rounded-md object-cover" loading="lazy" />
                     )}
                     <div className="text-left">
                       <p className="max-w-[120px] truncate text-xs font-semibold text-white">{item.name}</p>

@@ -22,7 +22,7 @@ const AnnouncementBanner = ({ announcement: propAnnouncement }) => {
       <div className="container-page flex items-center gap-3 px-4 py-3">
         <Icon className="h-5 w-5 shrink-0" />
         {announcement.image && (
-          <img src={announcement.image} alt="" className="h-10 w-16 shrink-0 rounded object-cover" />
+          <img src={announcement.image} alt="" className="h-10 w-16 shrink-0 rounded object-cover" loading="lazy" />
         )}
         <div className="min-w-0 flex-1 text-sm break-words">
           <span className="font-bold">{announcement.title}</span>

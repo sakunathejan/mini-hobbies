@@ -221,7 +221,7 @@ const AdminUserDetailPage = () => {
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-xl font-bold text-gray-600">
               {user.avatar ? (
-                <img src={user.avatar} alt="" className="h-full w-full rounded-full object-cover" />
+                <img src={user.avatar} alt="" className="h-full w-full rounded-full object-cover" loading="lazy" />
               ) : (
                 (user.name || "U")[0].toUpperCase()
               )}

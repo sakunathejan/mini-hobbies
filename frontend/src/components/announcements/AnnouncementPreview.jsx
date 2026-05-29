@@ -26,7 +26,7 @@ const AnnouncementPreview = ({ announcement, onClose }) => {
         {/* Banner preview */}
         <div className={`rounded-lg border p-4 ${announcement.priority === "urgent" ? "bg-red-50 border-red-200" : announcement.priority === "high" ? "bg-orange-50 border-orange-200" : announcement.priority === "normal" ? "bg-blue-50 border-blue-200" : "bg-gray-50 border-gray-200"}`}>
           <div className="flex items-center gap-3">
-            {announcement.image && <img src={announcement.image} alt="" className="h-12 w-20 rounded object-cover shrink-0" />}
+            {announcement.image && <img src={announcement.image} alt="" className="h-12 w-20 rounded object-cover shrink-0" loading="lazy" />}
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm">{announcement.title}</span>

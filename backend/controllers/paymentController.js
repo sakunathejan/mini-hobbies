@@ -156,7 +156,9 @@ export const verifyPayment = asyncHandler(async (req, res) => {
   await order.save();
   cache.clear("dashboard:");
 
-  const populatedPayment = await Payment.findById(payment._id).populate("order");
+  const [populatedPayment] = await Promise.all([
+    Payment.findById(payment._id).populate("order").lean()
+  ]);
   const normalizedOrder = order.toObject ? normalizeOrder(order) : order;
 
   enqueue("payment-verification-email", () => sendPaymentVerificationEmail(order, "verified", "Payment verified successfully."));
@@ -223,22 +225,24 @@ export const bulkDeletePayments = asyncHandler(async (req, res) => {
     throw new Error("No payment IDs provided.");
   }
 
-  const payments = await Payment.find({ _id: { $in: ids } });
+  const payments = await Payment.find({ _id: { $in: ids } }).lean();
+  const orderIds = payments.map((p) => p.order).filter(Boolean);
+  const orders = await Order.find({ _id: { $in: orderIds } });
 
-  for (const payment of payments) {
-    const order = await Order.findById(payment.order);
-    if (order) {
-      order.payment = undefined;
-      if (order.status === "Advance Payment Submitted") {
-        const revertStatus = order.paymentMethod === "advance" ? "Pending Advance Payment" : "Pending Payment Verification";
-        order.status = revertStatus;
-        order.statusHistory.push({ status: revertStatus, note: "Payment record deleted by admin", updatedAt: new Date() });
-      }
-      await order.save();
+  const bulkOrderUpdates = orders.map((order) => {
+    order.payment = undefined;
+    if (order.status === "Advance Payment Submitted") {
+      const revertStatus = order.paymentMethod === "advance" ? "Pending Advance Payment" : "Pending Payment Verification";
+      order.status = revertStatus;
+      order.statusHistory.push({ status: revertStatus, note: "Payment record deleted by admin", updatedAt: new Date() });
     }
-  }
+    return order.save();
+  });
 
-  await Payment.deleteMany({ _id: { $in: ids } });
+  await Promise.all([
+    ...bulkOrderUpdates,
+    Payment.deleteMany({ _id: { $in: ids } })
+  ]);
 
   res.json({ message: `${ids.length} payment(s) deleted.` });
 });

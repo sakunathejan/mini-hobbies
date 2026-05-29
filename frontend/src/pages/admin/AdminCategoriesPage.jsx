@@ -340,7 +340,7 @@ const AdminCategoriesPage = () => {
             />
             {form.image && (
               <div className="mt-2 h-24 w-full overflow-hidden rounded-lg bg-gray-50">
-                <img src={form.image} alt="Preview" className="h-full w-full object-cover" onError={(e) => { e.target.style.display = "none"; }} />
+                <img src={form.image} alt="Preview" className="h-full w-full object-cover" loading="lazy" onError={(e) => { e.target.style.display = "none"; }} />
               </div>
             )}
           </div>

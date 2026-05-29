@@ -11,11 +11,18 @@ const calcShipping = (totalWeightKg, zone) => {
 };
 
 const getDefaultOrigin = async () => {
+  const cached = cache.get("delivery:defaultOrigin");
+  if (cached) return cached;
   try {
     const zones = await DeliveryZone.distinct("from", { isActive: true });
-    if (zones.length === 1) return zones[0];
+    if (zones.length === 1) {
+      cache.set("delivery:defaultOrigin", zones[0], 5 * 60 * 1000);
+      return zones[0];
+    }
     const setting = await Setting.findOne({ key: "defaultShippingOrigin" }).lean();
-    return setting?.value || "Colombo";
+    const origin = setting?.value || "Colombo";
+    cache.set("delivery:defaultOrigin", origin, 5 * 60 * 1000);
+    return origin;
   } catch {
     return "Colombo";
   }
@@ -64,7 +71,9 @@ export const calculateDelivery = asyncHandler(async (req, res) => {
 
   const fee = calcShipping(totalWeight, zone);
 
-  const freeShippingSetting = await Setting.findOne({ key: "freeShipping" }).lean();
+  const freeShippingCached = cache.get("setting:freeShipping");
+  const freeShippingSetting = freeShippingCached !== null ? freeShippingCached : await Setting.findOne({ key: "freeShipping" }).lean();
+  if (freeShippingCached === null && freeShippingSetting) cache.set("setting:freeShipping", freeShippingSetting, 2 * 60 * 1000);
   const freeShipping = freeShippingSetting?.value === true;
   const subtotal = (items || []).reduce(
     (sum, item) => sum + (item.price || 0) * (item.quantity || 1),

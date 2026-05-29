@@ -2,6 +2,9 @@ import nodemailer from "nodemailer";
 import { readFileSync, existsSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
+import orderConfirmationHtml from "../email-templates/orderConfirmation.js";
+import passwordResetHtml from "../email-templates/passwordResetEmail.js";
+import welcomeHtml from "../email-templates/welcomeEmail.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -24,8 +27,7 @@ const getTransporter = () => {
   return transporter;
 };
 
-const loadLogo = () => {
-  if (logoBase64) return logoBase64;
+export const preloadLogo = () => {
   const paths = [
     join(__dirname, "..", "..", "frontend", "public", "logo.png"),
     join(__dirname, "..", "public", "logo.png"),
@@ -33,10 +35,15 @@ const loadLogo = () => {
   for (const p of paths) {
     if (existsSync(p)) {
       logoBase64 = "data:image/png;base64," + readFileSync(p).toString("base64");
-      return logoBase64;
+      return;
     }
   }
-  return "";
+};
+
+const loadLogo = () => {
+  if (logoBase64) return logoBase64;
+  preloadLogo();
+  return logoBase64;
 };
 
 const FROM = () => `"${process.env.SMTP_FROM_NAME || "Mini Hobbies"}" <${process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || "noreply@minihobbies.lk"}>`;
@@ -339,7 +346,6 @@ export const sendPasswordResetEmail = async (user, rawToken) => {
   const base = process.env.CLIENT_URL || "http://localhost:5173";
   const logo = loadLogo();
   const link = `${base}/admin/reset-password?token=${rawToken}`;
-  const { default: passwordResetHtml } = await import("../email-templates/passwordResetEmail.js");
 
   await sendMail(user.email, "Mini Hobbies - Password Reset", passwordResetHtml(user.name, link, logo));
 };
@@ -349,7 +355,6 @@ export const sendOrderConfirmationEmail = async (order) => {
   if (!e) throw new Error("Customer email not available");
 
   const logo = loadLogo();
-  const { default: orderConfirmationHtml } = await import("../email-templates/orderConfirmation.js");
 
   await sendMail(
     e,
@@ -362,7 +367,6 @@ export const sendCustomerWelcomeEmail = async (customer, rawToken) => {
   const logo = loadLogo();
   const base = process.env.CLIENT_URL || "http://localhost:5173";
   const verifyUrl = rawToken ? `${base}/verify-email?token=${rawToken}` : "";
-  const { default: welcomeHtml } = await import("../email-templates/welcomeEmail.js");
 
   const html = welcomeHtml(customer, verifyUrl, logo);
 
@@ -417,7 +421,6 @@ export const sendCustomerPasswordResetEmail = async (customer, rawToken) => {
   const base = process.env.CLIENT_URL || "http://localhost:5173";
   const logo = loadLogo();
   const link = `${base}/reset-password?token=${rawToken}`;
-  const { default: passwordResetHtml } = await import("../email-templates/passwordResetEmail.js");
 
   const text = `Reset your Mini Hobbies password
 

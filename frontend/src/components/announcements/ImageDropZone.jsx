@@ -21,7 +21,7 @@ const ImageDropZone = ({ value, existingImage, onFileChange, onRemove }) => {
     <div>
       {preview ? (
         <div className="relative inline-block">
-          <img src={preview} alt="" className="h-24 w-44 rounded-lg border object-cover" />
+          <img src={preview} alt="" className="h-24 w-44 rounded-lg border object-cover" loading="lazy" />
           <button
             type="button"
             onClick={onRemove}

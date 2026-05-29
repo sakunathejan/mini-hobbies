@@ -1,5 +1,5 @@
-import { ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Trash2, Upload, Package, Weight, MapPin, Search, X } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Trash2, Upload, Package, MapPin, X } from "lucide-react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Seo from "../components/Seo.jsx";
@@ -12,7 +12,7 @@ import { getSetting } from "../services/settingService.js";
 import { getEnabledPaymentMethods } from "../services/paymentMethodService.js";
 import { formatCurrency } from "../utils/formatters.js";
 
-const SearchableSelect = ({ label, options, value, onChange, placeholder, loading, error }) => {
+const SearchableSelect = memo(({ label, options, value, onChange, placeholder, loading, error }) => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
@@ -106,7 +106,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, loadin
       )}
     </div>
   );
-};
+});
 
 const CheckoutPage = () => {
   const { items, updateQuantity, removeItem, clearCart, subtotal } = useCart();
@@ -130,6 +130,7 @@ const CheckoutPage = () => {
   const [bankDetails, setBankDetails] = useState({ bankName: "Bank of Ceylon", accountName: "Mini Hobbies", accountNumber: "1234567890", branch: "Colombo Main" });
   const [paymentSettings, setPaymentSettings] = useState(null);
   const [paymentMethods, setPaymentMethods] = useState([]);
+  const selectedMethod = paymentMethods.find((m) => m.code === paymentMethod) || null;
 
   const fetchPaymentMethods = useCallback(() => {
     getEnabledPaymentMethods().then((list) => {
@@ -420,7 +421,7 @@ const CheckoutPage = () => {
               ))}
             </div>
 
-            {paymentMethod && paymentMethods.find((m) => m.code === paymentMethod)?.requiresSlipUpload && (
+            {selectedMethod?.requiresSlipUpload && (
               <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
                 <p className="font-semibold text-emerald-800">Bank Details for Transfer</p>
                 <div className="mt-2 space-y-1 text-sm text-emerald-700">
@@ -429,21 +430,23 @@ const CheckoutPage = () => {
                   <p>Account Number: {bankDetails.accountNumber}</p>
                   <p>Branch: {bankDetails.branch}</p>
                 </div>
-                <div className="mt-4">
-                  <label className="text-sm font-medium">Upload Payment Slip</label>
-                  <div className="mt-1 flex flex-wrap items-center gap-3">
-                    <label className="btn-secondary cursor-pointer min-h-[44px]">
-                      <Upload className="h-4 w-4" />
-                      {slipFile ? "Change file" : "Choose file"}
-                      <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSlipFile(e.target.files[0] || null)} />
-                    </label>
-                    {slipFile && <span className="max-w-[200px] truncate text-sm text-gray-600">{slipFile.name}</span>}
+                {selectedMethod && !selectedMethod.supportsPartialPayment && (
+                  <div className="mt-4">
+                    <label className="text-sm font-medium">Upload Payment Slip</label>
+                    <div className="mt-1 flex flex-wrap items-center gap-3">
+                      <label className="btn-secondary cursor-pointer min-h-[44px]">
+                        <Upload className="h-4 w-4" />
+                        {slipFile ? "Change file" : "Choose file"}
+                        <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSlipFile(e.target.files[0] || null)} />
+                      </label>
+                      {slipFile && <span className="max-w-[200px] truncate text-sm text-gray-600">{slipFile.name}</span>}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
-            {paymentMethod && paymentMethods.find((m) => m.code === paymentMethod)?.supportsPartialPayment && (
+            {selectedMethod?.supportsPartialPayment && (
               <div className="mt-4 rounded-lg border border-purple-200 bg-purple-50 p-4">
                 <p className="text-sm text-purple-700">
                   A 50% advance of <strong>{formatCurrency(Math.round(total * 0.5))}</strong> is required to place this order.
@@ -509,7 +512,7 @@ const CheckoutPage = () => {
                 const cartItemImage = cartItemVariant?.image?.url || item.images?.[0]?.url || item.image || "";
                 return (
                 <div key={item._id} className="flex items-center gap-3 py-3">
-                  <img src={cartItemImage} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16" />
+                  <img src={cartItemImage} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16" loading="lazy" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-medium">{item.name}</p>
                     <p className="text-sm text-gray-600">{formatCurrency(cartItemVariant?.price || item.discountPrice || item.price)} each</p>

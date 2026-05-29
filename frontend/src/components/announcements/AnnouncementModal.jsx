@@ -58,7 +58,7 @@ const AnnouncementModal = ({ announcement, onClose }) => {
           </button>
 
           {announcement.image && (
-            <img src={announcement.image} alt="" className="mb-4 w-full h-48 rounded-lg object-cover" />
+            <img src={announcement.image} alt="" className="mb-4 w-full h-48 rounded-lg object-cover" loading="lazy" />
           )}
 
           <h3 className="text-xl font-bold break-words">{announcement.title}</h3>

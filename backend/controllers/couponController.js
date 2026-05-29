@@ -1,9 +1,37 @@
 import Coupon from "../models/Coupon.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import * as cache from "../utils/cache.js";
 
 export const validateCoupon = asyncHandler(async (req, res) => {
   const { code, subtotal } = req.body;
-  const coupon = await Coupon.findOne({ code: code.toUpperCase(), isActive: true });
+  const cacheKey = `coupon:${code.toUpperCase()}`;
+  const cached = cache.get(cacheKey);
+  if (cached) {
+    const coupon = cached;
+    if (coupon.expiresAt && new Date() > coupon.expiresAt) {
+      res.status(400);
+      throw new Error("This coupon has expired.");
+    }
+    if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
+      res.status(400);
+      throw new Error("This coupon has reached its usage limit.");
+    }
+    if (subtotal < coupon.minOrder) {
+      res.status(400);
+      throw new Error(`Minimum order of LKR ${coupon.minOrder.toLocaleString("en-LK")} required for this coupon.`);
+    }
+    let discount = 0;
+    if (coupon.type === "percentage") {
+      discount = Math.round((subtotal * coupon.value) / 100);
+      if (coupon.maxDiscount > 0 && discount > coupon.maxDiscount) discount = coupon.maxDiscount;
+    } else {
+      discount = coupon.value;
+    }
+    return res.json({ valid: true, coupon, discount });
+  }
+
+  const coupon = await Coupon.findOne({ code: code.toUpperCase(), isActive: true }).lean();
+  if (coupon) cache.set(cacheKey, coupon, 30 * 1000);
 
   if (!coupon) {
     res.status(404);

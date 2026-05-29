@@ -70,6 +70,9 @@ export const getAnnouncements = asyncHandler(async (req, res) => {
 });
 
 export const getActiveAnnouncements = asyncHandler(async (_req, res) => {
+  const cached = cache.get("announcements:active");
+  if (cached) return res.json(cached);
+
   await publishIfScheduled();
   await archiveIfExpired();
 
@@ -79,6 +82,7 @@ export const getActiveAnnouncements = asyncHandler(async (_req, res) => {
     status: "published",
     $or: [{ expiresAt: { $exists: false } }, { expiresAt: null }, { expiresAt: { $gte: now } }]
   }).sort("-priority createdAt").lean();
+  cache.set("announcements:active", announcements, 60 * 1000);
   res.json(announcements);
 });
 

@@ -105,7 +105,7 @@ const MyReviewsSection = () => {
                         <div className="mt-2 flex flex-wrap gap-1.5">
                           {review.images.map((img, i) => (
                             <button key={i} onClick={() => setPreviewImg(img.url)} className="overflow-hidden rounded-lg border border-gray-200">
-                              <img src={img.url} alt="" className="h-14 w-14 object-cover hover:scale-110 transition" />
+                              <img src={img.url} alt="" className="h-14 w-14 object-cover hover:scale-110 transition" loading="lazy" />
                             </button>
                           ))}
                         </div>
@@ -156,7 +156,7 @@ const MyReviewsSection = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={() => setPreviewImg(null)}>
           <div className="relative max-h-[90vh] max-w-[90vw]" onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setPreviewImg(null)} className="absolute -right-3 -top-3 z-10 rounded-full bg-white p-1 shadow-lg"><XIcon className="h-5 w-5" /></button>
-            <img src={previewImg} alt="" className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain shadow-2xl" />
+            <img src={previewImg} alt="" className="max-h-[85vh] max-w-[85vw] rounded-xl object-contain shadow-2xl" loading="lazy" />
           </div>
         </div>
       )}

@@ -50,7 +50,7 @@ const AnnouncementToast = ({ announcement, onClose }) => {
 
         <div className="flex items-start gap-3 pr-6">
           {announcement.image && (
-            <img src={announcement.image} alt="" className="h-14 w-20 rounded-lg object-cover shrink-0" />
+            <img src={announcement.image} alt="" className="h-14 w-20 rounded-lg object-cover shrink-0" loading="lazy" />
           )}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold">{announcement.title}</p>
