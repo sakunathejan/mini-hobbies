@@ -5,12 +5,17 @@
 :root {
   color-scheme: light;
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
 }
 
 html {
   scroll-behavior: smooth;
   -moz-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -18,6 +23,8 @@ body {
   min-width: 320px;
   background: #f7f7f4;
   color: #111827;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 img {
@@ -29,20 +36,24 @@ img {
     @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
   }
 
-  .btn-primary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ember px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-ember focus:ring-offset-2;
+    .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-md bg-ember px-5 py-3 text-sm font-semibold text-white transition hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-ember focus:ring-offset-2 min-h-[44px] md:min-h-[40px];
   }
 
   .btn-secondary {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-900 transition hover:border-gray-900;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-900 transition hover:border-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900/10 min-h-[44px] md:min-h-[40px];
   }
 
   .btn-danger {
-    @apply inline-flex items-center justify-center gap-2 rounded-md border border-red-300 bg-white px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-600 hover:bg-red-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-md border border-red-300 bg-white px-5 py-3 text-sm font-semibold text-red-700 transition hover:border-red-600 hover:bg-red-50 focus:outline-none focus:ring-2 focus:ring-red-500/30 min-h-[44px] md:min-h-[40px];
   }
 
   .input {
-    @apply w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10;
+    @apply w-full rounded-md border border-gray-300 bg-white px-4 py-3 text-sm outline-none transition focus:border-gray-900 focus:ring-2 focus:ring-gray-900/10 min-h-[44px] md:min-h-[40px];
+  }
+
+  .btn-icon {
+    @apply inline-flex items-center justify-center rounded-md p-2 min-h-[44px] min-w-[44px] text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-400/30;
   }
 
   .section-title {
@@ -85,6 +96,47 @@ input, select, textarea, button {
 
 .touch-manipulation {
   touch-action: manipulation;
+}
+
+/* Card-based mobile table replacement */
+.mobile-card-grid {
+  @apply grid grid-cols-1 gap-3 sm:hidden;
+}
+
+.desktop-table {
+  @apply hidden sm:block;
+}
+
+/* Skeleton loading */
+.skeleton {
+  @apply animate-pulse rounded bg-gray-200;
+}
+
+/* Sticky bottom bar for mobile */
+.sticky-bottom {
+  @apply fixed bottom-0 left-0 right-0 z-30 border-t border-gray-200 bg-white px-4 py-3 shadow-lg;
+  padding-bottom: calc(0.75rem + var(--sab));
+}
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .sticky-bottom {
+    padding-bottom: calc(0.75rem + var(--sab));
+  }
+}
+
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Bottom nav spacer */
+.has-bottom-nav {
+  padding-bottom: 4.5rem;
+}
+
+@media (min-width: 768px) {
+  .has-bottom-nav {
+    padding-bottom: 0;
+  }
 }
 
 @media (max-width: 640px) {

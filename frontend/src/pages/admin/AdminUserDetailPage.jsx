@@ -313,9 +313,9 @@ const AdminUserDetailPage = () => {
       )}
 
       <div className="mt-6 border-b border-gray-200">
-        <div className="flex gap-0">
+        <div className="flex gap-0 overflow-x-auto">
           {tabs.map((t) => (
-            <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={`px-5 py-3 text-sm font-semibold transition-colors ${activeTab === t.key ? "border-b-2 border-ember text-ember" : "text-gray-500 hover:text-gray-700"}`}>
+            <button key={t.key} type="button" onClick={() => setActiveTab(t.key)} className={`shrink-0 whitespace-nowrap px-5 py-3 text-sm font-semibold transition-colors ${activeTab === t.key ? "border-b-2 border-ember text-ember" : "text-gray-500 hover:text-gray-700"}`}>
               {t.label}
             </button>
           ))}
@@ -464,7 +464,7 @@ const AdminUserDetailPage = () => {
         <div className="mt-6 space-y-6">
           <div className="rounded-lg border border-gray-200 bg-white p-5">
             <h3 className="mb-4 text-sm font-bold">Account Moderation</h3>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <StatusBadge status={user.moderationStatus || "active"} />
                 <span className="text-sm text-gray-600">
@@ -474,7 +474,7 @@ const AdminUserDetailPage = () => {
                    "No active moderation actions."}
                 </span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button type="button" onClick={() => setModerationAction({ type: "warn" })} className="rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">Warn</button>
                 <button type="button" onClick={() => setModerationAction({ type: "suspend" })} className="rounded bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600">Suspend</button>
                 <button type="button" onClick={() => setModerationAction({ type: "ban" })} className="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">Ban</button>

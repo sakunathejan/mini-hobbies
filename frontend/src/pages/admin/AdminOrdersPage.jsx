@@ -1,4 +1,4 @@
-import { ExternalLink, Eye, EyeOff, MessageCircle, Package, RefreshCw, Search, Trash2, CheckSquare, Square } from "lucide-react";
+import { ExternalLink, Eye, EyeOff, MessageCircle, MoreHorizontal, Package, RefreshCw, Search, Trash2, CheckSquare, Square } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -37,6 +37,7 @@ const AdminOrdersPage = () => {
   const [view, setView] = useState(() => localStorage.getItem("admin_orders_view") || "list");
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [openMenu, setOpenMenu] = useState(null);
   const [bulkDeleteTarget, setBulkDeleteTarget] = useState(null);
 
   const orders = Array.isArray(data) ? data : [];
@@ -219,8 +220,91 @@ const AdminOrdersPage = () => {
         </p>
       )}
 
+      {/* Mobile compact cards (always visible on mobile) */}
+      <div className="mobile-card-grid">
+        {pageOrders.map((order) => {
+          const customer = order.customer || {};
+          return (
+            <div key={order._id} className="rounded-lg border border-gray-200 bg-white p-3">
+              <div className="flex items-center justify-between gap-2">
+                <p className="truncate text-sm font-semibold">{order.orderNumber}</p>
+                <OrderStatusBadge status={order.status} />
+              </div>
+              <p className="mt-1 truncate text-xs text-gray-600">{customer.name || "—"}</p>
+              <p className="mt-1 text-sm font-bold">{formatCurrency(order.total || 0)}</p>
+              <p className="text-xs text-gray-500">
+                {order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-LK") : "—"}
+              </p>
+              <div className="mt-1 flex items-center gap-2">
+                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-600">
+                  {order.paymentMethod === "bank_transfer" ? "Bank" : order.paymentMethod === "cod" ? "COD" : "Advance"}
+                </span>
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <Link
+                  to={`/admin/orders/${order._id}`}
+                  className="btn-secondary inline-flex items-center gap-1 px-3 py-1.5 text-xs min-h-[36px]"
+                >
+                  <Search className="h-3.5 w-3.5" /> View Details
+                </Link>
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenMenu(openMenu === order._id ? null : order._id)}
+                    className="rounded-md p-2 text-gray-500 hover:bg-gray-100"
+                    aria-label="More actions"
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </button>
+                  {openMenu === order._id && (
+                    <>
+                      <div className="fixed inset-0 z-40" onClick={() => setOpenMenu(null)} />
+                      <div className="absolute left-1/2 z-50 mt-1 w-52 -translate-x-1/2 rounded-lg border bg-white shadow-lg">
+                        <div className="border-b px-3 py-2 text-xs font-semibold text-gray-500">Change Status</div>
+                        <div className="max-h-48 overflow-y-auto">
+                          {statuses.map((s) => (
+                            <button
+                              key={s}
+                              onClick={() => { changeStatus(order._id, s); setOpenMenu(null); }}
+                              disabled={updatingId === order._id}
+                              className="w-full px-3 py-1.5 text-left text-xs hover:bg-gray-50 disabled:opacity-50"
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
+                        <div className="border-t" />
+                        <button
+                          onClick={() => { openWhatsApp(order); setOpenMenu(null); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" /> WhatsApp Receipt
+                        </button>
+                        <button
+                          onClick={() => { handleRetryWhatsApp(order._id); setOpenMenu(null); }}
+                          disabled={retryingWhatsApp === order._id}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-50 disabled:opacity-50"
+                        >
+                          <RefreshCw className={`h-3.5 w-3.5 ${retryingWhatsApp === order._id ? "animate-spin" : ""}`} /> Status Update
+                        </button>
+                        <div className="border-t" />
+                        <button
+                          onClick={() => { setDeleteTarget(order); setOpenMenu(null); }}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" /> Delete Order
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
       {view === "list" ? (
-        <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+        <div className="desktop-table mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
           <table className="w-full text-left text-sm">
             <thead className="bg-gray-50 text-xs uppercase text-gray-500">
               <tr>
@@ -259,7 +343,7 @@ const AdminOrdersPage = () => {
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 shrink-0 overflow-hidden rounded bg-gray-100">
                             {(order.items[0].variantImage || order.items[0].image) ? (
-                              <img src={order.items[0].variantImage || order.items[0].image} alt="" className="h-full w-full object-cover" />
+                              <img src={order.items[0].variantImage || order.items[0].image} alt="" className="h-full w-full object-cover" loading="lazy" />
                             ) : (
                               <div className="flex h-full items-center justify-center text-gray-300"><Package className="h-4 w-4" /></div>
                             )}
@@ -315,7 +399,7 @@ const AdminOrdersPage = () => {
           </table>
         </div>
       ) : (
-        <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="hidden sm:grid mt-6 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {pageOrders.map((order) => {
             const customer = order.customer || {};
             const items = Array.isArray(order.items) ? order.items : [];
@@ -351,7 +435,7 @@ const AdminOrdersPage = () => {
                     <li key={`${order._id}-${item.name}`} className="flex items-center gap-2 px-3 py-1.5 text-xs">
                       <div className="h-7 w-7 shrink-0 overflow-hidden rounded bg-gray-100">
                         {(item.variantImage || item.image) ? (
-                          <img src={item.variantImage || item.image} alt="" className="h-full w-full object-cover" />
+                          <img src={item.variantImage || item.image} alt="" className="h-full w-full object-cover" loading="lazy" />
                         ) : (
                           <div className="flex h-full items-center justify-center text-gray-300"><Package className="h-3 w-3" /></div>
                         )}

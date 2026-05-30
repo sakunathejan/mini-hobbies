@@ -15,6 +15,7 @@ const AdminProductCard = memo(({ product, onDelete }) => {
           src={image}
           alt={product.images?.[0]?.alt || product.name}
           className="aspect-[4/3] w-full object-cover"
+          loading="lazy"
         />
       </Link>
       <div className="flex flex-1 flex-col p-2">

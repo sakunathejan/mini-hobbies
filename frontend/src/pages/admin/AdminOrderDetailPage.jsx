@@ -128,17 +128,17 @@ const AdminOrderDetailPage = () => {
       </button>
 
       <div className="print-section">
-        <div className="flex flex-wrap items-start justify-between gap-4 rounded-lg border border-gray-200 bg-white p-6">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 rounded-lg border border-gray-200 bg-white p-6">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-black">{order.orderNumber}</h1>
+              <h1 className="break-all text-2xl font-black">{order.orderNumber}</h1>
               <OrderStatusBadge status={order.status} />
             </div>
             <p className="mt-1 text-sm text-gray-500">
               Created {new Date(order.createdAt).toLocaleDateString("en-LK", { year: "numeric", month: "long", day: "numeric", hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
-          <button onClick={handlePrint} className="btn-secondary flex items-center gap-1.5 text-sm">
+          <button onClick={handlePrint} className="btn-secondary flex w-full items-center justify-center gap-1.5 text-sm sm:w-auto sm:self-start">
             <Printer className="h-4 w-4" /> Print
           </button>
         </div>

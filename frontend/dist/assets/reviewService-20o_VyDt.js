@@ -1,0 +1,1 @@
+import{b as i,i as a}from"./index-DMnD-eqX.js";const r=(e,t)=>i.get(`/reviews/product/${e}`,{params:t}).then(s=>s.data),d=e=>a.get("/reviews/mine",{params:e}).then(t=>t.data),n=e=>a.post("/reviews",e).then(t=>t.data),c=(e,t)=>a.put(`/reviews/${e}`,t).then(s=>s.data),v=e=>a.delete(`/reviews/${e}`).then(t=>t.data);export{r as a,n as c,v as d,d as g,c as u};

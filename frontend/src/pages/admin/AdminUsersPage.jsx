@@ -205,7 +205,54 @@ const AdminUsersPage = () => {
 
       {!loading && !error && users.length > 0 && (
         <>
-          <div className="mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
+          <div className="mobile-card-grid">
+            {users.map((user) => (
+              <div key={user._id} className={`rounded-lg border border-gray-200 bg-white p-4 ${selectedIds.includes(user._id) ? "ring-2 ring-ember" : ""}`}>
+                <div className="flex items-start gap-3">
+                  <button type="button" onClick={() => toggleOne(user._id)} className="mt-1 shrink-0">
+                    {selectedIds.includes(user._id) ? <CheckSquare className="h-4 w-4 text-ember" /> : <Square className="h-4 w-4 text-gray-400" />}
+                  </button>
+                  <div className="min-w-0 flex-1">
+                    <Link to={`/admin/users/${user._id}`} className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-bold text-gray-600">
+                        {user.avatar ? (
+                          <img src={user.avatar} alt="" className="h-full w-full rounded-full object-cover" loading="lazy" />
+                        ) : (
+                          (user.name || "U")[0].toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{user.name || "—"}</p>
+                        <p className="truncate text-xs text-gray-500">{user.email}</p>
+                      </div>
+                    </Link>
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <StatusBadge status={user.moderationStatus || user.status || "active"} />
+                      {user.emailVerified ? (
+                        <span className="flex items-center gap-1 text-xs text-emerald-600"><UserCheck className="h-3 w-3" /> Verified</span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-xs text-gray-400"><UserX className="h-3 w-3" /> Unverified</span>
+                      )}
+                    </div>
+                    <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
+                      <span>{user.phone || "—"}</span>
+                      <span>{user.orderCount} orders</span>
+                      <span>{formatCurrency(user.totalSpent)}</span>
+                    </div>
+                    <div className="mt-1 text-xs text-gray-400">
+                      Joined {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-LK") : "—"}
+                      {user.lastLoginAt ? ` · Last login ${new Date(user.lastLoginAt).toLocaleDateString("en-LK")}` : ""}
+                    </div>
+                  </div>
+                  <Link to={`/admin/users/${user._id}`} className="btn-icon shrink-0">
+                    <Eye className="h-4 w-4" />
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="desktop-table mt-6 overflow-x-auto rounded-lg border border-gray-200 bg-white">
             <table className="w-full text-left text-sm">
               <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                 <tr>

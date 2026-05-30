@@ -417,71 +417,111 @@ const AdminDeliveryZonesPage = () => {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto rounded-lg border bg-white">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b bg-gray-50 text-left text-xs font-medium text-gray-500">
-                    <th className="px-4 py-3 w-10">
+            <>
+              <div className="mobile-card-grid">
+                {filteredZones.map((zone) => (
+                  <div key={zone._id} className={`rounded-lg border bg-white p-3 ${!zone.isActive ? "opacity-60" : ""}`}>
+                    <div className="flex items-start gap-2">
                       <input
                         type="checkbox"
-                        className="accent-ember h-4 w-4"
-                        checked={filteredZones.length > 0 && selectedIds.size === filteredZones.length}
-                        onChange={toggleSelectAll}
+                        className="accent-ember mt-1 h-4 w-4 shrink-0"
+                        checked={selectedIds.has(zone._id)}
+                        onChange={() => toggleSelection(zone._id)}
                       />
-                    </th>
-                    <th className="px-4 py-3">Route</th>
-                    <th className="px-4 py-3">First Kg</th>
-                    <th className="px-4 py-3">Additional Kg</th>
-                    <th className="px-4 py-3">Provider</th>
-                    <th className="px-4 py-3">Status</th>
-                    <th className="px-4 py-3">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
-                  {filteredZones.map((zone) => (
-                    <tr key={zone._id} className={`hover:bg-gray-50 ${!zone.isActive ? "opacity-60" : ""}`}>
-                      <td className="px-4 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1 text-sm font-medium">
+                          <span>{zone.from}</span>
+                          <ArrowRight className="h-3 w-3 text-gray-400" />
+                          <span>{zone.to}</span>
+                        </div>
+                        <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                          <span><span className="text-gray-700">{formatCurrency(zone.firstKgCharge)}</span> first kg</span>
+                          <span><span className="text-gray-700">{formatCurrency(zone.additionalKgCharge)}</span> additional</span>
+                          <span>{zone.courierProvider || "koombiyo"}</span>
+                        </div>
+                        <div className="mt-2 flex items-center gap-2">
+                          <button
+                            onClick={() => handleToggle(zone._id)}
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold transition ${zone.isActive ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
+                          >
+                            {zone.isActive ? "Active" : "Inactive"}
+                          </button>
+                          <button className="text-xs text-red-600 hover:underline" onClick={() => setDeleteTarget(zone._id)}>
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="desktop-table overflow-x-auto rounded-lg border bg-white">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-gray-50 text-left text-xs font-medium text-gray-500">
+                      <th className="px-4 py-3 w-10">
                         <input
                           type="checkbox"
                           className="accent-ember h-4 w-4"
-                          checked={selectedIds.has(zone._id)}
-                          onChange={() => toggleSelection(zone._id)}
+                          checked={filteredZones.length > 0 && selectedIds.size === filteredZones.length}
+                          onChange={toggleSelectAll}
                         />
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{zone.from}</span>
-                          <ArrowRight className="h-3 w-3 text-gray-400" />
-                          <span className="font-medium">{zone.to}</span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 font-medium">{formatCurrency(zone.firstKgCharge)}</td>
-                      <td className="px-4 py-3 text-gray-600">{formatCurrency(zone.additionalKgCharge)}</td>
-                      <td className="px-4 py-3 text-xs text-gray-500">{zone.courierProvider || "koombiyo"}</td>
-                      <td className="px-4 py-3">
-                        <button
-                          onClick={() => handleToggle(zone._id)}
-                          className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold transition ${zone.isActive ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
-                        >
-                          {zone.isActive ? "Active" : "Inactive"}
-                        </button>
-                      </td>
-                      <td className="px-4 py-3">
-                        <button
-                          className="text-xs text-red-600 hover:underline"
-                          onClick={() => setDeleteTarget(zone._id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
+                      </th>
+                      <th className="px-4 py-3">Route</th>
+                      <th className="px-4 py-3">First Kg</th>
+                      <th className="px-4 py-3">Additional Kg</th>
+                      <th className="px-4 py-3">Provider</th>
+                      <th className="px-4 py-3">Status</th>
+                      <th className="px-4 py-3">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="border-t px-4 py-2 text-xs text-gray-500">
-                Showing {filteredZones.length} of {Array.isArray(zones) ? zones.length : 0} routes
-              </p>
-            </div>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredZones.map((zone) => (
+                      <tr key={zone._id} className={`hover:bg-gray-50 ${!zone.isActive ? "opacity-60" : ""}`}>
+                        <td className="px-4 py-3">
+                          <input
+                            type="checkbox"
+                            className="accent-ember h-4 w-4"
+                            checked={selectedIds.has(zone._id)}
+                            onChange={() => toggleSelection(zone._id)}
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{zone.from}</span>
+                            <ArrowRight className="h-3 w-3 text-gray-400" />
+                            <span className="font-medium">{zone.to}</span>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 font-medium">{formatCurrency(zone.firstKgCharge)}</td>
+                        <td className="px-4 py-3 text-gray-600">{formatCurrency(zone.additionalKgCharge)}</td>
+                        <td className="px-4 py-3 text-xs text-gray-500">{zone.courierProvider || "koombiyo"}</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleToggle(zone._id)}
+                            className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold transition ${zone.isActive ? "bg-emerald-50 text-emerald-700 hover:bg-emerald-100" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}
+                          >
+                            {zone.isActive ? "Active" : "Inactive"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            className="text-xs text-red-600 hover:underline"
+                            onClick={() => setDeleteTarget(zone._id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="border-t px-4 py-2 text-xs text-gray-500">
+                  Showing {filteredZones.length} of {Array.isArray(zones) ? zones.length : 0} routes
+                </p>
+              </div>
+            </>
           )}
 
           {stats?.latestImport && (

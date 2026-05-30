@@ -57,7 +57,7 @@ const ProductDetailsPage = () => {
       />
       <section className="container-page grid gap-8 py-10 lg:grid-cols-[1fr_0.9fr]">
         <div>
-          <img src={images[selected].url} alt={images[selected].alt || product.name} className="aspect-square w-full rounded-lg bg-white object-cover shadow-soft" />
+          <img src={images[selected].url} alt={images[selected].alt || product.name} className="aspect-square w-full rounded-lg bg-white object-cover shadow-soft" loading="lazy" />
           {images.length > 1 && (
             <div className="mt-4 grid grid-cols-5 gap-2 sm:gap-3">
               {images.map((image, index) => (
@@ -136,14 +136,30 @@ const ProductDetailsPage = () => {
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button disabled={activeStock < 1} onClick={handleAddToCart} className="btn-primary w-full sm:flex-1 min-h-[48px] disabled:bg-gray-300">
+            <button disabled={activeStock < 1} onClick={handleAddToCart} className="btn-primary w-full sm:flex-1 disabled:bg-gray-300">
               <ShoppingCart className="h-4 w-4" /> {activeStock < 1 ? "Sold out" : "Add to cart"}
             </button>
-            <button onClick={() => toggle(product)} className="btn-secondary w-full sm:w-auto min-h-[48px]">
+            <button onClick={() => toggle(product)} className="btn-secondary w-full sm:w-auto">
               <Heart className="h-4 w-4" /> Wishlist
             </button>
           </div>
         </article>
+      </section>
+
+      <section className="sticky-bottom sm:hidden">
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <p className="text-lg font-black">{formatCurrency(activePrice)}</p>
+            {product.discountPrice && <p className="text-xs text-gray-500 line-through">{formatCurrency(product.price)}</p>}
+          </div>
+          <button
+            disabled={activeStock < 1}
+            onClick={handleAddToCart}
+            className="btn-primary flex-1 disabled:bg-gray-300"
+          >
+            <ShoppingCart className="h-4 w-4" /> {activeStock < 1 ? "Sold out" : "Add to cart"}
+          </button>
+        </div>
       </section>
       <section className="container-page py-10">
         <ReviewSection productId={product._id} />
