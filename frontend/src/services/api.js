@@ -22,7 +22,8 @@ const processQueue = (error, token = null) => {
 };
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("mini_hobbies_admin_token");
+  let token = localStorage.getItem("mini_hobbies_admin_token");
+  if (!token) token = localStorage.getItem("mini_hobbies_customer_token");
   config.headers["x-session-id"] = getSessionId();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;

@@ -16,8 +16,38 @@ export const getCart = asyncHandler(async (req, res) => {
   res.json(cart || { items: [] });
 });
 
+const getOrCreateCart = async (scope) => {
+  console.log("[CART] getOrCreateCart scope:", JSON.stringify(scope));
+  let cart = await Cart.findOne(scope);
+  if (cart) {
+    console.log("[CART] Found existing cart:", cart._id);
+  } else {
+    console.log("[CART] No cart found, creating new one");
+    try {
+      cart = await Cart.create({ ...scope, items: [] });
+      console.log("[CART] Created cart:", cart._id);
+    } catch (err) {
+      console.log("[CART] Create error:", err.code, err.message);
+      if (err.code === 11000) {
+        cart = await Cart.findOne(scope);
+        if (cart) {
+          console.log("[CART] Retry found cart:", cart._id);
+        } else {
+          console.log("[CART] Retry still not found, rethrowing");
+          throw err;
+        }
+      } else {
+        throw err;
+      }
+    }
+  }
+  if (!cart.items) cart.items = [];
+  return cart;
+};
+
 export const addToCart = asyncHandler(async (req, res) => {
   const scope = getCartScope(req);
+  console.log("[CART addToCart] scope:", JSON.stringify(scope), "customer:", !!req.customer, "sessionId:", req.header("x-session-id"));
   if (!scope) {
     res.status(400);
     throw new Error("Unable to identify cart session.");
@@ -34,11 +64,7 @@ export const addToCart = asyncHandler(async (req, res) => {
   const variantName = selectedVariant?.name || "";
   const variantImage = selectedVariant?.image?.url || "";
 
-  const cart = await Cart.findOneAndUpdate(
-    scope,
-    { $setOnInsert: scope },
-    { upsert: true, new: true }
-  );
+  const cart = await getOrCreateCart(scope);
 
   if (variantId) {
     cart.items = cart.items.filter(
@@ -145,7 +171,10 @@ export const mergeCart = asyncHandler(async (req, res) => {
   ]);
 
   if (!sessionCart || sessionCart.items.length === 0) {
-    const cart = customerCart || await Cart.create({ customerId: req.customer._id, items: [] });
+    if (customerCart) {
+      return res.json(await customerCart.populate("items.product"));
+    }
+    const cart = await Cart.create({ customerId: req.customer._id, items: [] });
     return res.json(await cart.populate("items.product"));
   }
 
@@ -163,7 +192,7 @@ export const mergeCart = asyncHandler(async (req, res) => {
 
   const cart = await Cart.findOneAndUpdate(
     { customerId: req.customer._id },
-    { customerId: req.customer._id, items: mergedItems },
+    { $set: { items: mergedItems }, $setOnInsert: { customerId: req.customer._id } },
     { upsert: true, new: true }
   );
 

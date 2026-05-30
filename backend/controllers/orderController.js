@@ -1,4 +1,5 @@
 import Coupon from "../models/Coupon.js";
+import Customer from "../models/Customer.js";
 import DeliveryZone from "../models/DeliveryZone.js";
 import Order from "../models/Order.js";
 import Payment from "../models/Payment.js";
@@ -161,6 +162,8 @@ export const createOrder = asyncHandler(async (req, res) => {
     initialNote = "Order placed, awaiting payment verification";
   }
 
+  console.log(`[ORDER] createOrder: customer authenticated=${!!req.customer}, customerId=${req.customer?._id || "null"}, paymentMethod=${paymentMethod}`);
+
   const orderData = {
     orderNumber,
     customerId: req.customer?._id || null,
@@ -181,6 +184,19 @@ export const createOrder = asyncHandler(async (req, res) => {
   };
 
   const order = await Order.create(orderData);
+
+  if (!order.customerId && customer.email) {
+    try {
+      const matched = await Customer.findOne({ email: customer.email.toLowerCase().trim() });
+      if (matched) {
+        order.customerId = matched._id;
+        await order.save();
+        console.log(`[ORDER] Linked order ${order.orderNumber} to customer ${matched._id} by email fallback`);
+      }
+    } catch (linkErr) {
+      console.error(`[ORDER] Email fallback failed for ${order.orderNumber}:`, linkErr.message);
+    }
+  }
 
   if (paymentMethod === "cod") {
     const payment = await Payment.create({

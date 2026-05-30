@@ -25,26 +25,21 @@ export const getUsers = asyncHandler(async (req, res) => {
   const sort = userService.buildSortOption(req.query.sortBy, req.query.sortOrder);
   const result = await userService.listUsers({ filter, sort, page, limit });
 
-  const emails = result.data.map((c) => c.email);
+  const customerIds = result.data.map((c) => c._id);
   const { default: Order } = await import("../models/Order.js");
-  const [orderCounts, spendingData] = await Promise.all([
+  const [orderStats] = await Promise.all([
     Order.aggregate([
-      { $match: { "customer.email": { $in: emails } } },
-      { $group: { _id: "$customer.email", count: { $sum: 1 }, totalSpent: { $sum: "$total" } } },
-    ]),
-    Order.aggregate([
-      { $match: { "customer.email": { $in: emails } } },
-      { $group: { _id: "$customer.email", totalSpent: { $sum: "$total" } } },
+      { $match: { customerId: { $in: customerIds } } },
+      { $group: { _id: "$customerId", count: { $sum: 1 }, totalSpent: { $sum: "$total" } } },
     ]),
   ]);
 
-  const orderCountMap = Object.fromEntries(orderCounts.map((o) => [o._id, o.count]));
-  const spendingMap = Object.fromEntries(spendingData.map((s) => [s._id, s.totalSpent]));
+  const statsMap = Object.fromEntries(orderStats.map((o) => [o._id.toString(), { count: o.count, totalSpent: o.totalSpent }]));
 
   const data = result.data.map((c) => ({
     ...c,
-    orderCount: orderCountMap[c.email] || 0,
-    totalSpent: spendingMap[c.email] || 0,
+    orderCount: statsMap[c._id.toString()]?.count || 0,
+    totalSpent: statsMap[c._id.toString()]?.totalSpent || 0,
   }));
 
   res.json({ data, pagination: { page, limit, total: result.total, pages: result.pages } });
@@ -56,8 +51,8 @@ export const getUserById = asyncHandler(async (req, res) => {
     res.status(404); throw new Error("Customer not found.");
   }
   const { default: Order } = await import("../models/Order.js");
-  const recentOrders = await Order.find({ "customer.email": customer.email })
-    .sort({ createdAt: -1 }).limit(10).lean();
+  const recentOrders = await Order.find({ customerId: req.params.id })
+    .sort({ createdAt: -1 }).limit(10).populate("payment", "status method").lean();
   res.json({ ...customer, recentOrders });
 });
 
@@ -160,17 +155,17 @@ export const exportUsers = asyncHandler(async (req, res) => {
   const sort = userService.buildSortOption("createdAt", "desc");
   const customers = await userService.exportUsersCSV({ filter, sort });
 
-  const emails = customers.map((c) => c.email);
+  const customerIds = customers.map((c) => c._id);
   const { default: Order } = await import("../models/Order.js");
-  const orderCounts = await Order.aggregate([
-    { $match: { "customer.email": { $in: emails } } },
-    { $group: { _id: "$customer.email", count: { $sum: 1 }, totalSpent: { $sum: "$total" } } },
+  const orderStats = await Order.aggregate([
+    { $match: { customerId: { $in: customerIds } } },
+    { $group: { _id: "$customerId", count: { $sum: 1 }, totalSpent: { $sum: "$total" } } },
   ]);
-  const orderMap = Object.fromEntries(orderCounts.map((o) => [o._id, { count: o.count, totalSpent: o.totalSpent }]));
+  const orderMap = Object.fromEntries(orderStats.map((o) => [o._id.toString(), { count: o.count, totalSpent: o.totalSpent }]));
 
   const csvHeader = "Name,Email,Phone,Email Verified,Orders,Total Spent,Registered,Last Login\n";
   const csvRows = customers.map((c) => {
-    const o = orderMap[c.email] || { count: 0, totalSpent: 0 };
+    const o = orderMap[c._id.toString()] || { count: 0, totalSpent: 0 };
     return [
       `"${(c.name || "").replace(/"/g, '""')}"`,
       `"${c.email}"`,

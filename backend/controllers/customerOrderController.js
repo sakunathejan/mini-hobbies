@@ -8,6 +8,8 @@ export const getMyOrders = asyncHandler(async (req, res) => {
     throw new Error("Authentication required.");
   }
 
+  console.log(`[CUSTOMER ORDERS] getMyOrders: customerId=${req.customer._id}`);
+
   const { page = 1, limit = 10, status, paymentMethod, search, sort = "-createdAt" } = req.query;
 
   const filter = { customerId: req.customer._id };
