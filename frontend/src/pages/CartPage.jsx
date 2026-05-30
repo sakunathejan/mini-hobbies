@@ -10,18 +10,17 @@ import { placeholderImage } from "../utils/constants.js";
 
 const CartLineItem = ({ item, onUpdateQuantity, onRemove }) => {
   let unitPrice = item.discountPrice || item.price;
-  let variantImage = "";
   if (item.variantId && item.variants) {
     const v = item.variants.find((v) => v._id === item.variantId);
     if (v?.price) unitPrice = v.price;
-    if (v?.image?.url) variantImage = v.image.url;
   }
+  const displayImage = item.variantImage || (item.variantId && item.variants ? item.variants.find(v => v._id === item.variantId)?.image?.url : "") || item.images?.[0]?.url || placeholderImage;
   const lineTotal = unitPrice * item.quantity;
 
   return (
     <div className="flex items-center gap-3 px-3 py-3 sm:gap-4 sm:px-4">
       <img
-        src={variantImage || item.images?.[0]?.url || placeholderImage}
+        src={displayImage}
         alt={item.name}
         className="h-14 w-14 shrink-0 rounded-md object-cover sm:h-16 sm:w-16"
       />

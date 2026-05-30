@@ -85,6 +85,27 @@ export const UnifiedAuthProvider = ({ children }) => {
       const userData = { ...data.customer, role: "customer" };
       setUser(userData);
       toast.success("Welcome back!");
+
+      const sessionId = localStorage.getItem("mini_hobbies_session_id");
+
+      if (sessionId) {
+        try {
+          const { mergeCart } = await import("../services/customerCartService.js");
+          await mergeCart(sessionId);
+        } catch {}
+
+        try {
+          const { mergeWishlist } = await import("../services/customerWishlistService.js");
+          await mergeWishlist(sessionId);
+        } catch {}
+      }
+
+      localStorage.removeItem("mini_hobbies_cart");
+      localStorage.removeItem("mini_hobbies_wishlist");
+
+      window.dispatchEvent(new CustomEvent("cart:refresh"));
+      window.dispatchEvent(new CustomEvent("wishlist:refresh"));
+
       return { role: "customer", user: userData };
     } catch (err) {
       throw err;
@@ -102,6 +123,27 @@ export const UnifiedAuthProvider = ({ children }) => {
       localStorage.setItem(ROLE_KEY, "customer");
       setUser({ ...data.customer, role: "customer" });
       toast.success("Welcome back!");
+
+      const sessionId = localStorage.getItem("mini_hobbies_session_id");
+
+      if (sessionId) {
+        try {
+          const { mergeCart } = await import("../services/customerCartService.js");
+          await mergeCart(sessionId);
+        } catch {}
+
+        try {
+          const { mergeWishlist } = await import("../services/customerWishlistService.js");
+          await mergeWishlist(sessionId);
+        } catch {}
+      }
+
+      localStorage.removeItem("mini_hobbies_cart");
+      localStorage.removeItem("mini_hobbies_wishlist");
+
+      window.dispatchEvent(new CustomEvent("cart:refresh"));
+      window.dispatchEvent(new CustomEvent("wishlist:refresh"));
+
       return data;
     } catch (err) {
       throw err;
@@ -132,17 +174,17 @@ export const UnifiedAuthProvider = ({ children }) => {
     localStorage.removeItem(ADMIN_DATA_KEY);
     localStorage.removeItem(ROLE_KEY);
     localStorage.removeItem("mini_hobbies_admin_refresh");
+    localStorage.removeItem("mini_hobbies_cart");
+    localStorage.removeItem("mini_hobbies_wishlist");
     setUser(null);
     toast.success("Logged out.");
-    try {
-      await unifiedLogout();
-    } catch {}
-    try {
-      await logoutAdmin();
-    } catch {}
-    try {
-      await logoutCustomer();
-    } catch {}
+
+    window.dispatchEvent(new CustomEvent("cart:logout"));
+    window.dispatchEvent(new CustomEvent("wishlist:logout"));
+
+    try { await unifiedLogout(); } catch {}
+    try { await logoutAdmin(); } catch {}
+    try { await logoutCustomer(); } catch {}
   }, []);
 
   const refreshUser = useCallback((userData) => {

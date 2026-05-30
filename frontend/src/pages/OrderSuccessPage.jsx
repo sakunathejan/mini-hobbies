@@ -143,10 +143,10 @@ const OrderSuccessPage = () => {
                         transition: { delay: 0.4 + i * 0.08, duration: 0.35 },
                       }}
                     >
-                      {item.image && (
+                      {(item.variantImage || item.image) && (
                         <div className="relative h-16 w-16 overflow-hidden rounded-lg sm:h-20 sm:w-20">
                           <img
-                            src={item.image}
+                            src={item.variantImage || item.image}
                             alt={item.name}
                             className="h-full w-full object-cover transition duration-300 group-hover:scale-110"
                           />

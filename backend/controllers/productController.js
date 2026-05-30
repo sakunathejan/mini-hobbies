@@ -88,9 +88,12 @@ export const getProductById = asyncHandler(async (req, res) => {
 
 export const createProduct = asyncHandler(async (req, res) => {
   const data = { ...req.body };
-  if (data.variants) {
+  if (Array.isArray(data.variants) && data.variants.length > 0) {
     data.hasVariants = true;
     data.stock = data.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
+  } else {
+    data.hasVariants = false;
+    data.variants = [];
   }
   const product = await Product.create(data);
   const populated = await product.populate("category", "name slug");

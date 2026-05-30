@@ -1,13 +1,15 @@
 import express from "express";
 import { body } from "express-validator";
-import { addToCart, getCart, removeCartItem, updateCartItem } from "../controllers/cartController.js";
+import { addToCart, getCart, mergeCart, removeCartItem, updateCartItem } from "../controllers/cartController.js";
+import { optionalCustomer } from "../middleware/customerAuth.js";
 import { validateRequest } from "../middleware/validateRequest.js";
 
 const router = express.Router();
 
-router.get("/", getCart);
-router.post("/", [body("productId").isMongoId(), body("quantity").optional().isInt({ min: 1 })], validateRequest, addToCart);
-router.patch("/:productId", [body("quantity").isInt({ min: 1 })], validateRequest, updateCartItem);
-router.delete("/:productId", removeCartItem);
+router.get("/", optionalCustomer, getCart);
+router.post("/", optionalCustomer, [body("productId").isMongoId(), body("quantity").optional().isInt({ min: 1 })], validateRequest, addToCart);
+router.patch("/:itemId", optionalCustomer, [body("quantity").isInt({ min: 1 })], validateRequest, updateCartItem);
+router.delete("/:itemId", optionalCustomer, removeCartItem);
+router.post("/merge", optionalCustomer, [body("sessionId").notEmpty()], validateRequest, mergeCart);
 
 export default router;

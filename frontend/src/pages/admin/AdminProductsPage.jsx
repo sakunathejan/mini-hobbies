@@ -1,20 +1,39 @@
-import { useState, useMemo } from "react";
-import { Plus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { useState, useMemo, useEffect } from "react";
+import { AlertCircle, Plus, RefreshCw } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import AdminProductGrid from "../../components/products/AdminProductGrid.jsx";
 import ProductListView from "../../components/products/ProductListView.jsx";
 import ViewToggle from "../../components/ui/ViewToggle.jsx";
 import Pagination from "../../components/ui/Pagination.jsx";
 import EmptyState from "../../components/ui/EmptyState.jsx";
-import useFetch from "../../hooks/useFetch.js";
 import { deleteProduct, getProducts } from "../../services/productService.js";
 
 const PER_PAGE = 16;
 
 const AdminProductsPage = () => {
-  const { data, loading, setData } = useFetch(() => getProducts({ limit: 48 }), []);
+  const location = useLocation();
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [view, setView] = useState(() => localStorage.getItem("admin_products_view") || "grid");
   const [page, setPage] = useState(1);
+
+  const fetchProducts = async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const result = await getProducts({ limit: 48 });
+      setData(result);
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || "Failed to load products.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, [location.pathname]);
 
   const products = data?.products || [];
   const totalPages = Math.ceil(products.length / PER_PAGE);
@@ -45,6 +64,24 @@ const AdminProductsPage = () => {
     </div>
   );
 
+  if (error) return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl font-black">Products</h1>
+        <Link to="/admin/products/new" className="btn-primary"><Plus className="h-4 w-4" /> Add product</Link>
+      </div>
+      <div className="mt-6 rounded-lg border border-red-200 bg-red-50 p-4">
+        <div className="flex items-center gap-2 text-red-700">
+          <AlertCircle className="h-5 w-5" />
+          <p className="text-sm font-semibold">{error}</p>
+        </div>
+        <button onClick={fetchProducts} className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-red-700 hover:underline">
+          <RefreshCw className="h-3.5 w-3.5" /> Try again
+        </button>
+      </div>
+    </div>
+  );
+
   if (!products.length) return (
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -60,6 +97,9 @@ const AdminProductsPage = () => {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl font-black">Products</h1>
         <div className="flex items-center gap-3">
+          <button onClick={fetchProducts} className="btn-secondary p-2" title="Refresh">
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+          </button>
           <ViewToggle view={view} onChange={handleViewChange} storageKey="admin_products_view" />
           <Link to="/admin/products/new" className="btn-primary"><Plus className="h-4 w-4" /> Add product</Link>
         </div>

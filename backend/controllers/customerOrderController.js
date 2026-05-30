@@ -3,10 +3,14 @@ import asyncHandler from "../utils/asyncHandler.js";
 import { normalizeOrder } from "../utils/normalizeOrder.js";
 
 export const getMyOrders = asyncHandler(async (req, res) => {
-  const customer = req.customer;
+  if (!req.customer) {
+    res.status(401);
+    throw new Error("Authentication required.");
+  }
+
   const { page = 1, limit = 10, status, paymentMethod, search, sort = "-createdAt" } = req.query;
 
-  const filter = { "customer.email": customer.email.toLowerCase().trim() };
+  const filter = { customerId: req.customer._id };
 
   if (status) filter.status = { $regex: `^${status}$`, $options: "i" };
   if (paymentMethod) filter.paymentMethod = paymentMethod;
@@ -46,11 +50,14 @@ export const getMyOrders = asyncHandler(async (req, res) => {
 });
 
 export const getMyOrder = asyncHandler(async (req, res) => {
-  const customer = req.customer;
+  if (!req.customer) {
+    res.status(401);
+    throw new Error("Authentication required.");
+  }
 
   const order = await Order.findOne({
     _id: req.params.id,
-    "customer.email": customer.email.toLowerCase().trim(),
+    customerId: req.customer._id,
   }).populate("payment").lean();
 
   if (!order) {

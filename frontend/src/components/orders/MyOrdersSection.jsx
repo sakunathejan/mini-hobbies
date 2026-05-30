@@ -125,7 +125,7 @@ const DetailModal = ({ order, onClose }) => {
               {order.items?.map((item, i) => (
                 <div key={i} className="flex items-center gap-3 p-3 sm:gap-4 sm:p-4">
                   <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 sm:h-16 sm:w-16">
-                    {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full items-center justify-center text-gray-400"><Package className="h-6 w-6" /></div>}
+                    {(item.variantImage || item.image) ? <img src={item.variantImage || item.image} alt={item.name} className="h-full w-full object-cover" loading="lazy" /> : <div className="flex h-full items-center justify-center text-gray-400"><Package className="h-6 w-6" /></div>}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-gray-900">{item.name}</p>
@@ -301,8 +301,8 @@ const MyOrdersSection = () => {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-center gap-3 sm:gap-4">
                     <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-gray-100 sm:h-16 sm:w-16">
-                      {order.items?.[0]?.image ? (
-                        <img src={order.items[0].image} alt="" className="h-full w-full object-cover" loading="lazy" />
+                      {(order.items?.[0]?.variantImage || order.items?.[0]?.image) ? (
+                        <img src={order.items[0].variantImage || order.items[0].image} alt="" className="h-full w-full object-cover" loading="lazy" />
                       ) : (
                         <div className="flex h-full items-center justify-center text-gray-300"><Package className="h-6 w-6" /></div>
                       )}

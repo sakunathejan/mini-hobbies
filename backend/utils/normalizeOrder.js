@@ -28,7 +28,9 @@ const normalizeItems = (items = []) =>
     image: item.image || "",
     price: Number(item.price ?? item.unitPrice ?? 0),
     quantity: Number(item.quantity || 1),
-    variantName: item.variantName || ""
+    variantId: item.variantId || "",
+    variantName: item.variantName || "",
+    variantImage: item.variantImage || ""
   }));
 
 export const normalizeOrder = (order) => {

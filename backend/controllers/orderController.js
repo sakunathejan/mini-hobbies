@@ -68,21 +68,24 @@ export const createOrder = asyncHandler(async (req, res) => {
     }
     let price = product.discountPrice || product.price;
     let variantName = "";
+    let variantImage = "";
     if (item.variantId && product.hasVariants) {
-      const variant = product.variants.id(item.variantId);
+      const variant = product.variants.find((v) => v._id.toString() === item.variantId);
       if (variant) {
         price = variant.price || price;
         variantName = variant.name || "";
+        variantImage = variant.image?.url || "";
       }
     }
     return {
       product: product._id,
       name: product.name,
-      image: product.images[0]?.url || "",
+      image: variantImage || product.images[0]?.url || "",
       price,
       quantity: Number(item.quantity),
       variantId: item.variantId || "",
-      variantName
+      variantName,
+      variantImage
     };
   });
 
@@ -160,6 +163,7 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   const orderData = {
     orderNumber,
+    customerId: req.customer?._id || null,
     customer: { ...customer, phone: customer.phone.trim(), district },
     items: orderItems,
     subtotal,
@@ -329,6 +333,36 @@ export const retryWhatsApp = asyncHandler(async (req, res) => {
     res.status(500);
     throw new Error(err.message);
   }
+});
+
+export const getMyOrders = asyncHandler(async (req, res) => {
+  if (!req.customer) {
+    res.status(401);
+    throw new Error("Authentication required.");
+  }
+
+  const { page = 1, limit = 10, status } = req.query;
+  const filter = { customerId: req.customer._id };
+  if (status && status !== "All") filter.status = status;
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .sort("-createdAt")
+      .skip((parseInt(page) - 1) * parseInt(limit))
+      .limit(parseInt(limit))
+      .populate("payment", "status method")
+      .lean(),
+    Order.countDocuments(filter)
+  ]);
+
+  res.json({
+    orders: orders.map(normalizeOrder),
+    pagination: {
+      page: parseInt(page),
+      total,
+      pages: Math.ceil(total / parseInt(limit))
+    }
+  });
 });
 
 export const deleteOrder = asyncHandler(async (req, res) => {

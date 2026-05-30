@@ -386,7 +386,7 @@ const OrderTrackPage = () => {
                     {order.items.map((item) => (
                       <li key={`${item.product}-${item.name}`} className="flex items-center gap-3 py-3">
                         <img
-                          src={item.image || placeholderImage}
+                          src={item.variantImage || item.image || placeholderImage}
                           alt={item.name}
                           className="h-12 w-12 shrink-0 rounded-lg border object-cover sm:h-14 sm:w-14"
                         />

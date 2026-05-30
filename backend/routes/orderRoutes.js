@@ -11,6 +11,7 @@ import {
   updateOrderStatus
 } from "../controllers/orderController.js";
 import { adminOnly, protect } from "../middleware/authMiddleware.js";
+import { optionalCustomer } from "../middleware/customerAuth.js";
 import { upload, validateFileContent } from "../middleware/uploadMiddleware.js";
 import { validateRequest } from "../middleware/validateRequest.js";
 
@@ -31,6 +32,7 @@ const orderStatuses = [
 
 router.post(
   "/",
+  optionalCustomer,
   upload.single("paymentSlip"),
   validateFileContent(["image/jpeg", "image/png", "image/webp", "application/pdf"]),
   (req, _res, next) => {

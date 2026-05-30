@@ -509,7 +509,7 @@ const CheckoutPage = () => {
             <div className="mt-4 divide-y">
               {items.map((item) => {
                 const cartItemVariant = item.variantId && item.variants ? item.variants.find((v) => v._id === item.variantId) : null;
-                const cartItemImage = cartItemVariant?.image?.url || item.images?.[0]?.url || item.image || "";
+                const cartItemImage = item.variantImage || cartItemVariant?.image?.url || item.images?.[0]?.url || item.image || "";
                 return (
                 <div key={item._id} className="flex items-center gap-3 py-3">
                   <img src={cartItemImage} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16" loading="lazy" />

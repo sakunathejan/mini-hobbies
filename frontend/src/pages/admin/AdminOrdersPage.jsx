@@ -230,6 +230,7 @@ const AdminOrdersPage = () => {
                 </th>
                 <th className="p-4">Order</th>
                 <th className="p-4">Date</th>
+                <th className="p-4">Items</th>
                 <th className="p-4">Customer</th>
                 <th className="p-4">Total</th>
                 <th className="p-4">Payment</th>
@@ -251,6 +252,24 @@ const AdminOrdersPage = () => {
                     <td className="p-4 font-semibold">{order.orderNumber}</td>
                     <td className="p-4 text-gray-600 text-xs">
                       {order.createdAt ? new Date(order.createdAt).toLocaleDateString("en-LK") : "—"}
+                    </td>
+                    <td className="p-4">
+                      {order.items?.[0] && (
+                        <div className="flex items-center gap-2">
+                          <div className="h-8 w-8 shrink-0 overflow-hidden rounded bg-gray-100">
+                            {(order.items[0].variantImage || order.items[0].image) ? (
+                              <img src={order.items[0].variantImage || order.items[0].image} alt="" className="h-full w-full object-cover" />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-gray-300"><Package className="h-4 w-4" /></div>
+                            )}
+                          </div>
+                          <div className="min-w-0 max-w-[120px]">
+                            <p className="truncate text-xs font-medium">{order.items[0].name}</p>
+                            {order.items[0].variantName && <p className="truncate text-[10px] text-gray-500">{order.items[0].variantName}</p>}
+                            {order.items.length > 1 && <p className="text-[10px] text-gray-400">+{order.items.length - 1}</p>}
+                          </div>
+                        </div>
+                      )}
                     </td>
                     <td className="p-4">
                       <p className="font-medium">{customer.name || "—"}</p>
@@ -321,8 +340,15 @@ const AdminOrdersPage = () => {
 
                 <ul className="mt-2 divide-y rounded-md border border-gray-100">
                   {items.slice(0, 3).map((item) => (
-                    <li key={`${order._id}-${item.name}`} className="flex justify-between gap-2 px-3 py-1.5 text-xs">
-                      <span className="truncate">{item.name} x{item.quantity}</span>
+                    <li key={`${order._id}-${item.name}`} className="flex items-center gap-2 px-3 py-1.5 text-xs">
+                      <div className="h-7 w-7 shrink-0 overflow-hidden rounded bg-gray-100">
+                        {(item.variantImage || item.image) ? (
+                          <img src={item.variantImage || item.image} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <div className="flex h-full items-center justify-center text-gray-300"><Package className="h-3 w-3" /></div>
+                        )}
+                      </div>
+                      <span className="flex-1 truncate">{item.name}{item.variantName ? ` (${item.variantName})` : ""} x{item.quantity}</span>
                       <span className="shrink-0">{formatCurrency((item.price || 0) * item.quantity)}</span>
                     </li>
                   ))}

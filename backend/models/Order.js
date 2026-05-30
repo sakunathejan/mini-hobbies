@@ -8,7 +8,8 @@ const orderItemSchema = new mongoose.Schema(
     price: { type: Number, required: true },
     quantity: { type: Number, required: true, min: 1 },
     variantId: { type: String, default: "" },
-    variantName: { type: String, default: "" }
+    variantName: { type: String, default: "" },
+    variantImage: { type: String, default: "" }
   },
   { _id: false }
 );
@@ -38,6 +39,7 @@ const partialPaymentSchema = new mongoose.Schema(
 const orderSchema = new mongoose.Schema(
   {
     orderNumber: { type: String, required: true, unique: true, index: true },
+    customerId: { type: mongoose.Schema.Types.ObjectId, ref: "Customer", index: true },
     customer: {
       name: { type: String, required: true },
       email: { type: String, required: true },
@@ -106,6 +108,7 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true, strict: false }
 );
 
+orderSchema.index({ customerId: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ "customer.phone": 1, orderNumber: 1 });
 orderSchema.index({ createdAt: -1 });
