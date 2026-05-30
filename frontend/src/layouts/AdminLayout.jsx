@@ -1,4 +1,4 @@
-import { BarChart3, Bot, Building2, CreditCard, ExternalLink, LogOut, MapPin, Megaphone, Menu, MessageSquare, Package, Percent, PlusCircle, Settings, Shield, ShoppingBag, Tags, TrendingUp, User, X } from "lucide-react";
+import { BarChart3, Building2, CreditCard, ExternalLink, LogOut, MapPin, Megaphone, Menu, MessageSquare, Package, Percent, PlusCircle, Settings, Shield, ShoppingBag, Tags, TrendingUp, User, X } from "lucide-react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext.jsx";
@@ -51,8 +51,6 @@ const AdminLayout = () => {
     { to: "/admin/users", icon: User, label: "Users" },
     { to: "/admin/reviews", icon: MessageSquare, label: "Reviews" },
     { to: "/admin/moderation", icon: Shield, label: "Moderation" },
-    { to: "/admin/chat", icon: Bot, label: "Chat Bot" },
-    { to: "/admin/chat/knowledge", icon: MessageSquare, label: "Bot Knowledge" },
     { to: "/admin/settings", icon: Settings, label: "Settings" },
   ];
 

@@ -30,8 +30,6 @@ import customerModerationRoutes from "./moderation-system/routes/customerRoutes.
 import reviewRoutes from "./reviews/routes/reviewRoutes.js";
 import reviewReactionRoutes from "./reviews/routes/reviewReactionRoutes.js";
 import reviewReplyRoutes from "./reviews/routes/reviewReplyRoutes.js";
-import chatRoutes from "./routes/chatRoutes.js";
-import adminChatRoutes from "./routes/adminChatRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -117,9 +115,6 @@ app.use("/api/customers/moderation", publicLimiter, customerModerationRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/reviews/reactions", reviewReactionRoutes);
 app.use("/api/reviews/replies", reviewReplyRoutes);
-app.use("/api/chat", chatRoutes);
-app.use("/api/admin/chat", adminChatRoutes);
-
 app.use(notFound);
 app.use(errorHandler);
 
