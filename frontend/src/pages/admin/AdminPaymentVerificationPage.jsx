@@ -77,16 +77,15 @@ const AdminPaymentVerificationPage = () => {
   };
 
   const getPaymentType = (payment) => {
-    const order = payment.order || {};
-    if (payment.advance) return "Advance (50%)";
-    if (order.paymentType === "advance_50" || order.paymentMethod === "advance") return "Advance (50%)";
+    if (payment.method === "cod") return "COD";
+    if (payment.method === "advance") return "Advance (50%)";
     return "Full Payment";
   };
 
   const getPaymentAmount = (payment) => {
     const order = payment.order || {};
-    if (payment.advance || order.paymentType === "advance_50" || order.paymentMethod === "advance") {
-      return formatCurrency(order.advanceAmount || Math.round((order.total || 0) / 2));
+    if (payment.method === "advance") {
+      return formatCurrency(order.advanceAmount || 0);
     }
     return formatCurrency(order.total || 0);
   };

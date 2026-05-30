@@ -1,5 +1,6 @@
-import { ExternalLink, Eye, EyeOff, MessageCircle, Package, RefreshCw, Trash2, CheckSquare, Square } from "lucide-react";
+import { ExternalLink, Eye, EyeOff, MessageCircle, Package, RefreshCw, Search, Trash2, CheckSquare, Square } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import toast from "react-hot-toast";
 import KoombiyoDeliveryPanel from "../../components/orders/KoombiyoDeliveryPanel.jsx";
 import OrderStatusBadge from "../../components/orders/OrderStatusBadge.jsx";
@@ -286,9 +287,16 @@ const AdminOrdersPage = () => {
                     </td>
                     <td className="p-4"><OrderStatusBadge status={order.status} /></td>
                     <td className="p-4">
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 items-center">
+                        <Link
+                          to={`/admin/orders/${order._id}`}
+                          className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                          title="View Details"
+                        >
+                          <Search className="h-4 w-4" />
+                        </Link>
                         <select
-                          className="input w-32 text-xs"
+                          className="input w-28 text-xs"
                           value={order.status}
                           disabled={updatingId === order._id}
                           onChange={(e) => changeStatus(order._id, e.target.value)}
@@ -373,6 +381,13 @@ const AdminOrdersPage = () => {
                 </div>
 
                 <div className="mt-3 flex flex-wrap gap-2">
+                  <Link
+                    to={`/admin/orders/${order._id}`}
+                    className="btn-secondary flex items-center gap-1 px-2 py-1.5 text-xs"
+                    title="View Details"
+                  >
+                    <Search className="h-3 w-3" /> View
+                  </Link>
                   <select
                     className="input flex-1 min-w-0 text-xs"
                     value={order.status}
