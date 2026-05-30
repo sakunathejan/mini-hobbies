@@ -34,7 +34,8 @@ customerApi.interceptors.response.use(
     const originalRequest = error.config;
 
     if (error.response?.status === 401 &&
-        !originalRequest._retry) {
+        !originalRequest._retry &&
+        !/\/auth\/(login|register|google|refresh)/.test(originalRequest.url || "")) {
       originalRequest._retry = true;
 
       if (isRefreshing) {

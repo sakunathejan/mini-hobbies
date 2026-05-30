@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Loader2, AlertCircle, WifiOff } from "lucide-react";
+import toast from "react-hot-toast";
 import { useUnifiedAuth } from "../../context/UnifiedAuthContext.jsx";
 
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "";
@@ -25,6 +26,8 @@ const GoogleSignInButton = ({ redirectTo = "/account" }) => {
       await loginWithGoogle(response.credential);
       navigate(redirectTo, { replace: true });
     } catch (err) {
+      const msg = err.response?.data?.message || err.message || "Google sign-in failed. Please try again.";
+      toast.error(msg);
       console.error("Google sign-in failed:", err);
     }
   }, [loginWithGoogle, navigate, redirectTo]);
