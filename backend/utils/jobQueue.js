@@ -3,9 +3,13 @@ let activeCount = 0;
 const MAX_CONCURRENT = 3;
 
 const processNext = () => {
-  if (queue.length === 0 || activeCount >= MAX_CONCURRENT) return;
+  if (queue.length === 0 || activeCount >= MAX_CONCURRENT) {
+    console.log(`[QUEUE] processNext skipped: queue=${queue.length}, active=${activeCount}/${MAX_CONCURRENT}`);
+    return;
+  }
   const job = queue.shift();
   activeCount++;
+  console.log(`[QUEUE] START job "${job.name}" (active=${activeCount}/${MAX_CONCURRENT}, remaining=${queue.length})`);
   executeJob(job);
 };
 
@@ -13,14 +17,16 @@ const executeJob = async (job) => {
   const maxAttempts = job.maxRetries ?? 2;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
+      console.log(`[QUEUE] executing "${job.name}" attempt ${attempt}/${maxAttempts}`);
       await job.handler();
+      console.log(`[QUEUE] DONE job "${job.name}"`);
       break;
     } catch (err) {
-      console.error(`Job ${job.name} failed (attempt ${attempt}/${maxAttempts}):`, err.message);
+      console.error(`[QUEUE] FAIL job "${job.name}" (attempt ${attempt}/${maxAttempts}): ${err.message}`);
       if (attempt < maxAttempts) {
         await new Promise((r) => setTimeout(r, 1000 * attempt));
       } else {
-        console.error(`Job ${job.name} exhausted all ${maxAttempts} attempts.`);
+        console.error(`[QUEUE] EXHAUSTED job "${job.name}" — all ${maxAttempts} attempts failed.`);
         try {
           const { default: AuditLog } = await import("../models/AuditLog.js");
           await AuditLog.create({

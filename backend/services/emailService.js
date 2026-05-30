@@ -300,25 +300,38 @@ const formatEmailText = (order, note) => {
 };
 
 export const sendMail = async (to, subject, html, text) => {
+  console.log(`[EMAIL] sendMail called: to=${to}, subject="${subject}"`);
+
   const t = getTransporter();
   if (!t) {
-    if (process.env.NODE_ENV !== "production") {
-      console.log(`[EMAIL] Would send to ${to}: ${subject}`);
-    }
+    console.log(`[EMAIL] SKIP — no SMTP transporter (SMTP_HOST=${process.env.SMTP_HOST ? "set" : "unset"}, SMTP_USER=${process.env.SMTP_USER ? "set" : "unset"})`);
     return;
   }
-  await t.sendMail({
-    from: FROM(),
-    to,
-    subject,
-    text: text || "",
-    html
-  });
+
+  try {
+    const info = await t.sendMail({
+      from: FROM(),
+      to,
+      subject,
+      text: text || "",
+      html
+    });
+    console.log(`[EMAIL] SENT — to=${to}, subject="${subject}", messageId=${info.messageId}`);
+  } catch (err) {
+    console.error(`[EMAIL] FAILED — to=${to}, subject="${subject}", error=${err.message}`);
+    throw err;
+  }
 };
 
 export const sendPaymentVerificationEmail = async (order, action, note) => {
+  console.log(`[EMAIL] sendPaymentVerificationEmail called: order=${order?.orderNumber}, action=${action}`);
+
   const e = order.customer?.email;
-  if (!e) throw new Error("Customer email not available");
+  if (!e) {
+    console.error(`[EMAIL] ABORT — no customer email on order ${order?.orderNumber}. customer=`, JSON.stringify(order?.customer || {}));
+    throw new Error("Customer email not available");
+  }
+  console.log(`[EMAIL] source email from order.customer.email: "${e}"`);
 
   const { default: BankDetail } = await import("../models/BankDetail.js");
   const bankDetail = await BankDetail.findOne().sort({ createdAt: -1 }).lean();
@@ -332,8 +345,14 @@ export const sendPaymentVerificationEmail = async (order, action, note) => {
 };
 
 export const sendOrderStatusEmail = async (order, note) => {
+  console.log(`[EMAIL] sendOrderStatusEmail called: order=${order?.orderNumber}, status=${order?.status}`);
+
   const e = order.customer?.email;
-  if (!e) throw new Error("Customer email not available");
+  if (!e) {
+    console.error(`[EMAIL] ABORT — no customer email on order ${order?.orderNumber}. customer=`, JSON.stringify(order?.customer || {}));
+    throw new Error("Customer email not available");
+  }
+  console.log(`[EMAIL] source email from order.customer.email: "${e}"`);
 
   const { default: BankDetail } = await import("../models/BankDetail.js");
   const bankDetail = await BankDetail.findOne().sort({ createdAt: -1 }).lean();
