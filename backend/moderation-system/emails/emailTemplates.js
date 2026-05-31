@@ -18,9 +18,9 @@ ${data.endAt ? `<p><strong>Suspended until:</strong> ${new Date(data.endAt).toLo
 });
 
 export const suspensionExpired = (customerName) => ({
-  subject: "Suspension Expired — Mini Hobbies",
+  subject: "Account Reactivated — Mini Hobbies",
   html: `<p>Hi ${customerName},</p>
-<p>Your account suspension has expired. You can now use your account normally.</p>`
+<p>Your account suspension period has ended and your account has been reactivated. You can now log in and use your account normally.</p>`
 });
 
 export const banApplied = (customerName, data) => ({

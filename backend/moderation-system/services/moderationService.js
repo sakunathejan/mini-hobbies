@@ -14,10 +14,15 @@ import {
   moderationLifted,
 } from "../emails/emailTemplates.js";
 
-function trySendMail(to, subject, html) {
-  sendMail(to, subject, html)
-    .then(() => console.log(`[Moderation Email] Sent to ${to}: ${subject}`))
-    .catch((err) => console.error(`[Moderation Email] Failed to send to ${to}:`, err.message));
+async function trySendMail(to, subject, html) {
+  try {
+    await sendMail(to, subject, html);
+    console.log(`[Moderation Email] Sent to ${to}: ${subject}`);
+    return true;
+  } catch (err) {
+    console.error(`[Moderation Email] Failed to send to ${to}:`, err.message);
+    return false;
+  }
 }
 
 async function syncModerationStatus(customerId) {
@@ -67,10 +72,10 @@ export async function issueWarning(customerId, data, admin) {
   });
 
   if (data.sendEmail !== false) {
-    modCase.emailSent = true;
-    await modCase.save();
     const { subject, html } = warningIssued(customer.name, data);
-    trySendMail(customer.email, subject, html);
+    const sent = await trySendMail(customer.email, subject, html);
+    modCase.emailSent = sent;
+    await modCase.save();
   }
 
   await syncModerationStatus(customerId);
@@ -112,10 +117,10 @@ export async function applySuspension(customerId, data, admin) {
   });
 
   if (data.sendEmail !== false) {
-    modCase.emailSent = true;
-    await modCase.save();
     const { subject, html } = suspensionApplied(customer.name, { reason: data.reason, message: data.message, endAt });
-    trySendMail(customer.email, subject, html);
+    const sent = await trySendMail(customer.email, subject, html);
+    modCase.emailSent = sent;
+    await modCase.save();
   }
 
   await syncModerationStatus(customerId);
@@ -153,10 +158,10 @@ export async function applyBan(customerId, data, admin) {
   });
 
   if (data.sendEmail !== false) {
-    modCase.emailSent = true;
-    await modCase.save();
     const { subject, html } = banApplied(customer.name, { reason: data.reason, message: data.message });
-    trySendMail(customer.email, subject, html);
+    const sent = await trySendMail(customer.email, subject, html);
+    modCase.emailSent = sent;
+    await modCase.save();
   }
 
   await syncModerationStatus(customerId);
@@ -216,6 +221,11 @@ export async function getCustomerModerationStatus(customerId) {
     if (active.endAt && new Date(active.endAt) <= new Date()) {
       await ModerationCase.findByIdAndUpdate(active._id, { $set: { status: "expired" } });
       await syncModerationStatus(customerId);
+      const customer = await Customer.findById(customerId).select("name email");
+      if (customer && !customer.deletedAt) {
+        const { subject, html } = suspensionExpired(customer.name);
+        trySendMail(customer.email, subject, html);
+      }
       return { status: "active", case: null };
     }
     return { status: "suspended", case: active };

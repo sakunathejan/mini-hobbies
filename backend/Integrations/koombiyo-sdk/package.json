@@ -1,6 +1,6 @@
 {
   "name": "koombiyo-sdk",
-  "version": "1.2.26",
+  "version": "1.2.27",
   "description": "Koombiyo Delivery API Client for NodeJS written in TypeScript",
   "main": "build/index.js",
   "scripts": {

@@ -304,8 +304,9 @@ export const sendMail = async (to, subject, html, text) => {
 
   const t = getTransporter();
   if (!t) {
-    console.log(`[EMAIL] SKIP — no SMTP transporter (SMTP_HOST=${process.env.SMTP_HOST ? "set" : "unset"}, SMTP_USER=${process.env.SMTP_USER ? "set" : "unset"})`);
-    return;
+    const msg = `SMTP not configured (SMTP_HOST=${process.env.SMTP_HOST ? "set" : "unset"}, SMTP_USER=${process.env.SMTP_USER ? "set" : "unset"})`;
+    console.error(`[EMAIL] SKIP — ${msg}`);
+    throw new Error(msg);
   }
 
   try {
