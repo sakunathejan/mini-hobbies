@@ -5,7 +5,7 @@ const baseURL = import.meta.env.VITE_API_URL;
 
 const api = axios.create({
   baseURL: baseURL || "",
-  timeout: 15000,
+  timeout: 30000,
   withCredentials: true,
   headers: { "x-csrf-token": "1" }
 });
