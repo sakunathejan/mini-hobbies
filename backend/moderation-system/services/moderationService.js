@@ -114,9 +114,14 @@ export async function applySuspension(customerId, data, admin) {
     throw err;
   }
 
-  const endAt = data.durationHours ? new Date(Date.now() + data.durationHours * 3600000) : data.endAt || null;
+  let endAt = null;
+  if (data.durationHours) {
+    endAt = new Date(Date.now() + data.durationHours * 3600000);
+  } else if (data.endAt) {
+    endAt = new Date(data.endAt);
+  }
 
-  if (!endAt) {
+  if (!endAt || isNaN(endAt.getTime())) {
     const err = new Error("Suspension requires either durationHours or endAt");
     err.statusCode = 400;
     throw err;
@@ -260,8 +265,6 @@ export async function getCustomerModerationStatus(customerId) {
   }
   if (active.type === "suspension") {
     if (active.endAt && new Date(active.endAt) <= new Date()) {
-      await ModerationCase.updateOne({ _id: active._id }, { $set: { status: "expired" } });
-      await syncModerationStatus(customerId);
       return { status: "active", case: null };
     }
     return { status: "suspended", case: active };
@@ -511,34 +514,65 @@ export async function deleteModerationCase(caseId) {
 
 export async function expireSuspensions() {
   const now = new Date();
+  log("INFO", "expiry_check_start", { checkedAt: now.toISOString() });
+
   const expired = await ModerationCase.find({
     type: "suspension",
     status: "active",
     endAt: { $lte: now },
   });
 
+  log("INFO", "expiry_found_count", { count: expired.length });
+
   let count = 0;
   for (const modCase of expired) {
-    modCase.status = "expired";
-    await modCase.save();
-    await syncModerationStatus(modCase.customer);
+    try {
+      const endAtStr = modCase.endAt?.toISOString?.() ?? String(modCase.endAt);
+      log("INFO", "expiry_processing", { moderationId: String(modCase._id), customerId: String(modCase.customer), endAt: endAtStr });
 
-    const customer = await Customer.findById(modCase.customer);
-    if (customer && !customer.deletedAt) {
+      modCase.status = "expired";
+      await modCase.save();
+      log("INFO", "expiry_marked_expired", { moderationId: String(modCase._id) });
+
+      await syncModerationStatus(modCase.customer);
+      log("INFO", "expiry_user_reactivated", { customerId: String(modCase.customer) });
+
+      const customer = await Customer.findById(modCase.customer);
+      if (!customer) {
+        log("ERROR", "expiry_customer_not_found", { customerId: String(modCase.customer) });
+        count++;
+        continue;
+      }
+      if (customer.deletedAt) {
+        log("WARN", "expiry_customer_deleted", { customerId: String(customer._id), deletedAt: customer.deletedAt });
+        count++;
+        continue;
+      }
+      if (!customer.email) {
+        log("ERROR", "expiry_no_email", { customerId: String(customer._id) });
+        count++;
+        continue;
+      }
+
+      log("INFO", "expiry_email_queuing", { customerId: String(customer._id), email: customer.email });
       const sent = await queueModerationEmail("suspension_expired", customer, modCase, {});
       modCase.emailSent = sent;
       await modCase.save();
+
       if (sent) {
-        log("INFO", "email_sent", { userId: String(customer._id), email: customer.email, moderationId: String(modCase._id), type: "suspension_expired" });
+        log("INFO", "expiry_email_sent", { customerId: String(customer._id), email: customer.email, moderationId: String(modCase._id) });
       } else {
-        log("ERROR", "email_failed", { userId: String(customer._id), email: customer.email, moderationId: String(modCase._id), type: "suspension_expired" });
+        log("ERROR", "expiry_email_failed", { customerId: String(customer._id), email: customer.email, moderationId: String(modCase._id) });
       }
+      count++;
+    } catch (err) {
+      log("ERROR", "expiry_case_error", { moderationId: String(modCase._id), customerId: String(modCase.customer), error: err.message });
+      count++;
     }
-    count++;
   }
 
   if (count > 0) {
-    log("INFO", "suspensions_expired", { count, checkedAt: now.toISOString() });
+    log("INFO", "expiry_batch_complete", { count });
   }
 
   return count;

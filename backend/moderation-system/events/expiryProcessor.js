@@ -5,16 +5,16 @@ let intervalId = null;
 export function startExpiryProcessor(intervalMs = 60000) {
   const run = async () => {
     try {
+      const now = new Date().toISOString();
+      console.log(`[Expiry Processor] Checking for expired suspensions at ${now}...`);
       const count = await expireSuspensions();
-      if (count > 0) {
-        console.log(`[Expiry Processor] Expired ${count} suspension(s) and queued expiry emails`);
-      }
+      console.log(`[Expiry Processor] Result: ${count} suspension(s) expired.`);
     } catch (err) {
-      console.error("[Expiry Processor] Error:", err.message);
+      console.error(`[Expiry Processor] Error: ${err.message}`);
     }
   };
 
-  console.log("[Expiry Processor] Started (interval: " + intervalMs + "ms)");
+  console.log(`[Expiry Processor] Started (interval: ${intervalMs}ms)`);
   run();
   intervalId = setInterval(run, intervalMs);
 }
