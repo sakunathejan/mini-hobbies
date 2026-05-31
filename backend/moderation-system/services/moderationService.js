@@ -191,7 +191,11 @@ export async function liftModeration(customerId, admin) {
 
   await syncModerationStatus(customerId);
   const { subject, html } = moderationLifted(customer.name);
-  await trySendMail(customer.email, subject, html);
+  const sent = await trySendMail(customer.email, subject, html);
+  if (!sent) {
+    console.log(`[Lift Moderation] Retrying email to ${customer.email}...`);
+    await trySendMail(customer.email, subject, html);
+  }
   return { lifted: true };
 }
 
