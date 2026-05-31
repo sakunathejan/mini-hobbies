@@ -14,15 +14,20 @@ import {
   moderationLifted,
 } from "../emails/emailTemplates.js";
 
-async function trySendMail(to, subject, html) {
-  try {
-    await sendMail(to, subject, html);
-    console.log(`[Moderation Email] Sent to ${to}: ${subject}`);
-    return true;
-  } catch (err) {
-    console.error(`[Moderation Email] Failed to send to ${to}:`, err.message);
-    return false;
+async function trySendMail(to, subject, html, retries = 2) {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      await sendMail(to, subject, html);
+      console.log(`[Moderation Email] Sent to ${to}: ${subject}`);
+      return true;
+    } catch (err) {
+      console.error(`[Moderation Email] Failed to send to ${to} (attempt ${attempt}/${retries}):`, err.message);
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
   }
+  return false;
 }
 
 async function syncModerationStatus(customerId) {
@@ -191,11 +196,7 @@ export async function liftModeration(customerId, admin) {
 
   await syncModerationStatus(customerId);
   const { subject, html } = moderationLifted(customer.name);
-  const sent = await trySendMail(customer.email, subject, html);
-  if (!sent) {
-    console.log(`[Lift Moderation] Retrying email to ${customer.email}...`);
-    await trySendMail(customer.email, subject, html);
-  }
+  await trySendMail(customer.email, subject, html);
   return { lifted: true };
 }
 
