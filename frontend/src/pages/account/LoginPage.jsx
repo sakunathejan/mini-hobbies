@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Eye, EyeOff, Loader2, Mail, Lock, User, Shield, ArrowRight } from "lucide-react";
+import { Eye, EyeOff, Loader2, Mail, Lock, User, ArrowRight } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import Seo from "../../components/Seo.jsx";
@@ -164,13 +164,7 @@ const LoginPage = () => {
                   Create one <ArrowRight className="inline h-3 w-3" />
                 </Link>
               </p>
-              <Link
-                to="/admin/login"
-                className="inline-flex items-center gap-1.5 text-xs font-medium text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
-              >
-                <Shield className="h-3 w-3" />
-                Admin sign in
-              </Link>
+
             </div>
           </div>
         </motion.div>

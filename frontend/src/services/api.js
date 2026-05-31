@@ -67,7 +67,7 @@ api.interceptors.response.use(
         localStorage.removeItem("mini_hobbies_admin_token");
         localStorage.removeItem("mini_hobbies_admin");
         localStorage.removeItem("mini_hobbies_admin_refresh");
-        window.location.href = "/admin/login";
+        window.location.href = "/login";
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

@@ -1,1 +1,0 @@
-import{b as a}from"./index-BXyUsrX2.js";const o=()=>a.get("/payment-methods/enabled").then(t=>t.data),s=()=>a.get("/payment-methods").then(t=>t.data),m=t=>a.post("/payment-methods",t).then(e=>e.data),h=(t,e)=>a.patch(`/payment-methods/${t}`,e).then(n=>n.data),p=t=>a.delete(`/payment-methods/${t}`).then(e=>e.data);export{o as a,m as c,p as d,s as g,h as u};

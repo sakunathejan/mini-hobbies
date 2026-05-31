@@ -10,7 +10,6 @@ const ProductDetailsPage = lazy(() => import("../pages/ProductDetailsPage.jsx"))
 const CartPage = lazy(() => import("../pages/CartPage.jsx"));
 const CheckoutPage = lazy(() => import("../pages/CheckoutPage.jsx"));
 const WishlistPage = lazy(() => import("../pages/WishlistPage.jsx"));
-const AdminLoginPage = lazy(() => import("../pages/admin/LoginPage.jsx"));
 const DashboardPage = lazy(() => import("../pages/admin/DashboardPage.jsx"));
 const AdminProductsPage = lazy(() => import("../pages/admin/AdminProductsPage.jsx"));
 const ProductFormPage = lazy(() => import("../pages/admin/ProductFormPage.jsx"));
@@ -68,7 +67,6 @@ const AppRoutes = () => (
         <Route path="account/moderation" element={<ModerationHistoryPage />} />
       </Route>
     </Route>
-    <Route path="admin/login" element={<AdminLoginPage />} />
     <Route element={<AdminRoute />}>
       <Route path="admin" element={<AdminLayout />}>
         <Route index element={<DashboardPage />} />

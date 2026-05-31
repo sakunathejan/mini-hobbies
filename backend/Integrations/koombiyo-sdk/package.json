@@ -5,7 +5,7 @@
   "main": "build/index.js",
   "scripts": {
     "test": "mocha **/*.test.js",
-    "npm-patch": "npm version patch --git-tag-version false && git add package.json",
+    "release:patch": "npm version patch --git-tag-version false && git add package.json package-lock.json",
     "build": "tsc"
   },
   "dependencies": {
@@ -13,16 +13,10 @@
   },
   "devDependencies": {
     "@types/node": "17.0.23",
-    "husky": "4.3.8",
     "mocha": "8.2.1",
     "nock": "12.0.3",
     "ts-node": "10.7.0",
     "typescript": "4.6.3"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run npm-patch && npm run test"
-    }
   },
   "repository": {
     "type": "git",
