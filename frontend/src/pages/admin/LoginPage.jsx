@@ -4,6 +4,17 @@ import { Navigate, useNavigate } from "react-router-dom";
 import Seo from "../../components/Seo.jsx";
 import { useAuth } from "../../context/AuthContext.jsx";
 
+const isTokenValid = () => {
+  const token = localStorage.getItem("mini_hobbies_admin_token");
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+};
+
 const LoginPage = () => {
   const { login, isAdmin } = useAuth();
   const navigate = useNavigate();
@@ -12,7 +23,7 @@ const LoginPage = () => {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  if (isAdmin) return <Navigate to="/admin" replace />;
+  if (isAdmin && isTokenValid()) return <Navigate to="/admin" replace />;
 
   const submit = async (event) => {
     event.preventDefault();
