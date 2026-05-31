@@ -84,8 +84,14 @@ const ModerationModal = ({ open, type, customer, onClose, onConfirm }) => {
   const TITLES = { warn: "Issue Warning", suspend: "Suspend Account", ban: "Ban Account" };
   const ICONS = { warn: AlertTriangle, suspend: Clock, ban: Ban };
   const COLORS = { warn: "amber", suspend: "orange", ban: "red" };
+  const BTN_CLASSES = {
+    warn: "bg-amber-500 hover:bg-amber-600 text-white",
+    suspend: "bg-orange-500 hover:bg-orange-600 text-white",
+    ban: "bg-red-600 hover:bg-red-700 text-white",
+  };
   const Icon = ICONS[type] || AlertTriangle;
   const color = COLORS[type] || "gray";
+  const btnClass = BTN_CLASSES[type] || "bg-gray-600 hover:bg-gray-700 text-white";
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -155,7 +161,7 @@ const ModerationModal = ({ open, type, customer, onClose, onConfirm }) => {
 
           <div className="flex justify-end gap-2 pt-2">
             <button type="button" onClick={onClose} className="btn-secondary text-sm">Cancel</button>
-            <button type="submit" disabled={sending} className={`btn-${color} text-sm`}>
+            <button type="submit" disabled={sending} className={`inline-flex items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 min-h-[44px] md:min-h-[40px] disabled:opacity-50 disabled:cursor-not-allowed ${btnClass}`}>
               {sending ? "Processing..." : TITLES[type] || "Confirm"}
             </button>
           </div>
