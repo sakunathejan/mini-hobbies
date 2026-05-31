@@ -25,7 +25,7 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await connectDB();
-  startExpiryProcessor(2000);
+  startExpiryProcessor(60000);
   // KOOMBIYO DISABLED — re-enable when SDK is ready:
   // initKoombiyo(process.env.KOOMBIYO_API_KEY);
   // syncAllActiveDeliveries();

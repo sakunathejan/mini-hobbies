@@ -1,55 +1,18 @@
-import nodemailer from "nodemailer";
 import ModerationCase from "../models/ModerationCase.js";
 import Customer from "../../models/Customer.js";
 import AuditLog from "../../models/AuditLog.js";
-import { sendMail } from "../../services/emailService.js";
-import {
-  warningIssued,
-  suspensionApplied,
-  suspensionExpired,
-  banApplied,
-  appealReceived,
-  appealApproved,
-  appealRejected,
-  appealStatusUpdated,
-  moderationLifted,
-} from "../emails/emailTemplates.js";
+import { queueWarningEmail, queueSuspensionEmail, queueSuspensionExpiredEmail, queueBanEmail, queueModerationLiftedEmail } from "./emailService.js";
 
-async function trySendMail(to, subject, html, retries = 2) {
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      const host = process.env.SMTP_HOST;
-      const port = parseInt(process.env.SMTP_PORT || "587");
-      const user = process.env.SMTP_USER;
-      const pass = process.env.SMTP_PASS;
-      if (!host || !user || !pass) {
-        console.error(`[Moderation Email] SMTP not configured, skipping email to ${to}`);
-        return false;
-      }
-      const transporter = nodemailer.createTransport({
-        host, port, secure: port === 465,
-        auth: { user, pass },
-        connectionTimeout: 10000,
-        greetingTimeout: 10000,
-      });
-      const fromName = process.env.SMTP_FROM_NAME || "Mini Hobbies";
-      const fromEmail = process.env.SMTP_FROM_EMAIL || user || "noreply@minihobbies.lk";
-      await transporter.sendMail({
-        from: `"${fromName}" <${fromEmail}>`,
-        to,
-        subject,
-        html,
-      });
-      console.log(`[Moderation Email] Sent to ${to}: ${subject}`);
-      return true;
-    } catch (err) {
-      console.error(`[Moderation Email] Failed to send to ${to} (attempt ${attempt}/${retries}):`, err.message);
-      if (attempt < retries) {
-        await new Promise((r) => setTimeout(r, 1000));
-      }
-    }
-  }
-  return false;
+function log(level, event, data = {}) {
+  const entry = {
+    timestamp: new Date().toISOString(),
+    level,
+    event,
+    ...data,
+  };
+  const msg = `[Moderation ${event}] ${JSON.stringify(entry)}`;
+  if (level === "ERROR") console.error(msg);
+  else console.log(msg);
 }
 
 async function syncModerationStatus(customerId) {
@@ -68,7 +31,31 @@ async function syncModerationStatus(customerId) {
   await Customer.findByIdAndUpdate(customerId, { $set: { moderationStatus: status } });
 }
 
-// --- Admin: Issue Warning ---
+async function queueModerationEmail(type, customer, modCase, data = {}) {
+  if (!customer?.email) {
+    log("ERROR", "email_skipped", { reason: "no_email", userId: customer?._id, moderationId: String(modCase._id) });
+    return false;
+  }
+
+  try {
+    const emailData = { reason: data.reason, message: data.message, endAt: data.endAt, severity: data.severity };
+    let queueFn;
+    if (type === "warning") queueFn = () => queueWarningEmail(customer, emailData);
+    else if (type === "suspension") queueFn = () => queueSuspensionEmail(customer, emailData);
+    else if (type === "ban") queueFn = () => queueBanEmail(customer, emailData);
+    else if (type === "lifted") queueFn = () => queueModerationLiftedEmail(customer);
+    else if (type === "suspension_expired") queueFn = () => queueSuspensionExpiredEmail(customer);
+    else return false;
+
+    await queueFn();
+    log("INFO", "email_queued", { userId: String(customer._id), email: customer.email, moderationId: String(modCase._id), type });
+    return true;
+  } catch (err) {
+    log("ERROR", "email_queued_failed", { userId: String(customer._id), email: customer.email, moderationId: String(modCase._id), type, error: err.message });
+    return false;
+  }
+}
+
 export async function issueWarning(customerId, data, admin) {
   const customer = await Customer.findById(customerId);
   if (!customer || customer.deletedAt) {
@@ -98,18 +85,23 @@ export async function issueWarning(customerId, data, admin) {
     details: { reason: data.reason, severity: data.severity, caseId: modCase._id },
   });
 
+  log("INFO", "moderation_created", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), type: "warning", reason: data.reason });
+
   if (data.sendEmail !== false) {
-    const { subject, html } = warningIssued(customer.name, data);
-    const sent = await trySendMail(customer.email, subject, html);
+    const sent = await queueModerationEmail("warning", customer, modCase, data);
     modCase.emailSent = sent;
     await modCase.save();
+    if (sent) {
+      log("INFO", "email_sent", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), type: "warning" });
+    } else {
+      log("ERROR", "email_failed", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), type: "warning" });
+    }
   }
 
   await syncModerationStatus(customerId);
   return modCase;
 }
 
-// --- Admin: Apply Suspension ---
 export async function applySuspension(customerId, data, admin) {
   const customer = await Customer.findById(customerId);
   if (!customer || customer.deletedAt) {
@@ -143,18 +135,23 @@ export async function applySuspension(customerId, data, admin) {
     details: { reason: data.reason, severity: data.severity, endAt, caseId: modCase._id },
   });
 
+  log("INFO", "suspension_created", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), endAt: endAt?.toISOString(), reason: data.reason });
+
   if (data.sendEmail !== false) {
-    const { subject, html } = suspensionApplied(customer.name, { reason: data.reason, message: data.message, endAt });
-    const sent = await trySendMail(customer.email, subject, html);
+    const sent = await queueModerationEmail("suspension", customer, modCase, { ...data, endAt });
     modCase.emailSent = sent;
     await modCase.save();
+    if (sent) {
+      log("INFO", "email_sent", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), type: "suspension" });
+    } else {
+      log("ERROR", "email_failed", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), type: "suspension" });
+    }
   }
 
   await syncModerationStatus(customerId);
   return modCase;
 }
 
-// --- Admin: Apply Ban ---
 export async function applyBan(customerId, data, admin) {
   const customer = await Customer.findById(customerId);
   if (!customer || customer.deletedAt) {
@@ -184,18 +181,23 @@ export async function applyBan(customerId, data, admin) {
     details: { reason: data.reason, severity: data.severity, caseId: modCase._id },
   });
 
+  log("INFO", "ban_created", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), reason: data.reason });
+
   if (data.sendEmail !== false) {
-    const { subject, html } = banApplied(customer.name, { reason: data.reason, message: data.message });
-    const sent = await trySendMail(customer.email, subject, html);
+    const sent = await queueModerationEmail("ban", customer, modCase, data);
     modCase.emailSent = sent;
     await modCase.save();
+    if (sent) {
+      log("INFO", "email_sent", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), type: "ban" });
+    } else {
+      log("ERROR", "email_failed", { userId: String(customerId), email: customer.email, moderationId: String(modCase._id), type: "ban" });
+    }
   }
 
   await syncModerationStatus(customerId);
   return modCase;
 }
 
-// --- Admin: Lift Moderation ---
 export async function liftModeration(customerId, admin) {
   const customer = await Customer.findById(customerId);
   if (!customer || customer.deletedAt) {
@@ -216,13 +218,16 @@ export async function liftModeration(customerId, admin) {
     resourceId: String(customerId),
   });
 
+  log("INFO", "moderation_lifted", { userId: String(customerId), email: customer.email });
+
   await syncModerationStatus(customerId);
-  const { subject, html } = moderationLifted(customer.name);
-  await trySendMail(customer.email, subject, html);
+
+  const sent = await queueModerationEmail("lifted", customer, { _id: "manual_lift" }, {});
+  log("INFO", "email_sent", { userId: String(customerId), email: customer.email, type: "lifted", sent });
+
   return { lifted: true };
 }
 
-// --- Get Moderation History ---
 export async function getModerationHistory(customerId) {
   const cases = await ModerationCase.find({ customer: customerId })
     .sort({ createdAt: -1 })
@@ -232,7 +237,6 @@ export async function getModerationHistory(customerId) {
   return { cases, moderationStatus: customer?.moderationStatus || "active" };
 }
 
-// --- Get customer's current moderation status ---
 export async function getCustomerModerationStatus(customerId) {
   const active = await ModerationCase.findOne({
     customer: customerId,
@@ -246,13 +250,6 @@ export async function getCustomerModerationStatus(customerId) {
   }
   if (active.type === "suspension") {
     if (active.endAt && new Date(active.endAt) <= new Date()) {
-      await ModerationCase.findByIdAndUpdate(active._id, { $set: { status: "expired" } });
-      await syncModerationStatus(customerId);
-      const customer = await Customer.findById(customerId).select("name email");
-      if (customer && !customer.deletedAt) {
-        const { subject, html } = suspensionExpired(customer.name);
-        await trySendMail(customer.email, subject, html);
-      }
       return { status: "active", case: null };
     }
     return { status: "suspended", case: active };
@@ -260,7 +257,6 @@ export async function getCustomerModerationStatus(customerId) {
   return { status: "warned", case: active };
 }
 
-// --- Get All Cases (admin listing) ---
 export async function listCases({ page = 1, limit = 20, type, status, appealStatus, search, startDate, endDate } = {}) {
   const filter = {};
   if (type) filter.type = type;
@@ -295,7 +291,6 @@ export async function listCases({ page = 1, limit = 20, type, status, appealStat
   return { data, total, page, pages: Math.ceil(total / limit) };
 }
 
-// --- Customer: Submit Appeal ---
 export async function submitAppeal(customerId, message) {
   const active = await ModerationCase.findOne({
     customer: customerId,
@@ -317,13 +312,13 @@ export async function submitAppeal(customerId, message) {
   active.appealMessage = message;
   await active.save();
 
+  log("INFO", "appeal_submitted", { userId: String(customerId), moderationId: String(active._id) });
+
   const customer = await Customer.findById(customerId);
-  const { subject, html } = appealReceived();
-  await trySendMail(process.env.ADMIN_EMAIL || "admin@minihobbies.lk", subject, html);
+  await queueModerationEmail("appeal_received", customer, active, {});
   return active;
 }
 
-// --- Admin: Review Appeal ---
 export async function reviewAppeal(caseId, decision, admin, reviewNotes) {
   const modCase = await ModerationCase.findById(caseId);
   if (!modCase) {
@@ -353,13 +348,15 @@ export async function reviewAppeal(caseId, decision, admin, reviewNotes) {
   await modCase.save();
 
   const customer = await Customer.findById(modCase.customer);
+  if (!customer) return modCase;
+
   if (decision === "approve") {
     await syncModerationStatus(modCase.customer);
-    const { subject, html } = appealApproved(customer.name);
-    await trySendMail(customer.email, subject, html);
+    await queueModerationEmail("appeal_approved", customer, modCase, {});
+    log("INFO", "appeal_approved", { userId: String(modCase.customer), moderationId: String(caseId) });
   } else {
-    const { subject, html } = appealRejected(customer.name, reviewNotes);
-    await trySendMail(customer.email, subject, html);
+    await queueModerationEmail("appeal_rejected", customer, modCase, {});
+    log("INFO", "appeal_rejected", { userId: String(modCase.customer), moderationId: String(caseId) });
   }
 
   await AuditLog.create({
@@ -373,7 +370,6 @@ export async function reviewAppeal(caseId, decision, admin, reviewNotes) {
   return modCase;
 }
 
-// --- Admin: Delete Appeal ---
 export async function deleteAppeal(caseId) {
   const modCase = await ModerationCase.findById(caseId);
   if (!modCase) {
@@ -394,10 +390,11 @@ export async function deleteAppeal(caseId) {
   modCase.appealReviewNotes = undefined;
   await modCase.save();
 
+  log("INFO", "appeal_deleted", { moderationId: String(caseId) });
+
   return modCase;
 }
 
-// --- Admin: Update Appeal Status (under_review, waiting_customer, escalated) ---
 export async function updateAppealStatus(caseId, status, admin) {
   const modCase = await ModerationCase.findById(caseId).populate("customer", "name email");
   if (!modCase) {
@@ -420,8 +417,8 @@ export async function updateAppealStatus(caseId, status, admin) {
 
   const customer = modCase.customer;
   if (customer?.email) {
-    const { subject, html } = appealStatusUpdated(customer.name, status);
-    await trySendMail(customer.email, subject, html);
+    await queueModerationEmail("appeal_status_updated", customer, modCase, {});
+    log("INFO", "appeal_status_updated", { userId: String(customer._id), moderationId: String(caseId), status });
   }
 
   await AuditLog.create({
@@ -435,7 +432,6 @@ export async function updateAppealStatus(caseId, status, admin) {
   return modCase;
 }
 
-// --- Admin: Add Internal Note to Appeal ---
 export async function addAppealNote(caseId, text, admin) {
   const modCase = await ModerationCase.findById(caseId);
   if (!modCase) {
@@ -455,7 +451,6 @@ export async function addAppealNote(caseId, text, admin) {
   return modCase;
 }
 
-// --- Admin: Get Appeal Analytics ---
 export async function getAppealAnalytics() {
   const total = await ModerationCase.countDocuments({ appealStatus: { $ne: "none" } });
   const pending = await ModerationCase.countDocuments({ appealStatus: "pending" });
@@ -477,7 +472,6 @@ export async function getAppealAnalytics() {
   return { total, pending, underReview, approved, rejected, activeBans, approvalRate, recentDecided };
 }
 
-// --- Admin: Delete Any Moderation Case ---
 export async function deleteModerationCase(caseId) {
   const modCase = await ModerationCase.findByIdAndDelete(caseId);
   if (!modCase) {
@@ -498,26 +492,42 @@ export async function deleteModerationCase(caseId) {
     details: { deletedCase: modCase.toObject() },
   });
 
+  log("INFO", "moderation_case_deleted", { moderationId: String(caseId) });
+
   return { deleted: true };
 }
 
-// --- Expire expired suspensions ---
 export async function expireSuspensions() {
+  const now = new Date();
   const expired = await ModerationCase.find({
     type: "suspension",
     status: "active",
-    endAt: { $lte: new Date() },
+    endAt: { $lte: now },
   });
 
+  let count = 0;
   for (const modCase of expired) {
     modCase.status = "expired";
     await modCase.save();
     await syncModerationStatus(modCase.customer);
+
     const customer = await Customer.findById(modCase.customer);
     if (customer && !customer.deletedAt) {
-      const { subject, html } = suspensionExpired(customer.name);
-      await trySendMail(customer.email, subject, html);
+      const sent = await queueModerationEmail("suspension_expired", customer, modCase, {});
+      modCase.emailSent = sent;
+      await modCase.save();
+      if (sent) {
+        log("INFO", "email_sent", { userId: String(customer._id), email: customer.email, moderationId: String(modCase._id), type: "suspension_expired" });
+      } else {
+        log("ERROR", "email_failed", { userId: String(customer._id), email: customer.email, moderationId: String(modCase._id), type: "suspension_expired" });
+      }
     }
+    count++;
   }
-  return expired.length;
+
+  if (count > 0) {
+    log("INFO", "suspensions_expired", { count, checkedAt: now.toISOString() });
+  }
+
+  return count;
 }

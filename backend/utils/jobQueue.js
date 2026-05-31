@@ -4,12 +4,10 @@ const MAX_CONCURRENT = 3;
 
 const processNext = () => {
   if (queue.length === 0 || activeCount >= MAX_CONCURRENT) {
-    console.log(`[QUEUE] processNext skipped: queue=${queue.length}, active=${activeCount}/${MAX_CONCURRENT}`);
     return;
   }
   const job = queue.shift();
   activeCount++;
-  console.log(`[QUEUE] START job "${job.name}" (active=${activeCount}/${MAX_CONCURRENT}, remaining=${queue.length})`);
   executeJob(job);
 };
 
@@ -17,9 +15,8 @@ const executeJob = async (job) => {
   const maxAttempts = job.maxRetries ?? 2;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`[QUEUE] executing "${job.name}" attempt ${attempt}/${maxAttempts}`);
       await job.handler();
-      console.log(`[QUEUE] DONE job "${job.name}"`);
+      if (job.resolve) job.resolve(true);
       break;
     } catch (err) {
       console.error(`[QUEUE] FAIL job "${job.name}" (attempt ${attempt}/${maxAttempts}): ${err.message}`);
@@ -27,6 +24,7 @@ const executeJob = async (job) => {
         await new Promise((r) => setTimeout(r, 1000 * attempt));
       } else {
         console.error(`[QUEUE] EXHAUSTED job "${job.name}" — all ${maxAttempts} attempts failed.`);
+        if (job.reject) job.reject(err);
         try {
           const { default: AuditLog } = await import("../models/AuditLog.js");
           await AuditLog.create({
@@ -43,15 +41,20 @@ const executeJob = async (job) => {
 };
 
 export const enqueue = (name, handler, maxRetries = 2) => {
-  queue.push({ name, handler, maxRetries });
-  processNext();
+  return new Promise((resolve, reject) => {
+    queue.push({ name, handler, maxRetries, resolve, reject });
+    processNext();
+  });
 };
 
 export const enqueueBatch = (jobs) => {
-  for (const job of jobs) {
-    queue.push(job);
-  }
+  const promises = jobs.map((job) => {
+    return new Promise((resolve, reject) => {
+      queue.push({ ...job, resolve, reject });
+    });
+  });
   if (activeCount < MAX_CONCURRENT) processNext();
+  return Promise.allSettled(promises);
 };
 
 export const queueSize = () => queue.length + activeCount;
