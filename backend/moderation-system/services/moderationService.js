@@ -1,3 +1,4 @@
+import nodemailer from "nodemailer";
 import ModerationCase from "../models/ModerationCase.js";
 import Customer from "../../models/Customer.js";
 import AuditLog from "../../models/AuditLog.js";
@@ -17,7 +18,28 @@ import {
 async function trySendMail(to, subject, html, retries = 2) {
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await sendMail(to, subject, html);
+      const host = process.env.SMTP_HOST;
+      const port = parseInt(process.env.SMTP_PORT || "587");
+      const user = process.env.SMTP_USER;
+      const pass = process.env.SMTP_PASS;
+      if (!host || !user || !pass) {
+        console.error(`[Moderation Email] SMTP not configured, skipping email to ${to}`);
+        return false;
+      }
+      const transporter = nodemailer.createTransport({
+        host, port, secure: port === 465,
+        auth: { user, pass },
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+      });
+      const fromName = process.env.SMTP_FROM_NAME || "Mini Hobbies";
+      const fromEmail = process.env.SMTP_FROM_EMAIL || user || "noreply@minihobbies.lk";
+      await transporter.sendMail({
+        from: `"${fromName}" <${fromEmail}>`,
+        to,
+        subject,
+        html,
+      });
       console.log(`[Moderation Email] Sent to ${to}: ${subject}`);
       return true;
     } catch (err) {
