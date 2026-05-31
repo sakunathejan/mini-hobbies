@@ -99,6 +99,7 @@ customerSchema.methods.toPublicProfile = function toPublicProfile() {
     emailVerified: this.emailVerified,
     addresses: this.addresses,
     preferences: this.preferences,
+    moderationStatus: this.moderationStatus,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };

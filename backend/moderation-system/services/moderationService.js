@@ -1,7 +1,7 @@
 import ModerationCase from "../models/ModerationCase.js";
 import Customer from "../../models/Customer.js";
 import AuditLog from "../../models/AuditLog.js";
-import { queueWarningEmail, queueSuspensionEmail, queueSuspensionExpiredEmail, queueBanEmail, queueModerationLiftedEmail } from "./emailService.js";
+import { queueWarningEmail, queueSuspensionEmail, queueSuspensionExpiredEmail, queueBanEmail, queueModerationLiftedEmail, queueAppealReceivedEmail, queueAppealApprovedEmail, queueAppealRejectedEmail, queueAppealStatusUpdatedEmail } from "./emailService.js";
 
 function log(level, event, data = {}) {
   const entry = {
@@ -45,6 +45,10 @@ async function queueModerationEmail(type, customer, modCase, data = {}) {
     else if (type === "ban") queueFn = () => queueBanEmail(customer, emailData);
     else if (type === "lifted") queueFn = () => queueModerationLiftedEmail(customer);
     else if (type === "suspension_expired") queueFn = () => queueSuspensionExpiredEmail(customer);
+    else if (type === "appeal_received") queueFn = () => queueAppealReceivedEmail();
+    else if (type === "appeal_approved") queueFn = () => queueAppealApprovedEmail(customer);
+    else if (type === "appeal_rejected") queueFn = () => queueAppealRejectedEmail(customer, data.reviewNotes);
+    else if (type === "appeal_status_updated") queueFn = () => queueAppealStatusUpdatedEmail(customer, data.appealStatus);
     else return false;
 
     await queueFn();
@@ -111,6 +115,12 @@ export async function applySuspension(customerId, data, admin) {
   }
 
   const endAt = data.durationHours ? new Date(Date.now() + data.durationHours * 3600000) : data.endAt || null;
+
+  if (!endAt) {
+    const err = new Error("Suspension requires either durationHours or endAt");
+    err.statusCode = 400;
+    throw err;
+  }
 
   const modCase = await ModerationCase.create({
     customer: customerId,
@@ -250,6 +260,8 @@ export async function getCustomerModerationStatus(customerId) {
   }
   if (active.type === "suspension") {
     if (active.endAt && new Date(active.endAt) <= new Date()) {
+      await ModerationCase.updateOne({ _id: active._id }, { $set: { status: "expired" } });
+      await syncModerationStatus(customerId);
       return { status: "active", case: null };
     }
     return { status: "suspended", case: active };
@@ -355,7 +367,7 @@ export async function reviewAppeal(caseId, decision, admin, reviewNotes) {
     await queueModerationEmail("appeal_approved", customer, modCase, {});
     log("INFO", "appeal_approved", { userId: String(modCase.customer), moderationId: String(caseId) });
   } else {
-    await queueModerationEmail("appeal_rejected", customer, modCase, {});
+    await queueModerationEmail("appeal_rejected", customer, modCase, { reviewNotes });
     log("INFO", "appeal_rejected", { userId: String(modCase.customer), moderationId: String(caseId) });
   }
 
@@ -417,7 +429,7 @@ export async function updateAppealStatus(caseId, status, admin) {
 
   const customer = modCase.customer;
   if (customer?.email) {
-    await queueModerationEmail("appeal_status_updated", customer, modCase, {});
+    await queueModerationEmail("appeal_status_updated", customer, modCase, { appealStatus: status });
     log("INFO", "appeal_status_updated", { userId: String(customer._id), moderationId: String(caseId), status });
   }
 

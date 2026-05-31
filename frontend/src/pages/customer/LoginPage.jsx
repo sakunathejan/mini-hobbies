@@ -17,14 +17,15 @@ const LoginPage = () => {
     setError("");
     try {
       const result = await login(form);
-      if (result?.user?.suspension) {
-        navigate("/suspended", { replace: true });
+      const modStatus = result?.user?.moderationStatus || result?.moderationStatus;
+      if (modStatus === "suspended" || modStatus === "banned") {
+        navigate("/account/suspended", { replace: true });
         return;
       }
       navigate(state?.from || "/account", { replace: true });
     } catch (err) {
-      if (err.response?.data?.suspended) {
-        navigate("/suspended", { replace: true });
+      if (err.response?.data?.moderationStatus === "suspended" || err.response?.data?.moderationStatus === "banned") {
+        navigate("/account/suspended", { replace: true });
         return;
       }
       setError(err.response?.data?.message || "Invalid email or password.");
