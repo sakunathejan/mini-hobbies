@@ -191,7 +191,7 @@ export async function liftModeration(customerId, admin) {
 
   await syncModerationStatus(customerId);
   const { subject, html } = moderationLifted(customer.name);
-  trySendMail(customer.email, subject, html);
+  await trySendMail(customer.email, subject, html);
   return { lifted: true };
 }
 
@@ -224,7 +224,7 @@ export async function getCustomerModerationStatus(customerId) {
       const customer = await Customer.findById(customerId).select("name email");
       if (customer && !customer.deletedAt) {
         const { subject, html } = suspensionExpired(customer.name);
-        trySendMail(customer.email, subject, html);
+        await trySendMail(customer.email, subject, html);
       }
       return { status: "active", case: null };
     }
@@ -292,7 +292,7 @@ export async function submitAppeal(customerId, message) {
 
   const customer = await Customer.findById(customerId);
   const { subject, html } = appealReceived();
-  trySendMail(process.env.ADMIN_EMAIL || "admin@minihobbies.lk", subject, html);
+  await trySendMail(process.env.ADMIN_EMAIL || "admin@minihobbies.lk", subject, html);
   return active;
 }
 
@@ -329,10 +329,10 @@ export async function reviewAppeal(caseId, decision, admin, reviewNotes) {
   if (decision === "approve") {
     await syncModerationStatus(modCase.customer);
     const { subject, html } = appealApproved(customer.name);
-    trySendMail(customer.email, subject, html);
+    await trySendMail(customer.email, subject, html);
   } else {
     const { subject, html } = appealRejected(customer.name, reviewNotes);
-    trySendMail(customer.email, subject, html);
+    await trySendMail(customer.email, subject, html);
   }
 
   await AuditLog.create({
@@ -394,7 +394,7 @@ export async function updateAppealStatus(caseId, status, admin) {
   const customer = modCase.customer;
   if (customer?.email) {
     const { subject, html } = appealStatusUpdated(customer.name, status);
-    trySendMail(customer.email, subject, html);
+    await trySendMail(customer.email, subject, html);
   }
 
   await AuditLog.create({
@@ -489,7 +489,7 @@ export async function expireSuspensions() {
     const customer = await Customer.findById(modCase.customer);
     if (customer && !customer.deletedAt) {
       const { subject, html } = suspensionExpired(customer.name);
-      trySendMail(customer.email, subject, html);
+      await trySendMail(customer.email, subject, html);
     }
   }
   return expired.length;
