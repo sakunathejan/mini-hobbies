@@ -1,8 +1,11 @@
 import { Router } from "express";
 import Order from "../../models/Order.js";
+import KoombiyoShipment from "../../models/koombiyo/KoombiyoShipment.js";
+import KoombiyoDistrict from "../../models/koombiyo/KoombiyoDistrict.js";
+import KoombiyoCity from "../../models/koombiyo/KoombiyoCity.js";
 import { adminOnly, protect } from "../../middleware/authMiddleware.js";
 import asyncHandler from "../../utils/asyncHandler.js";
-import { isInitialized } from "../../services/koombiyo/koombiyoApiClient.js";
+import { isInitialized, koombiyoPost } from "../../services/koombiyo/koombiyoApiClient.js";
 import { createKoombiyoShipment, getKoombiyoWaybills } from "../../services/koombiyo/order.service.js";
 import { syncDistricts } from "../../services/koombiyo/district.service.js";
 import { syncCities } from "../../services/koombiyo/city.service.js";
@@ -11,6 +14,7 @@ import { requestPickup } from "../../services/koombiyo/pickup.service.js";
 import { getReturnNotes, getReturnItems, processReturnReceive } from "../../services/koombiyo/return.service.js";
 import { enqueue } from "../../utils/jobQueue.js";
 import { sendOrderStatusEmail } from "../../services/emailService.js";
+import { getAuditLogs } from "../../services/audit.service.js";
 
 const router = Router();
 
@@ -180,6 +184,53 @@ router.post(
   requireInit,
   asyncHandler(async (req, res) => {
     const result = await syncAllActiveDeliveries();
+    res.json(result);
+  })
+);
+
+router.get(
+  "/dashboard",
+  protect,
+  adminOnly,
+  requireInit,
+  asyncHandler(async (req, res) => {
+    const waybillResult = await getKoombiyoWaybills(1);
+    const availableWaybills = waybillResult.success ? waybillResult.total : 0;
+    const activeShipments = await KoombiyoShipment.countDocuments({
+      deliveryStatus: { $nin: ["delivered", "cancelled", "returned"] }
+    });
+    const totalShipments = await KoombiyoShipment.countDocuments();
+    const districtCount = await KoombiyoDistrict.countDocuments({ isActive: true });
+    const cityCount = await KoombiyoCity.countDocuments({ isActive: true });
+    const lastShipment = await KoombiyoShipment.findOne().sort({ createdAt: -1 }).select("createdAt").lean();
+    const failedSyncCount = await koombiyoPost("Allorders/users", { limit: 1 }).then(() => 0).catch(() => 1);
+    const apiOk = isInitialized();
+    res.json({
+      apiStatus: apiOk ? "connected" : "disconnected",
+      lastSyncTime: lastShipment?.createdAt || null,
+      availableWaybills,
+      waybillStatus: availableWaybills < 20 ? "low" : availableWaybills < 50 ? "medium" : "good",
+      activeShipments,
+      totalShipments,
+      districtCount,
+      cityCount,
+      failedSyncCount
+    });
+  })
+);
+
+router.get(
+  "/audit-logs",
+  protect,
+  adminOnly,
+  asyncHandler(async (req, res) => {
+    const { action, orderId, limit = 50, skip = 0 } = req.query;
+    const result = await getAuditLogs({
+      action: action || undefined,
+      orderId: orderId || undefined,
+      limit: parseInt(limit),
+      skip: parseInt(skip)
+    });
     res.json(result);
   })
 );

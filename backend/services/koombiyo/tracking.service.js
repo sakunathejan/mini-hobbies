@@ -6,6 +6,8 @@ import * as cache from "../../utils/cache.js";
 import { ORDER_STATUS, KOOMBIYO_TO_LIFECYCLE, shouldSendEmail, LIFECYCLE_TO_LEGACY } from "../../constants/orderStatus.js";
 import { emit, EVENTS } from "../event.service.js";
 import { sendStatusUpdateEmail } from "../email/email.service.js";
+import { addTimelineEntry } from "../../helpers/orderTimeline.js";
+import { logAudit } from "../audit.service.js";
 
 function mapDeliveryStatus(label) {
   if (!label) return "pending";
@@ -14,6 +16,7 @@ function mapDeliveryStatus(label) {
   if (s.includes("out for delivery") || s.includes("dispatched")) return "in_transit";
   if (s.includes("warehouse") || s.includes("destination")) return "in_transit";
   if (s.includes("collected") || s.includes("processing")) return "processing";
+  if (s.includes("pickup") || s.includes("pick up")) return "pickup_requested";
   if (s.includes("cancelled") || s.includes("return")) return "returned";
   return "pending";
 }
@@ -28,7 +31,7 @@ export async function refreshTracking(orderId) {
     if (!waybillId) return { success: false, error: "No waybill ID" };
 
     const currentLifecycleStatus = order.lifecycleStatus || ORDER_STATUS.PENDING;
-    if (currentLifecycleStatus === ORDER_STATUS.DELIVERED || currentLifecycleStatus === ORDER_STATUS.CANCELLED || currentLifecycleStatus === ORDER_STATUS.RETURNED) {
+    if ([ORDER_STATUS.DELIVERED, ORDER_STATUS.CANCELLED, ORDER_STATUS.RETURNED].includes(currentLifecycleStatus)) {
       return { success: true, synced: false, reason: "Terminal status" };
     }
 
@@ -75,10 +78,7 @@ export async function refreshTracking(orderId) {
     await KoombiyoShipment.findOneAndUpdate(
       { order: orderId },
       {
-        $set: {
-          deliveryStatus: mappedStatus,
-          lastTrackingSyncAt: new Date()
-        },
+        $set: { deliveryStatus: mappedStatus, lastTrackingSyncAt: new Date() },
         $push: { history: historyEntry }
       }
     );
@@ -96,9 +96,14 @@ export async function refreshTracking(orderId) {
       order.lastSyncAt = new Date();
 
       if (newLifecycleStatus === ORDER_STATUS.DELIVERED) order.deliveredAt = new Date();
-      if ((newLifecycleStatus === ORDER_STATUS.IN_TRANSIT || newLifecycleStatus === ORDER_STATUS.SHIPPED) && !order.shippedAt) {
+      if ([ORDER_STATUS.IN_TRANSIT, ORDER_STATUS.SHIPPED].includes(newLifecycleStatus) && !order.shippedAt) {
         order.shippedAt = new Date();
       }
+
+      addTimelineEntry(order, newLifecycleStatus, {
+        note: `Koombiyo tracking: ${statusLabel}`,
+        source: "api"
+      });
 
       if (order.statusHistory) {
         order.statusHistory.push({
@@ -107,6 +112,13 @@ export async function refreshTracking(orderId) {
           updatedAt: new Date()
         });
       }
+
+      await logAudit({
+        action: "STATUS_CHANGED",
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        details: { from: currentLifecycleStatus, to: newLifecycleStatus, waybillId, label: statusLabel }
+      });
     }
 
     await order.save({ validateModifiedOnly: true });

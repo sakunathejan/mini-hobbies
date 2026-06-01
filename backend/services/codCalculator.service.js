@@ -1,4 +1,9 @@
-export function calculateCOD({ productValue, deliveryCharge }) {
+const PAYMENT_METHODS = {
+  COD: "cod",
+  ONLINE_PAYMENT: "online_payment"
+};
+
+export function calculateCOD({ productValue, deliveryCharge, paymentMethod }) {
   if (productValue === undefined || productValue === null) {
     return { success: false, error: "productValue is required" };
   }
@@ -16,12 +21,27 @@ export function calculateCOD({ productValue, deliveryCharge }) {
     return { success: false, error: "Invalid delivery charge" };
   }
 
-  const codTotal = Math.round((pv + dc) * 100) / 100;
+  const isCOD = paymentMethod === PAYMENT_METHODS.COD;
+  const codAmount = isCOD ? Math.round((pv + dc) * 100) / 100 : 0;
+  const getCod = isCOD ? codAmount : 0;
 
   return {
     success: true,
     productValue: pv,
     deliveryCharge: dc,
-    codTotal
+    codAmount,
+    getCod,
+    paymentMethod: isCOD ? PAYMENT_METHODS.COD : PAYMENT_METHODS.ONLINE_PAYMENT
+  };
+}
+
+export function getPaymentSummary({ productValue, deliveryCharge, paymentMethod }) {
+  const total = Math.round((parseFloat(productValue || 0) + parseFloat(deliveryCharge || 0)) * 100) / 100;
+  const isCOD = paymentMethod === PAYMENT_METHODS.COD;
+  return {
+    total,
+    payNow: isCOD ? 0 : total,
+    payOnDelivery: isCOD ? total : 0,
+    paymentMethod: isCOD ? "Cash on Delivery" : "Online Payment"
   };
 }

@@ -17,6 +17,7 @@ const AdminCategoriesPage = lazy(() => import("../pages/admin/AdminCategoriesPag
 const AdminOrdersPage = lazy(() => import("../pages/admin/AdminOrdersPage.jsx"));
 const AdminOrderDetailPage = lazy(() => import("../pages/admin/AdminOrderDetailPage.jsx"));
 const OrderTrackPage = lazy(() => import("../pages/OrderTrackPage.jsx"));
+const TrackingPage = lazy(() => import("../pages/TrackingPage.jsx"));
 const OrderSuccessPage = lazy(() => import("../pages/OrderSuccessPage.jsx"));
 const AdminPaymentVerificationPage = lazy(() => import("../pages/admin/AdminPaymentVerificationPage.jsx"));
 const AdminPaymentMethodsPage = lazy(() => import("../pages/admin/AdminPaymentMethodsPage.jsx"));
@@ -49,6 +50,7 @@ const AppRoutes = () => (
       <Route path="products/:slug" element={<ProductDetailsPage />} />
       <Route path="cart" element={<CartPage />} />
       <Route path="checkout" element={<CheckoutPage />} />
+      <Route path="track/:waybillId" element={<TrackingPage />} />
       <Route path="track-order" element={<OrderTrackPage />} />
       <Route path="order-success" element={<OrderSuccessPage />} />
       <Route path="wishlist" element={<WishlistPage />} />

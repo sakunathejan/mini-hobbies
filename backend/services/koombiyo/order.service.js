@@ -9,6 +9,8 @@ import { emit, EVENTS } from "../event.service.js";
 import { sendShipmentCreatedEmail } from "../email/email.service.js";
 import { calculateCOD } from "../codCalculator.service.js";
 import { validateCityInDistrict, validateDistrictExists } from "../../middleware/validateLocation.js";
+import { addTimelineEntry } from "../../helpers/orderTimeline.js";
+import { logAudit } from "../audit.service.js";
 
 function sanitizePhone(phone) {
   if (!phone) return "";
@@ -62,11 +64,23 @@ export async function createKoombiyoShipment(orderId) {
 
   const districtCheck = await validateDistrictExists(districtId);
   if (!districtCheck.valid) {
+    await logAudit({
+      action: "LOCATION_VALIDATION_FAILED",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      details: { error: `Invalid district: ${districtCheck.error}`, districtId }
+    });
     return { success: false, error: `Invalid district: ${districtCheck.error}` };
   }
 
   const cityCheck = await validateCityInDistrict(cityId, districtId);
   if (!cityCheck.valid) {
+    await logAudit({
+      action: "LOCATION_VALIDATION_FAILED",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      details: { error: `Invalid city: ${cityCheck.error}`, cityId, districtId }
+    });
     return { success: false, error: `Invalid city: ${cityCheck.error}` };
   }
 
@@ -74,16 +88,26 @@ export async function createKoombiyoShipment(orderId) {
   const cityCode = cityCheck.city.cityId;
 
   const items = order.items || [];
-
   const totalProductValue = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
   const deliveryCharge = order.deliveryFee || 0;
-  const codResult = calculateCOD({ productValue: totalProductValue, deliveryCharge });
-  const getCod = codResult.success ? codResult.codTotal : 0;
+
+  const paymentMethod = order.paymentMethod === "cod" ? "cod" : "online_payment";
+  const codResult = calculateCOD({ productValue: totalProductValue, deliveryCharge, paymentMethod });
+
+  if (!codResult.success) {
+    return { success: false, error: codResult.error };
+  }
 
   let waybillId;
   try {
     waybillId = await getNextWaybill();
     console.log("[Koombiyo] Allocated waybill ID:", waybillId);
+    await logAudit({
+      action: "WAYBILL_ALLOCATED",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      details: { waybillId }
+    });
   } catch (err) {
     console.error("[Koombiyo] Waybill allocation failed:", err.message);
     return { success: false, error: err.message };
@@ -99,7 +123,7 @@ export async function createKoombiyoShipment(orderId) {
     receiverPhone: (customer.phone || "").replace(/\D/g, ""),
     description: buildDescription(items),
     spclNote: sanitizeText(order.notes || ""),
-    getCod
+    getCod: codResult.getCod
   };
 
   try {
@@ -146,13 +170,19 @@ export async function createKoombiyoShipment(orderId) {
     order.cityId = cityCode;
     order.koombiyoWaybillId = waybillId;
     order.isKoombiyoActive = true;
-    order.productValue = totalProductValue;
-    order.deliveryCharge = deliveryCharge;
-    order.codTotal = getCod;
+    order.productValue = codResult.productValue;
+    order.deliveryCharge = codResult.deliveryCharge;
+    order.codAmount = codResult.codAmount;
+    order.codTotal = codResult.getCod;
     order.lifecycleStatus = ORDER_STATUS.SHIPPED;
     order.status = LIFECYCLE_TO_LEGACY[ORDER_STATUS.SHIPPED] || order.status;
     order.shippedAt = new Date();
     order.lastSyncAt = new Date();
+
+    addTimelineEntry(order, ORDER_STATUS.SHIPPED, {
+      note: `Shipment created via Koombiyo. Waybill: ${waybillId}. ${codResult.paymentMethod === "cod" ? `COD: LKR ${codResult.codAmount}` : "Paid online"}`,
+      source: "system"
+    });
 
     if (order.statusHistory) {
       order.statusHistory.push({
@@ -164,6 +194,13 @@ export async function createKoombiyoShipment(orderId) {
 
     await order.save({ validateModifiedOnly: true });
     cache.clear(`koombiyo:tracking:${order._id}`);
+
+    await logAudit({
+      action: "SHIPMENT_CREATED",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      details: { waybillId, codAmount: codResult.codAmount, paymentMethod: codResult.paymentMethod }
+    });
 
     emit(EVENTS.ORDER_SHIPPED, { order, waybillId, trackingUrl });
 

@@ -5,8 +5,11 @@ import { ORDER_STATUS, KOOMBIYO_TO_LIFECYCLE, isTerminal, shouldSendEmail, LIFEC
 import { sendStatusUpdateEmail } from "../email/email.service.js";
 import { emit, EVENTS } from "../event.service.js";
 import { cancelOrderByKoombioSync } from "./cancellation.service.js";
+import { addTimelineEntry } from "../../helpers/orderTimeline.js";
+import { logAudit } from "../audit.service.js";
 
-const VALID_TRACKING_LABELS = new Set(["pending", "processing", "in_transit", "delivered", "returned", "cancelled"]);
+const VALID_TRACKING_LABELS = new Set(["pending", "processing", "in_transit", "delivered", "returned", "cancelled", "pickup_requested"]);
+const CANCELLATION_PENALTY = new Map();
 
 function mapDeliveryLabel(label) {
   if (!label) return "pending";
@@ -15,6 +18,7 @@ function mapDeliveryLabel(label) {
   if (s.includes("out for delivery") || s.includes("dispatched")) return "in_transit";
   if (s.includes("warehouse") || s.includes("destination")) return "in_transit";
   if (s.includes("collected") || s.includes("processing")) return "processing";
+  if (s.includes("pickup") || s.includes("pick up")) return "pickup_requested";
   if (s.includes("cancelled") || s.includes("return")) return "cancelled";
   return "pending";
 }
@@ -38,6 +42,12 @@ export async function syncSingleOrder(orderId) {
     trackingData = trackingResult.status === "fulfilled" ? trackingResult.value : {};
     historyData = historyResult.status === "fulfilled" ? historyResult.value : [];
   } catch (err) {
+    await logAudit({
+      action: "SYNC_FAILED",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      details: { error: `API call failed: ${err.message}`, waybillId }
+    });
     return { success: false, error: `API call failed: ${err.message}` };
   }
 
@@ -45,9 +55,25 @@ export async function syncSingleOrder(orderId) {
   const foundInKoombiyo = orderData && Object.keys(orderData).length > 0;
 
   if (!foundInKoombiyo) {
-    const cancelResult = await cancelOrderByKoombioSync(order, "Waybill not found in Koombiyo (deleted from portal)");
+    const key = String(order._id);
+    const prev = CANCELLATION_PENALTY.get(key) || 0;
+    CANCELLATION_PENALTY.set(key, prev + 1);
+    if (prev < 1) {
+      console.log(`[KoombiyoSync] Deletion detected for ${order.orderNumber} (pass ${prev + 1}/2), waiting for confirmation`);
+      return { success: true, synced: false, reason: "Deletion detected, awaiting second confirmation", pass: prev + 1 };
+    }
+    CANCELLATION_PENALTY.delete(key);
+    const result = await cancelOrderByKoombioSync(order, "Waybill not found in Koombiyo (deleted from portal)");
+    await logAudit({
+      action: "SHIPMENT_CANCELLED",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      details: { reason: "2-pass confirmed deletion", waybillId }
+    });
     return { success: true, synced: true, status: ORDER_STATUS.CANCELLED, cancelled: true, reason: "deleted" };
   }
+
+  CANCELLATION_PENALTY.delete(String(order._id));
 
   const apiLabel = orderData?.status || trackingData?.status || "";
   const mappedStatus = mapDeliveryLabel(apiLabel);
@@ -56,7 +82,21 @@ export async function syncSingleOrder(orderId) {
   if (!newLifecycleStatus) return { success: false, error: `Unknown status: ${mappedStatus}` };
 
   if (newLifecycleStatus === ORDER_STATUS.CANCELLED) {
-    const cancelResult = await cancelOrderByKoombioSync(order, "Cancelled/deleted from Koombiyo portal");
+    const key = String(order._id);
+    const prev = CANCELLATION_PENALTY.get(key) || 0;
+    CANCELLATION_PENALTY.set(key, prev + 1);
+    if (prev < 1) {
+      console.log(`[KoombiyoSync] Cancellation detected for ${order.orderNumber} (pass ${prev + 1}/2), waiting for confirmation`);
+      return { success: true, synced: false, reason: "Cancellation detected, awaiting second confirmation", pass: prev + 1 };
+    }
+    CANCELLATION_PENALTY.delete(key);
+    const result = await cancelOrderByKoombioSync(order, "Cancelled from Koombiyo portal");
+    await logAudit({
+      action: "SHIPMENT_CANCELLED",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      details: { reason: "2-pass confirmed cancellation from portal", waybillId }
+    });
     return { success: true, synced: true, status: ORDER_STATUS.CANCELLED, cancelled: true };
   }
 
@@ -65,16 +105,20 @@ export async function syncSingleOrder(orderId) {
   }
 
   const now = new Date();
-
   const previousStatus = currentStatus;
   order.lifecycleStatus = newLifecycleStatus;
   order.status = LIFECYCLE_TO_LEGACY[newLifecycleStatus] || order.status;
   order.lastSyncAt = now;
 
   if (newLifecycleStatus === ORDER_STATUS.DELIVERED) order.deliveredAt = now;
-  if (newLifecycleStatus === ORDER_STATUS.IN_TRANSIT || newLifecycleStatus === ORDER_STATUS.SHIPPED) {
+  if ([ORDER_STATUS.IN_TRANSIT, ORDER_STATUS.SHIPPED].includes(newLifecycleStatus)) {
     if (!order.shippedAt) order.shippedAt = now;
   }
+
+  addTimelineEntry(order, newLifecycleStatus, {
+    note: `Koombiyo tracking: ${apiLabel}`,
+    source: "api"
+  });
 
   const historyEntry = {
     status: newLifecycleStatus,
@@ -118,6 +162,13 @@ export async function syncSingleOrder(orderId) {
   } catch (err) {
     console.error("[Sync] KoombiyoShipment update error:", err.message);
   }
+
+  await logAudit({
+    action: "STATUS_CHANGED",
+    orderId: order._id,
+    orderNumber: order.orderNumber,
+    details: { from: previousStatus, to: newLifecycleStatus, waybillId, label: apiLabel }
+  });
 
   if (shouldSendEmail(previousStatus, newLifecycleStatus)) {
     emit(EVENTS.ORDER_STATUS_UPDATED, { order, previousStatus, newStatus: newLifecycleStatus, data: orderData });
@@ -190,9 +241,15 @@ export async function detectKoombiyoCancellations() {
       const foundInKoombiyo = orderData && Object.keys(orderData).length > 0;
 
       if (!foundInKoombiyo && order.lifecycleStatus !== ORDER_STATUS.CANCELLED) {
-        const fullOrder = await Order.findById(order._id);
-        await cancelOrderByKoombioSync(fullOrder, "Waybill not found in Koombiyo (deleted from portal)");
-        cancelled++;
+        const key = String(order._id);
+        const prev = CANCELLATION_PENALTY.get(key) || 0;
+        CANCELLATION_PENALTY.set(key, prev + 1);
+        if (prev >= 1) {
+          CANCELLATION_PENALTY.delete(key);
+          const fullOrder = await Order.findById(order._id);
+          await cancelOrderByKoombioSync(fullOrder, "Waybill not found in Koombiyo (deleted from portal)");
+          cancelled++;
+        }
         continue;
       }
 
@@ -200,9 +257,15 @@ export async function detectKoombiyoCancellations() {
       const mappedStatus = mapDeliveryLabel(apiLabel);
 
       if (mappedStatus === "cancelled" && order.lifecycleStatus !== ORDER_STATUS.CANCELLED) {
-        const fullOrder = await Order.findById(order._id);
-        await cancelOrderByKoombioSync(fullOrder, "Cancelled from Koombiyo portal");
-        cancelled++;
+        const key = String(order._id);
+        const prev = CANCELLATION_PENALTY.get(key) || 0;
+        CANCELLATION_PENALTY.set(key, prev + 1);
+        if (prev >= 1) {
+          CANCELLATION_PENALTY.delete(key);
+          const fullOrder = await Order.findById(order._id);
+          await cancelOrderByKoombioSync(fullOrder, "Cancelled from Koombiyo portal");
+          cancelled++;
+        }
       }
     } catch (err) {
       continue;

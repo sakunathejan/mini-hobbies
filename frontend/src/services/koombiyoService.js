@@ -35,3 +35,12 @@ export const processKoombiyoReturnReceive = (waybillId) =>
 
 export const syncAllKoombiyoDeliveries = () =>
   api.post(`${ADMIN}/sync`).then((r) => r.data);
+
+export const getKoombiyoWaybillTracking = (waybillId) =>
+  api.get(`${PUBLIC}/track/${waybillId}`).then((r) => r.data);
+
+export const getKoombiyoDashboard = () =>
+  api.get(`${ADMIN}/dashboard`).then((r) => r.data);
+
+export const getKoombiyoAuditLogs = (params) =>
+  api.get(`${ADMIN}/audit-logs`, { params }).then((r) => r.data);

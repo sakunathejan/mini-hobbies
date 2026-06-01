@@ -3,6 +3,8 @@ import KoombiyoShipment from "../../models/koombiyo/KoombiyoShipment.js";
 import { ORDER_STATUS, isTerminal, isValidTransition, LIFECYCLE_TO_LEGACY } from "../../constants/orderStatus.js";
 import { emit, EVENTS } from "../event.service.js";
 import { sendOrderCancellationEmail } from "../email/email.service.js";
+import { addTimelineEntry } from "../../helpers/orderTimeline.js";
+import { logAudit } from "../audit.service.js";
 
 export async function cancelOrder(orderId, { reason, cancelledBy } = {}) {
   const order = await Order.findById(orderId);
@@ -46,7 +48,19 @@ export async function cancelOrder(orderId, { reason, cancelledBy } = {}) {
     });
   }
 
+  addTimelineEntry(order, ORDER_STATUS.CANCELLED, {
+    note: reason || "Cancelled by " + (cancelledBy || "admin"),
+    source: "manual"
+  });
+
   await order.save({ validateModifiedOnly: true });
+
+  await logAudit({
+    action: "ORDER_CANCELLED",
+    orderId: order._id,
+    orderNumber: order.orderNumber,
+    details: { reason: reason || "", cancelledBy: cancelledBy || "admin" }
+  });
 
   if (order.delivery?.shipmentId) {
     await KoombiyoShipment.findByIdAndUpdate(order.delivery.shipmentId, {
@@ -102,7 +116,19 @@ export async function cancelOrderByKoombioSync(order, reason) {
     });
   }
 
+  addTimelineEntry(order, ORDER_STATUS.CANCELLED, {
+    note: reason || "Cancelled via Koombiyo portal",
+    source: "api"
+  });
+
   await order.save({ validateModifiedOnly: true });
+
+  await logAudit({
+    action: "SHIPMENT_CANCELLED",
+    orderId: order._id,
+    orderNumber: order.orderNumber,
+    details: { reason, source: "koombiyo_sync", waybillId: order.delivery?.waybillId }
+  });
 
   const emailResult = await sendOrderCancellationEmail(order, reason);
   if (!emailResult.success) {

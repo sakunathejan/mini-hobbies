@@ -55,7 +55,20 @@ const orderSchema = new mongoose.Schema(
     isKoombiyoActive: { type: Boolean, default: false },
     productValue: { type: Number, default: 0 },
     deliveryCharge: { type: Number, default: 0 },
+    codAmount: { type: Number, default: 0 },
     codTotal: { type: Number, default: 0 },
+    paymentStatus: {
+      type: String,
+      enum: ["pending", "paid", "refunded"],
+      default: "pending"
+    },
+    lastEmailStatusSent: { type: String, default: "" },
+    orderTimeline: [{
+      status: { type: String, required: true },
+      timestamp: { type: Date, default: Date.now },
+      note: { type: String, default: "" },
+      source: { type: String, default: "system" }
+    }],
     items: [orderItemSchema],
     subtotal: { type: Number, required: true },
     deliveryFee: { type: Number, default: 0 },
@@ -65,8 +78,8 @@ const orderSchema = new mongoose.Schema(
     remainingBalance: { type: Number, default: 0 },
     partialPayments: [partialPaymentSchema],
     fullyPaidAt: { type: Date },
-    paymentMethod: { type: String, enum: ["bank_transfer", "cod", "advance"], default: "bank_transfer" },
-    paymentType: { type: String, enum: ["advance_50", "full_payment", "cod"], default: "full_payment" },
+    paymentMethod: { type: String, enum: ["bank_transfer", "cod", "advance", "online_payment"], default: "bank_transfer" },
+    paymentType: { type: String, enum: ["advance_50", "full_payment", "cod", "online_payment"], default: "full_payment" },
     payment: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
     coupon: {
       code: { type: String },
