@@ -21,7 +21,7 @@ const Footer = () => (
       </div>
       <div>
         <h3 className="font-semibold">Social</h3>
-        <div className="mt-3 flex gap-3">
+        <div className="mt-3 flex flex-wrap gap-3">
           <a aria-label="Instagram" href="https://instagram.com" className="rounded-md bg-white/10 p-2"><Instagram className="h-5 w-5" /></a>
           <a aria-label="Facebook" href="https://facebook.com" className="rounded-md bg-white/10 p-2"><Facebook className="h-5 w-5" /></a>
           <a aria-label="Email" href="mailto:hello@minihobbies.lk" className="rounded-md bg-white/10 p-2"><Mail className="h-5 w-5" /></a>
