@@ -11,7 +11,7 @@ import * as cache from "../utils/cache.js";
 import { enqueue } from "../utils/jobQueue.js";
 import { generateOrderNumber } from "../utils/orderNumber.js";
 import { normalizeOrder, toTitleStatus } from "../utils/normalizeOrder.js";
-import { normalizePhone, notifyAdminWhatsApp } from "../utils/whatsapp.js";
+import { normalizePhone, notifyAdminWhatsApp, formatOrderWhatsAppMessage, buildWhatsAppUrl } from "../utils/whatsapp.js";
 import { uploadPaymentSlip } from "../services/supabaseStorageService.js";
 import { retryCustomerWhatsApp, buildCustomerWhatsAppUrl } from "../services/whatsappService.js";
 import { sendOrderStatusEmail, sendOrderConfirmationEmail } from "../services/emailService.js";
@@ -268,17 +268,15 @@ export const createOrder = asyncHandler(async (req, res) => {
   cache.clear("dashboard:");
   const normalized = normalizeOrder(order);
 
-  let whatsappUrl = "";
-  let adminNotified = false;
-  try {
-    const wa = await notifyAdminWhatsApp(normalized);
-    whatsappUrl = wa.whatsappUrl;
-    adminNotified = wa.adminNotified;
-  } catch (_) {}
+  const storePhone = process.env.WHATSAPP_STORE_PHONE;
+  const waMsg = formatOrderWhatsAppMessage(normalized);
+  const whatsappUrl = storePhone ? buildWhatsAppUrl(storePhone, waMsg) : "";
+
+  notifyAdminWhatsApp(normalized).catch(() => {});
 
   enqueue("order-confirmation-email", () => sendOrderConfirmationEmail(order));
 
-  res.status(201).json({ ...normalized, whatsappUrl, adminNotified });
+  res.status(201).json({ ...normalized, whatsappUrl });
 });
 
 export const getOrders = asyncHandler(async (_req, res) => {
