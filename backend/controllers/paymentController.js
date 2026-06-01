@@ -124,6 +124,7 @@ export const verifyPayment = asyncHandler(async (req, res) => {
       order.remainingBalance = 0;
       order.fullyPaidAt = new Date();
       order.status = "Fully Paid";
+      order.paymentStatus = "paid";
       order.statusHistory.push({ status: "Fully Paid", note: "Balance payment verified. Order fully paid.", updatedAt: new Date() });
     } else {
       order.partialPayments.push({
@@ -138,11 +139,13 @@ export const verifyPayment = asyncHandler(async (req, res) => {
     }
   } else if (payment.method === "cod") {
     order.status = "Fully Paid";
+    order.paymentStatus = "paid";
     order.statusHistory.push({ status: "Fully Paid", note: "Payment verified by admin", updatedAt: new Date() });
   } else {
     order.remainingBalance = 0;
     order.fullyPaidAt = new Date();
     order.status = "Fully Paid";
+    order.paymentStatus = "paid";
     order.statusHistory.push({ status: "Fully Paid", note: "Full payment verified by admin", updatedAt: new Date() });
   }
 

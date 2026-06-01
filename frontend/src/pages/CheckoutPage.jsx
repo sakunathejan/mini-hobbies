@@ -589,6 +589,17 @@ const CheckoutPage = () => {
                   <div className="rounded-lg bg-gray-50 p-3">
                     <p className="font-semibold">Payment Method</p>
                     <p>{selectedMethod?.name || paymentMethod}</p>
+                    {paymentMethod === "cod" ? (
+                      <div className="mt-2 space-y-1 text-xs">
+                        <p className="flex justify-between"><span>Pay on Delivery</span><span className="font-bold">{formatCurrency(total)}</span></p>
+                        <p className="flex justify-between text-gray-500"><span>Pay Now</span><span>{formatCurrency(0)}</span></p>
+                      </div>
+                    ) : (
+                      <div className="mt-2 space-y-1 text-xs">
+                        <p className="flex justify-between"><span>Pay Now</span><span className="font-bold">{formatCurrency(total)}</span></p>
+                        <p className="flex justify-between text-gray-500"><span>Pay on Delivery</span><span>{formatCurrency(0)}</span></p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -698,6 +709,33 @@ const CheckoutPage = () => {
                 <span>Total</span>
                 <span>{formatCurrency(total)}</span>
               </div>
+              {paymentMethod && (
+                <div className="mt-3 space-y-1.5 rounded-lg bg-gray-50 p-3 text-xs">
+                  {paymentMethod === "cod" ? (
+                    <>
+                      <div className="flex justify-between text-emerald-700">
+                        <span>Pay on Delivery (COD)</span>
+                        <span className="font-bold">{formatCurrency(total)}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-500">
+                        <span>Pay Now</span>
+                        <span>{formatCurrency(0)}</span>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex justify-between text-ember-700">
+                        <span>Pay Now</span>
+                        <span className="font-bold">{formatCurrency(total)}</span>
+                      </div>
+                      <div className="flex justify-between text-gray-500">
+                        <span>Pay on Delivery</span>
+                        <span>{formatCurrency(0)}</span>
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
             </div>
 
             <button

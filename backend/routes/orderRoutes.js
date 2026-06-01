@@ -54,7 +54,7 @@ router.post(
     body("customer.city").optional().trim(),
     body("districtId").optional().isInt(),
     body("cityId").optional().isInt(),
-    body("paymentMethod").optional().isIn(["bank_transfer", "cod", "advance"]),
+    body("paymentMethod").optional().isIn(["bank_transfer", "cod", "advance", "online_payment", "card"]),
     body("items").isArray({ min: 1 }),
     body("couponCode").optional().trim()
   ],

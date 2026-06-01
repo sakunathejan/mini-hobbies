@@ -1,6 +1,7 @@
 import { Truck, ExternalLink, RefreshCw, Package, Loader2, ArrowUpDown, Undo2, ClipboardList, Clock } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
+import { formatCurrency } from "../../utils/formatters.js";
 import {
   createKoombiyoShipment,
   refreshKoombiyoTracking,
@@ -401,9 +402,44 @@ const KoombiyoDeliveryPanel = ({ order, onShipmentCreated, compact, showActions,
         )}
 
         {!delivery.shipmentCreated && (
-          <p className="mt-3 text-sm text-gray-400">
-            {canCreate ? `Click "Create shipment" to send this order to Koombiyo.` : "Shipment will be created once the order is fully paid."}
-          </p>
+          <>
+            <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50 p-3 text-xs">
+              <p className="mb-2 font-semibold text-gray-700">Payment Summary</p>
+              <div className="space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Product Value</span>
+                  <span className="font-medium">{formatCurrency(order.productValue || order.subtotal || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Delivery Charge</span>
+                  <span className="font-medium">{formatCurrency(order.deliveryFee || 0)}</span>
+                </div>
+                <div className="flex justify-between border-t border-gray-200 pt-1">
+                  <span className="text-gray-500">Total Amount</span>
+                  <span className="font-bold">{formatCurrency(order.total || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Payment Method</span>
+                  <span className="font-medium capitalize">{order.paymentMethod || "—"}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Payment Status</span>
+                  <span className={`font-medium capitalize ${order.paymentStatus === "paid" ? "text-emerald-600" : "text-amber-600"}`}>
+                    {order.paymentStatus || "pending"}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-gray-200 pt-1 text-xs">
+                  <span className="font-semibold text-gray-700">COD Amount to Koombiyo</span>
+                  <span className={`font-bold ${order.paymentMethod === "cod" ? "text-amber-700" : "text-emerald-700"}`}>
+                    {order.paymentMethod === "cod" ? formatCurrency(order.total || 0) : formatCurrency(0)}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <p className="mt-3 text-sm text-gray-400">
+              {canCreate ? `Click "Create shipment" to send this order to Koombiyo.` : "Shipment will be created once the order is fully paid."}
+            </p>
+          </>
         )}
       </div>
 

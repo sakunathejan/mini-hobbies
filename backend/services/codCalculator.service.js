@@ -1,15 +1,27 @@
-const PAYMENT_METHODS = {
-  COD: "cod",
-  ONLINE_PAYMENT: "online_payment"
-};
+const PREPAID_METHODS = new Set([
+  "online_payment", "bank_transfer", "card", "advance"
+]);
 
-export function calculateCOD({ productValue, deliveryCharge, paymentMethod }) {
-  if (productValue === undefined || productValue === null) {
-    return { success: false, error: "productValue is required" };
+const COD_METHOD = "cod";
+const PAID_STATUS = "paid";
+
+function canonicalMethod(method) {
+  if (!method) return "";
+  return method.toLowerCase().trim();
+}
+
+export function calculateCOD(order) {
+  if (!order) {
+    return { success: false, error: "Order is required" };
   }
-  if (deliveryCharge === undefined || deliveryCharge === null) {
-    return { success: false, error: "deliveryCharge is required" };
-  }
+
+  const items = order.items || [];
+  const productValue = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
+  const deliveryCharge = order.deliveryFee || 0;
+  const paymentMethod = canonicalMethod(order.paymentMethod);
+  const paymentStatus = (order.paymentStatus || "pending").toLowerCase();
+  const paymentType = (order.paymentType || "").toLowerCase();
+  const status = (order.status || "").toLowerCase();
 
   const pv = Math.round(parseFloat(productValue) * 100) / 100;
   const dc = Math.round(parseFloat(deliveryCharge) * 100) / 100;
@@ -21,27 +33,53 @@ export function calculateCOD({ productValue, deliveryCharge, paymentMethod }) {
     return { success: false, error: "Invalid delivery charge" };
   }
 
-  const isCOD = paymentMethod === PAYMENT_METHODS.COD;
-  const codAmount = isCOD ? Math.round((pv + dc) * 100) / 100 : 0;
-  const getCod = isCOD ? codAmount : 0;
+  const totalAmount = Math.round((pv + dc) * 100) / 100;
+
+  const paidStatus = paymentStatus === PAID_STATUS;
+  const paidLegacyStatus = ["fully paid", "payment confirmed", "fully paid pending verification", "advance payment confirmed"].includes(status);
+  const prepaidMethod = PREPAID_METHODS.has(paymentMethod);
+  const prepaidType = ["online_payment", "card", "full_payment"].includes(paymentType);
+
+  const isCOD =
+    !paidStatus &&
+    !paidLegacyStatus &&
+    paymentMethod === COD_METHOD &&
+    !prepaidMethod &&
+    !prepaidType;
+
+  const alreadyPaid = !isCOD;
+  const codAmount = alreadyPaid ? 0 : totalAmount;
+  const getCod = codAmount;
+
+  console.log(`[COD] Order ${order.orderNumber || order._id}: method=${paymentMethod} status=${paymentStatus} type=${paymentType} legacyStatus=${order.status} => isCOD=${isCOD} alreadyPaid=${alreadyPaid} codAmount=${codAmount}`);
 
   return {
     success: true,
     productValue: pv,
     deliveryCharge: dc,
+    totalAmount,
     codAmount,
     getCod,
-    paymentMethod: isCOD ? PAYMENT_METHODS.COD : PAYMENT_METHODS.ONLINE_PAYMENT
+    paymentMethod,
+    paymentStatus,
+    paymentType,
+    alreadyPaid
   };
 }
 
-export function getPaymentSummary({ productValue, deliveryCharge, paymentMethod }) {
-  const total = Math.round((parseFloat(productValue || 0) + parseFloat(deliveryCharge || 0)) * 100) / 100;
-  const isCOD = paymentMethod === PAYMENT_METHODS.COD;
+export function getPaymentSummary(order) {
+  const result = calculateCOD(order);
+  if (!result.success) return result;
+
   return {
-    total,
-    payNow: isCOD ? 0 : total,
-    payOnDelivery: isCOD ? total : 0,
-    paymentMethod: isCOD ? "Cash on Delivery" : "Online Payment"
+    success: true,
+    total: result.totalAmount,
+    productValue: result.productValue,
+    deliveryCharge: result.deliveryCharge,
+    payNow: result.alreadyPaid ? result.totalAmount : 0,
+    payOnDelivery: result.alreadyPaid ? 0 : result.totalAmount,
+    paymentMethod: result.paymentMethod,
+    paymentStatus: result.paymentStatus,
+    codAmount: result.codAmount
   };
 }

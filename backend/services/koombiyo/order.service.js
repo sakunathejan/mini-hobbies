@@ -46,6 +46,25 @@ function buildDescription(items) {
   return sanitizeText(parts.join(", "));
 }
 
+function validateCodAmount(order, codResult) {
+  const pm = (order.paymentMethod || "").toLowerCase();
+  const ps = (order.paymentStatus || "").toLowerCase();
+
+  if (ps === "paid" && codResult.codAmount !== 0) {
+    return { valid: false, error: `Payment status is PAID but COD amount is ${codResult.codAmount}. Must be 0.` };
+  }
+
+  if (pm === "cod" && codResult.codAmount === 0) {
+    return { valid: false, error: "Payment method is COD but COD amount is 0. Must equal total." };
+  }
+
+  if (pm !== "cod" && codResult.codAmount > 0) {
+    return { valid: false, error: `Payment method is ${pm} but COD amount is ${codResult.codAmount}. Must be 0 for prepaid orders.` };
+  }
+
+  return { valid: true };
+}
+
 export async function createKoombiyoShipment(orderId) {
   if (!isInitialized()) return { success: false, error: "Koombiyo not initialized" };
 
@@ -56,6 +75,27 @@ export async function createKoombiyoShipment(orderId) {
   const currentStatus = order.lifecycleStatus || ORDER_STATUS.PENDING;
   if (isTerminal(currentStatus)) {
     return { success: false, error: `Cannot create shipment for order in ${currentStatus} status` };
+  }
+
+  console.log(`[Koombiyo] createKoombiyoShipment for order ${order.orderNumber}: paymentMethod="${order.paymentMethod}" paymentStatus="${order.paymentStatus}" paymentType="${order.paymentType}" status="${order.status}" lifecycleStatus="${order.lifecycleStatus}" total=${order.total}`);
+
+  const codResult = calculateCOD(order);
+  console.log(`[Koombiyo] calculateCOD result:`, JSON.stringify(codResult));
+
+  if (!codResult.success) {
+    return { success: false, error: codResult.error };
+  }
+
+  const validation = validateCodAmount(order, codResult);
+  if (!validation.valid) {
+    console.error(`[Koombiyo] COD validation FAILED for ${order.orderNumber}: ${validation.error}`);
+    await logAudit({
+      action: "LOCATION_VALIDATION_FAILED",
+      orderId: order._id,
+      orderNumber: order.orderNumber,
+      details: { error: validation.error, paymentMethod: order.paymentMethod, paymentStatus: order.paymentStatus, codAmount: codResult.codAmount }
+    });
+    return { success: false, error: validation.error };
   }
 
   const customer = order.customer || {};
@@ -87,17 +127,6 @@ export async function createKoombiyoShipment(orderId) {
   const districtCode = districtCheck.district.districtId;
   const cityCode = cityCheck.city.cityId;
 
-  const items = order.items || [];
-  const totalProductValue = items.reduce((sum, item) => sum + (item.price || 0) * (item.quantity || 0), 0);
-  const deliveryCharge = order.deliveryFee || 0;
-
-  const paymentMethod = order.paymentMethod === "cod" ? "cod" : "online_payment";
-  const codResult = calculateCOD({ productValue: totalProductValue, deliveryCharge, paymentMethod });
-
-  if (!codResult.success) {
-    return { success: false, error: codResult.error };
-  }
-
   let waybillId;
   try {
     waybillId = await getNextWaybill();
@@ -113,6 +142,7 @@ export async function createKoombiyoShipment(orderId) {
     return { success: false, error: err.message };
   }
 
+  const items = order.items || [];
   const payload = {
     orderWaybillid: waybillId,
     orderNo: order.orderNumber || String(order._id),
@@ -180,7 +210,7 @@ export async function createKoombiyoShipment(orderId) {
     order.lastSyncAt = new Date();
 
     addTimelineEntry(order, ORDER_STATUS.SHIPPED, {
-      note: `Shipment created via Koombiyo. Waybill: ${waybillId}. ${codResult.paymentMethod === "cod" ? `COD: LKR ${codResult.codAmount}` : "Paid online"}`,
+      note: `Shipment created via Koombiyo. Waybill: ${waybillId}. ${codResult.alreadyPaid ? "Prepaid" : `COD: LKR ${codResult.codAmount}`}`,
       source: "system"
     });
 
@@ -199,7 +229,13 @@ export async function createKoombiyoShipment(orderId) {
       action: "SHIPMENT_CREATED",
       orderId: order._id,
       orderNumber: order.orderNumber,
-      details: { waybillId, codAmount: codResult.codAmount, paymentMethod: codResult.paymentMethod }
+      details: {
+        waybillId,
+        codAmount: codResult.codAmount,
+        paymentMethod: codResult.paymentMethod,
+        paymentStatus: codResult.paymentStatus,
+        alreadyPaid: codResult.alreadyPaid
+      }
     });
 
     emit(EVENTS.ORDER_SHIPPED, { order, waybillId, trackingUrl });
@@ -236,6 +272,10 @@ function sanitizeOrder(order) {
     _id: order._id,
     orderNumber: order.orderNumber,
     status: order.status,
+    lifecycleStatus: order.lifecycleStatus,
+    paymentMethod: order.paymentMethod,
+    paymentStatus: order.paymentStatus,
+    codAmount: order.codAmount,
     delivery: order.delivery
   };
 }

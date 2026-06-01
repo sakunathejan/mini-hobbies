@@ -78,8 +78,8 @@ const orderSchema = new mongoose.Schema(
     remainingBalance: { type: Number, default: 0 },
     partialPayments: [partialPaymentSchema],
     fullyPaidAt: { type: Date },
-    paymentMethod: { type: String, enum: ["bank_transfer", "cod", "advance", "online_payment"], default: "bank_transfer" },
-    paymentType: { type: String, enum: ["advance_50", "full_payment", "cod", "online_payment"], default: "full_payment" },
+    paymentMethod: { type: String, enum: ["bank_transfer", "cod", "advance", "online_payment", "card"], default: "bank_transfer" },
+    paymentType: { type: String, enum: ["advance_50", "full_payment", "cod", "online_payment", "card"], default: "full_payment" },
     payment: { type: mongoose.Schema.Types.ObjectId, ref: "Payment" },
     coupon: {
       code: { type: String },

@@ -151,7 +151,13 @@ export const createOrder = asyncHandler(async (req, res) => {
   let initialStatus = "Pending Advance Payment";
   let initialNote = "Order placed";
 
-  const paymentType = paymentMethod === "advance" ? "advance_50" : paymentMethod === "bank_transfer" ? "full_payment" : "cod";
+  const paymentType =
+    paymentMethod === "advance" ? "advance_50" :
+    paymentMethod === "bank_transfer" ? "full_payment" :
+    paymentMethod === "online_payment" ? "online_payment" :
+    paymentMethod === "card" ? "card" :
+    paymentMethod === "cod" ? "cod" :
+    "full_payment";
   const advanceAmount = paymentMethod === "advance" ? Math.round(total * 0.5) : 0;
   const remainingBalance = advanceAmount > 0 ? total - advanceAmount : 0;
 
@@ -161,6 +167,12 @@ export const createOrder = asyncHandler(async (req, res) => {
   } else if (paymentMethod === "bank_transfer") {
     initialStatus = "Pending Payment Verification";
     initialNote = "Order placed, awaiting payment verification";
+  } else if (paymentMethod === "advance") {
+    initialStatus = "Advance Payment Submitted";
+    initialNote = "Advance payment order placed";
+  } else {
+    initialStatus = "Fully Paid";
+    initialNote = "Order placed with " + paymentMethod;
   }
 
   console.log(`[ORDER] createOrder: customer authenticated=${!!req.customer}, customerId=${req.customer?._id || "null"}, paymentMethod=${paymentMethod}`);
@@ -318,6 +330,10 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
 
   if (trackingNumber !== undefined) {
     order.trackingNumber = trackingNumber;
+  }
+
+  if (newStatus === "Fully Paid" && order.paymentStatus !== "paid") {
+    order.paymentStatus = "paid";
   }
 
   if (newStatus === "Delivered" && order.remainingBalance > 0) {
