@@ -20,9 +20,8 @@ router.get("/", [
   query("page").optional().isInt({ min: 1 }),
   query("limit").optional().isInt({ min: 1, max: 100 }),
   query("search").optional().trim(),
-  query("status").optional().isIn(["active", "warned", "suspended", "banned"]),
   query("verified").optional().isIn(["true", "false"]),
-  query("sortBy").optional().isIn(["createdAt", "name", "email", "lastLoginAt", "loginAttempts", "moderationStatus"]),
+  query("sortBy").optional().isIn(["createdAt", "name", "email", "lastLoginAt", "loginAttempts"]),
   query("sortOrder").optional().isIn(["asc", "desc"]),
 ], validateRequest, getUsers);
 

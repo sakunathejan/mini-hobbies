@@ -35,12 +35,6 @@ const customerSchema = new mongoose.Schema({
   lastLoginIp: { type: String },
   lastLoginAt: { type: Date },
   lastLoginDevice: { type: String },
-  moderationStatus: {
-    type: String,
-    enum: ["active", "warned", "suspended", "banned"],
-    default: "active",
-    index: true
-  },
   deletedAt: { type: Date, default: null },
   authProvider: { type: String, enum: ["local", "google", "both"], default: "local" },
   googleId: { type: String, default: null },
@@ -99,7 +93,6 @@ customerSchema.methods.toPublicProfile = function toPublicProfile() {
     emailVerified: this.emailVerified,
     addresses: this.addresses,
     preferences: this.preferences,
-    moderationStatus: this.moderationStatus,
     createdAt: this.createdAt,
     updatedAt: this.updatedAt,
   };

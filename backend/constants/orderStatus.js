@@ -1,0 +1,82 @@
+export const ORDER_STATUS = {
+  PENDING: "PENDING",
+  CONFIRMED: "CONFIRMED",
+  SHIPPED: "SHIPPED",
+  IN_TRANSIT: "IN_TRANSIT",
+  DELIVERED: "DELIVERED",
+  CANCELLED: "CANCELLED",
+  RETURNED: "RETURNED"
+};
+
+export const VALID_TRANSITIONS = {
+  [ORDER_STATUS.PENDING]: [ORDER_STATUS.CONFIRMED, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.CONFIRMED]: [ORDER_STATUS.SHIPPED, ORDER_STATUS.CANCELLED],
+  [ORDER_STATUS.SHIPPED]: [ORDER_STATUS.IN_TRANSIT, ORDER_STATUS.CANCELLED, ORDER_STATUS.RETURNED],
+  [ORDER_STATUS.IN_TRANSIT]: [ORDER_STATUS.DELIVERED, ORDER_STATUS.RETURNED],
+  [ORDER_STATUS.DELIVERED]: [],
+  [ORDER_STATUS.CANCELLED]: [],
+  [ORDER_STATUS.RETURNED]: []
+};
+
+export const EMAIL_WORTHY_TRANSITIONS = {
+  [ORDER_STATUS.SHIPPED]: true,
+  [ORDER_STATUS.IN_TRANSIT]: true,
+  [ORDER_STATUS.DELIVERED]: true,
+  [ORDER_STATUS.CANCELLED]: true
+};
+
+export const TERMINAL_STATUSES = [ORDER_STATUS.DELIVERED, ORDER_STATUS.CANCELLED, ORDER_STATUS.RETURNED];
+
+export const KOOMBIYO_TO_LIFECYCLE = {
+  pending: ORDER_STATUS.SHIPPED,
+  processing: ORDER_STATUS.CONFIRMED,
+  in_transit: ORDER_STATUS.IN_TRANSIT,
+  delivered: ORDER_STATUS.DELIVERED,
+  returned: ORDER_STATUS.RETURNED,
+  cancelled: ORDER_STATUS.CANCELLED
+};
+
+export const LEGACY_TO_LIFECYCLE = {
+  "Pending Advance Payment": ORDER_STATUS.PENDING,
+  "Pending Payment Verification": ORDER_STATUS.PENDING,
+  "Advance Payment Submitted": ORDER_STATUS.PENDING,
+  "Fully Paid Pending Verification": ORDER_STATUS.PENDING,
+  "Payment Confirmed": ORDER_STATUS.CONFIRMED,
+  "Advance Payment Confirmed": ORDER_STATUS.CONFIRMED,
+  "Awaiting Final Payment": ORDER_STATUS.PENDING,
+  "Fully Paid": ORDER_STATUS.CONFIRMED,
+  "Preparing Order": ORDER_STATUS.CONFIRMED,
+  "Shipped": ORDER_STATUS.SHIPPED,
+  "Delivered": ORDER_STATUS.DELIVERED,
+  "Cancelled": ORDER_STATUS.CANCELLED
+};
+
+export const LIFECYCLE_TO_LEGACY = {
+  [ORDER_STATUS.PENDING]: "Pending Advance Payment",
+  [ORDER_STATUS.CONFIRMED]: "Payment Confirmed",
+  [ORDER_STATUS.SHIPPED]: "Shipped",
+  [ORDER_STATUS.IN_TRANSIT]: "Shipped",
+  [ORDER_STATUS.DELIVERED]: "Delivered",
+  [ORDER_STATUS.CANCELLED]: "Cancelled",
+  [ORDER_STATUS.RETURNED]: "Cancelled"
+};
+
+const ALL = Object.values(ORDER_STATUS);
+export const VALID_STATUSES = ALL;
+
+export function isValidTransition(from, to) {
+  if (from === to) return false;
+  const allowed = VALID_TRANSITIONS[from];
+  if (!allowed) return false;
+  return allowed.includes(to);
+}
+
+export function isTerminal(status) {
+  return TERMINAL_STATUSES.includes(status);
+}
+
+export function shouldSendEmail(from, to) {
+  if (!from) return false;
+  if (from === to) return false;
+  return !!EMAIL_WORTHY_TRANSITIONS[to];
+}

@@ -1,34 +1,50 @@
-import { ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Trash2, Upload, Package, MapPin, X } from "lucide-react";
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Trash2, Upload, Package, MapPin, X, Check } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
 import Seo from "../components/Seo.jsx";
 import { useCart } from "../context/CartContext.jsx";
 import { validateCoupon } from "../services/couponService.js";
 import { getBankDetails } from "../services/bankDetailService.js";
-import { getCities, calculateDelivery } from "../services/deliveryService.js";
+import { getDistricts, getCitiesByDistrict, calculateDelivery } from "../services/deliveryService.js";
 import { createOrder } from "../services/orderService.js";
 import { getSetting } from "../services/settingService.js";
 import { getEnabledPaymentMethods } from "../services/paymentMethodService.js";
 import { formatCurrency } from "../utils/formatters.js";
 
-const SearchableSelect = memo(({ label, options, value, onChange, placeholder, loading, error }) => {
+const steps = ["Delivery", "Payment", "Review"];
+
+function getOptionId(opt) {
+  if (opt == null) return opt;
+  if (typeof opt === "object") return opt.cityId ?? opt.districtId ?? opt.id ?? opt._id;
+  return opt;
+}
+
+function getOptionLabel(opt) {
+  if (opt == null) return "";
+  if (typeof opt === "string") return opt;
+  return opt.name || opt.label || opt.city || opt.district || getOptionLabelFallback(opt);
+}
+
+function getOptionLabelFallback(opt) {
+  try { return JSON.stringify(opt); } catch { return String(opt); }
+}
+
+const SearchableSelect = ({ label, options, value, onChange, placeholder, loading, error }) => {
   const [search, setSearch] = useState("");
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const inputRef = useRef(null);
 
-  const safeOptions = useMemo(() => {
-    if (!Array.isArray(options)) return [];
-    return options.filter((o) => o != null && typeof o === "string");
-  }, [options]);
+  const safeOptions = (Array.isArray(options) ? options : []);
 
-  const filtered = useMemo(() => {
-    if (!safeOptions.length) return safeOptions;
-    if (!search) return safeOptions;
+  const filtered = (() => {
+    if (!safeOptions.length || !search) return safeOptions;
     const q = search.toLowerCase();
-    return safeOptions.filter((o) => o.toLowerCase().includes(q));
-  }, [safeOptions, search]);
+    return safeOptions.filter((o) => {
+      const lbl = getOptionLabel(o);
+      return lbl.toLowerCase().includes(q);
+    });
+  })();
 
   useEffect(() => {
     const handleClick = (e) => {
@@ -38,35 +54,22 @@ const SearchableSelect = memo(({ label, options, value, onChange, placeholder, l
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  const selectedLabel = value || "";
+  const selectedLabel = (() => {
+    if (value == null) return "";
+    const match = safeOptions.find((o) => getOptionId(o) === value);
+    return match ? getOptionLabel(match) : "";
+  })();
 
-  const handleFocus = useCallback(() => {
-    setSearch("");
-    setOpen(true);
-  }, []);
-
-  const handleChange = useCallback((e) => {
-    setSearch(e.target.value);
-    setOpen(true);
-  }, []);
-
-  const handleSelect = useCallback((opt) => {
-    onChange(opt);
-    setOpen(false);
-    setSearch("");
-  }, [onChange]);
-
-  const handleClear = useCallback(() => {
-    onChange("");
-    setSearch("");
-  }, [onChange]);
+  const handleFocus = () => { setSearch(""); setOpen(true); };
+  const handleChange = (e) => { setSearch(e.target.value); setOpen(true); };
+  const handleSelect = (opt) => { onChange(getOptionId(opt)); setOpen(false); setSearch(""); };
+  const handleClear = () => { onChange(null); setSearch(""); };
 
   return (
     <div ref={ref} className="relative">
       <label className="text-sm font-medium">{label}</label>
       <div className="relative mt-1">
         <input
-          ref={inputRef}
           className="input w-full text-base pr-8"
           value={open ? search : selectedLabel}
           placeholder={placeholder || "Search..."}
@@ -74,7 +77,7 @@ const SearchableSelect = memo(({ label, options, value, onChange, placeholder, l
           onChange={handleChange}
           autoComplete="off"
         />
-        {value && !open && (
+        {value != null && value !== "" && !open && (
           <button
             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 min-h-[32px] min-w-[32px] flex items-center justify-center"
             onClick={handleClear}
@@ -91,36 +94,49 @@ const SearchableSelect = memo(({ label, options, value, onChange, placeholder, l
           {!loading && !error && filtered.length === 0 && (
             <p className="p-3 text-sm text-gray-400">{search ? "No results found" : "No options available"}</p>
           )}
-          {!loading && !error && filtered.map((opt) => (
-            <button
-              key={opt}
-              className={`w-full text-left px-3 py-3 text-sm transition hover:bg-ember/10 min-h-[44px] flex items-center ${opt === value ? "bg-ember/10 font-semibold text-ember" : ""}`}
-              onClick={() => handleSelect(opt)}
-              type="button"
-            >
-              <MapPin className="mr-2 h-4 w-4 shrink-0 text-gray-400" />
-              {opt}
-            </button>
-          ))}
+          {!loading && !error && filtered.map((opt) => {
+            const id = getOptionId(opt);
+            const lbl = getOptionLabel(opt);
+            return (
+              <button
+                key={id}
+                className={`w-full text-left px-3 py-3 text-sm transition hover:bg-ember/10 min-h-[44px] flex items-center ${id === value ? "bg-ember/10 font-semibold text-ember" : ""}`}
+                onClick={() => handleSelect(opt)}
+                type="button"
+              >
+                <MapPin className="mr-2 h-4 w-4 shrink-0 text-gray-400" />
+                {lbl}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
   );
-});
+};
 
 const CheckoutPage = () => {
   const { items, updateQuantity, removeItem, clearCart, subtotal } = useCart();
   const navigate = useNavigate();
+  const [step, setStep] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [showSummaryMobile, setShowSummaryMobile] = useState(false);
   const [freeShipping, setFreeShipping] = useState(false);
+  const [paymentSettings, setPaymentSettings] = useState(null);
+  const [paymentMethods, setPaymentMethods] = useState([]);
+
+  const [districts, setDistricts] = useState([]);
+  const [districtsLoading, setDistrictsLoading] = useState(false);
   const [cities, setCities] = useState([]);
   const [citiesLoading, setCitiesLoading] = useState(false);
+  const [selectedDistrictId, setSelectedDistrictId] = useState(null);
+  const [selectedCityId, setSelectedCityId] = useState(null);
   const [deliveryCity, setDeliveryCity] = useState("");
   const [deliveryCalc, setDeliveryCalc] = useState(null);
   const [deliveryLoading, setDeliveryLoading] = useState(false);
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", notes: "" });
   const [paymentMethod, setPaymentMethod] = useState("bank_transfer");
+  const selectedMethod = paymentMethods.find((m) => m.code === paymentMethod) || null;
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponDiscount, setCouponDiscount] = useState(0);
@@ -128,9 +144,6 @@ const CheckoutPage = () => {
   const [slipFile, setSlipFile] = useState(null);
   const [errors, setErrors] = useState({});
   const [bankDetails, setBankDetails] = useState({ bankName: "Bank of Ceylon", accountName: "Mini Hobbies", accountNumber: "1234567890", branch: "Colombo Main" });
-  const [paymentSettings, setPaymentSettings] = useState(null);
-  const [paymentMethods, setPaymentMethods] = useState([]);
-  const selectedMethod = paymentMethods.find((m) => m.code === paymentMethod) || null;
 
   const fetchPaymentMethods = useCallback(() => {
     getEnabledPaymentMethods().then((list) => {
@@ -142,8 +155,11 @@ const CheckoutPage = () => {
   }, []);
 
   useEffect(() => {
-    setCitiesLoading(true);
-    getCities().then(setCities).catch(() => setCities([])).finally(() => setCitiesLoading(false));
+    setDistrictsLoading(true);
+    getDistricts().then((list) => {
+      setDistricts(Array.isArray(list) ? list : []);
+    }).catch(() => setDistricts([])).finally(() => setDistrictsLoading(false));
+
     getBankDetails().then((d) => { if (d.bankName) setBankDetails(d); }).catch(() => {});
     getSetting("freeShipping").then((s) => setFreeShipping(s.value)).catch(() => {});
     getSetting("paymentSettings").then((s) => setPaymentSettings(s.value)).catch(() => {});
@@ -151,6 +167,17 @@ const CheckoutPage = () => {
     const interval = setInterval(fetchPaymentMethods, 10000);
     return () => clearInterval(interval);
   }, [fetchPaymentMethods]);
+
+  useEffect(() => {
+    if (!selectedDistrictId) { setCities([]); setSelectedCityId(null); return; }
+    setCitiesLoading(true);
+    setSelectedCityId(null);
+    setDeliveryCity("");
+    setDeliveryCalc(null);
+    getCitiesByDistrict(selectedDistrictId).then((list) => {
+      setCities(Array.isArray(list) ? list : []);
+    }).catch(() => setCities([])).finally(() => setCitiesLoading(false));
+  }, [selectedDistrictId]);
 
   useEffect(() => {
     if (!deliveryCity) { setDeliveryCalc(null); return; }
@@ -169,22 +196,51 @@ const CheckoutPage = () => {
   const deliveryFee = freeShipping ? 0 : (deliveryCalc?.fee ?? 0);
   const total = subtotal + deliveryFee - couponDiscount;
 
-  const validate = useCallback(() => {
+  const selectedCityObj = useMemo(() => cities.find((c) => {
+    const id = c.cityId ?? c._id ?? c.id;
+    return id === selectedCityId;
+  }), [cities, selectedCityId]);
+
+  const selectedDistrictObj = useMemo(() => districts.find((d) => {
+    const id = d.districtId ?? d._id ?? d.id;
+    return id === selectedDistrictId;
+  }), [districts, selectedDistrictId]);
+
+  const validateStep = useCallback((s) => {
     const e = {};
-    if (!form.name.trim()) e.name = "Name is required";
-    if (!form.email.trim()) e.email = "Email is required";
-    else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Invalid email";
-    if (!form.phone.trim()) e.phone = "Phone is required";
-    else if (!/^(?:\+94|0)?[0-9]{9,10}$/.test(form.phone.replace(/\s/g, ""))) e.phone = "Invalid Sri Lankan phone number";
-    if (!deliveryCity) e.deliveryCity = "Please select a delivery city";
-    if (!form.address.trim()) e.address = "Address is required";
-    if (items.length === 0) e.items = "Cart is empty";
-    const selectedMethod = paymentMethods.find((m) => m.code === paymentMethod);
-    if (selectedMethod?.requiresSlipUpload && !slipFile) e.slip = "Please upload the payment slip";
-    if (deliveryCalc && !deliveryCalc.available) e.deliveryUnavailable = "Delivery not available to this location";
+    if (s === 0) {
+      if (!form.name.trim()) e.name = "Name is required";
+      if (!form.email.trim()) e.email = "Email is required";
+      else if (!/\S+@\S+\.\S+/.test(form.email)) e.email = "Invalid email";
+      if (!form.phone.trim()) e.phone = "Phone is required";
+      else if (!/^(?:\+94|0)?[0-9]{9,10}$/.test(form.phone.replace(/\s/g, ""))) e.phone = "Invalid Sri Lankan phone number";
+      if (!selectedDistrictId) e.district = "Please select a district";
+      if (!selectedCityId) e.city = "Please select a city";
+      if (!form.address.trim()) e.address = "Address is required";
+    }
+    if (s === 1) {
+      const sm = paymentMethods.find((m) => m.code === paymentMethod);
+      if (sm?.requiresSlipUpload && !slipFile) e.slip = "Please upload the payment slip";
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
-  }, [form, items, paymentMethod, slipFile, deliveryCity, deliveryCalc, paymentMethods]);
+  }, [form, selectedDistrictId, selectedCityId, paymentMethod, slipFile, paymentMethods]);
+
+  const handleNext = () => {
+    if (validateStep(step)) {
+      if (step === 0 && !deliveryCalc?.available && deliveryCity) {
+        toast.error("Delivery is not available to this location");
+        return;
+      }
+      setStep((s) => Math.min(s + 1, steps.length - 1));
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  const handleBack = () => {
+    setStep((s) => Math.max(s - 1, 0));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -204,10 +260,10 @@ const CheckoutPage = () => {
   };
 
   const handlePlaceOrder = async () => {
-    if (!validate()) return;
+    if (!validateStep(1)) return;
 
-    const selectedMethod = paymentMethods.find((m) => m.code === paymentMethod);
-    if (selectedMethod?.requiresSlipUpload && !slipFile) {
+    const sm = paymentMethods.find((m) => m.code === paymentMethod);
+    if (sm?.requiresSlipUpload && !slipFile) {
       toast.error("Please upload the payment slip.");
       return;
     }
@@ -219,18 +275,31 @@ const CheckoutPage = () => {
         email: form.email,
         phone: form.phone,
         address: form.address,
-        district: deliveryCity
+        district: selectedDistrictObj?.name || deliveryCity,
+        city: selectedCityObj?.name || ""
       };
 
       const itemsPayload = items.map((item) => ({ product: item._id, quantity: item.quantity, variantId: item.variantId || "" }));
 
-      if (selectedMethod?.supportsPartialPayment && slipFile) {
+      const orderPayload = {
+        customer: customerPayload,
+        items: itemsPayload,
+        notes: form.notes,
+        paymentMethod,
+        couponCode: appliedCoupon ? appliedCoupon.code : "",
+        districtId: selectedDistrictId,
+        cityId: selectedCityId
+      };
+
+      if (sm?.supportsPartialPayment && slipFile) {
         const fd = new FormData();
-        fd.append("customer", JSON.stringify(customerPayload));
-        fd.append("items", JSON.stringify(itemsPayload));
-        fd.append("notes", form.notes);
-        fd.append("paymentMethod", paymentMethod);
-        fd.append("couponCode", appliedCoupon ? appliedCoupon.code : "");
+        fd.append("customer", JSON.stringify(orderPayload.customer));
+        fd.append("items", JSON.stringify(orderPayload.items));
+        fd.append("notes", orderPayload.notes);
+        fd.append("paymentMethod", orderPayload.paymentMethod);
+        fd.append("couponCode", orderPayload.couponCode);
+        fd.append("districtId", String(orderPayload.districtId));
+        fd.append("cityId", String(orderPayload.cityId));
         fd.append("paymentSlip", slipFile);
         fd.append("bankName", bankDetails.bankName);
         fd.append("accountName", bankDetails.accountName);
@@ -253,17 +322,9 @@ const CheckoutPage = () => {
           }
         });
       } else {
-        const payload = {
-          customer: customerPayload,
-          items: itemsPayload,
-          notes: form.notes,
-          paymentMethod,
-          couponCode: appliedCoupon ? appliedCoupon.code : ""
-        };
+        const order = await createOrder(orderPayload);
 
-        const order = await createOrder(payload);
-
-        if (selectedMethod?.requiresSlipUpload && slipFile && !selectedMethod.supportsPartialPayment) {
+        if (sm?.requiresSlipUpload && slipFile && !sm.supportsPartialPayment) {
           const fd = new FormData();
           fd.append("orderId", order._id);
           fd.append("slip", slipFile);
@@ -313,169 +374,239 @@ const CheckoutPage = () => {
       <Seo title="Checkout" />
       <h1 className="text-3xl font-black">Checkout</h1>
 
+      <div className="mt-6 flex items-center gap-2">
+        {steps.map((s, i) => (
+          <div key={s} className="flex items-center gap-2">
+            <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium transition ${
+              i === step ? "bg-ember text-white" :
+              i < step ? "bg-emerald-100 text-emerald-700" :
+              "bg-gray-100 text-gray-400"
+            }`}>
+              {i < step ? <Check className="h-3.5 w-3.5" /> : <span>{i + 1}</span>}
+              <span className="hidden sm:inline">{s}</span>
+            </div>
+            {i < steps.length - 1 && <div className={`h-px w-6 ${i < step ? "bg-emerald-400" : "bg-gray-300"}`} />}
+          </div>
+        ))}
+      </div>
+
       <div className="mt-8 grid gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3 space-y-6">
-          <div className="rounded-lg border bg-white p-4 sm:p-6">
-            <h2 className="text-lg font-bold">Contact Information</h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="md:col-span-2 lg:col-span-1">
-                <label className="text-sm font-medium">Full Name</label>
-                <input className={`input mt-1 text-base ${errors.name ? "border-red-400" : ""}`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
-                {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
-              </div>
-              <div className="md:col-span-2 lg:col-span-1">
-                <label className="text-sm font-medium">Email</label>
-                <input className={`input mt-1 text-base ${errors.email ? "border-red-400" : ""}`} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" />
-                {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
-              </div>
-              <div className="md:col-span-2 lg:col-span-1">
-                <label className="text-sm font-medium">Phone</label>
-                <input className={`input mt-1 text-base ${errors.phone ? "border-red-400" : ""}`} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="077 123 4567" />
-                {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}
-              </div>
-            </div>
-          </div>
 
-          <div className="rounded-lg border bg-white p-4 sm:p-6">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-ember" />
-              Delivery Location
-            </h2>
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div>
-                <SearchableSelect
-                  label="City"
-                  options={cities}
-                  value={deliveryCity}
-                  onChange={(v) => { setDeliveryCity(v); setDeliveryCalc(null); }}
-                  placeholder="Search city..."
-                  loading={citiesLoading}
-                  error={!citiesLoading && cities.length === 0 ? "No delivery cities available" : ""}
-                />
-                {errors.deliveryCity && <p className="mt-1 text-xs text-red-600">{errors.deliveryCity}</p>}
+          {step === 0 && (
+            <div className="space-y-6">
+              <div className="rounded-lg border bg-white p-4 sm:p-6">
+                <h2 className="text-lg font-bold">Contact Information</h2>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div className="md:col-span-2 lg:col-span-1">
+                    <label className="text-sm font-medium">Full Name</label>
+                    <input className={`input mt-1 text-base ${errors.name ? "border-red-400" : ""}`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="John Doe" />
+                    {errors.name && <p className="mt-1 text-xs text-red-600">{errors.name}</p>}
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-1">
+                    <label className="text-sm font-medium">Email</label>
+                    <input className={`input mt-1 text-base ${errors.email ? "border-red-400" : ""}`} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="john@example.com" />
+                    {errors.email && <p className="mt-1 text-xs text-red-600">{errors.email}</p>}
+                  </div>
+                  <div className="md:col-span-2 lg:col-span-1">
+                    <label className="text-sm font-medium">Phone</label>
+                    <input className={`input mt-1 text-base ${errors.phone ? "border-red-400" : ""}`} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="077 123 4567" />
+                    {errors.phone && <p className="mt-1 text-xs text-red-600">{errors.phone}</p>}
+                  </div>
+                </div>
               </div>
-              <div className="md:col-span-2">
-                <label className="text-sm font-medium">Delivery Address</label>
-                <textarea className={`input mt-1 text-base ${errors.address ? "border-red-400" : ""}`} rows={3} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Street, city, postal code" />
-                {errors.address && <p className="mt-1 text-xs text-red-600">{errors.address}</p>}
-              </div>
-              <div className="md:col-span-2">
-                <label className="text-sm font-medium">Order Notes (optional)</label>
-                <textarea className="input mt-1 text-base" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Special instructions for delivery..." />
-              </div>
-            </div>
 
-            {deliveryLoading && (
-              <div className="mt-4 flex items-center gap-2 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
-                Calculating delivery...
-              </div>
-            )}
+              <div className="rounded-lg border bg-white p-4 sm:p-6">
+                <h2 className="text-lg font-bold flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-ember" />
+                  Delivery Location
+                </h2>
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <div>
+                    <SearchableSelect
+                      label="District"
+                      options={districts}
+                      value={selectedDistrictId}
+                      onChange={(v) => setSelectedDistrictId(v)}
+                      placeholder="Search district..."
+                      loading={districtsLoading}
+                      error={!districtsLoading && districts.length === 0 ? "No districts available" : ""}
+                    />
+                    {errors.district && <p className="mt-1 text-xs text-red-600">{errors.district}</p>}
+                  </div>
+                  <div>
+                    <SearchableSelect
+                      label="City"
+                      options={cities}
+                      value={selectedCityId}
+                      onChange={(v) => {
+                        setSelectedCityId(v);
+                        const cityObj = cities.find((c) => (c.cityId ?? c._id ?? c.id) === v);
+                        setDeliveryCity(cityObj?.name || "");
+                      }}
+                      placeholder={selectedDistrictId ? "Search city..." : "Select district first"}
+                      loading={citiesLoading}
+                      error={!citiesLoading && cities.length === 0 && selectedDistrictId ? "No cities in this district" : ""}
+                    />
+                    {errors.city && <p className="mt-1 text-xs text-red-600">{errors.city}</p>}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium">Delivery Address</label>
+                    <textarea className={`input mt-1 text-base ${errors.address ? "border-red-400" : ""}`} rows={3} value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Street, city, postal code" />
+                    {errors.address && <p className="mt-1 text-xs text-red-600">{errors.address}</p>}
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="text-sm font-medium">Order Notes (optional)</label>
+                    <textarea className="input mt-1 text-base" rows={3} value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Special instructions for delivery..." />
+                  </div>
+                </div>
 
-            {deliveryCalc && !deliveryLoading && (
-              <div className={`mt-4 rounded-lg border p-4 ${deliveryCalc.available ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
-                {deliveryCalc.available ? (
-                  <div className="space-y-1 text-sm">
-                    <p className="font-semibold text-emerald-800">Delivery Available</p>
-                    <div className="flex items-center gap-2 text-emerald-700">
-                      <Package className="h-4 w-4" />
-                      <span>Package Weight: <strong>{deliveryCalc.totalWeight} kg</strong></span>
-                    </div>
-                    <div className="flex items-center gap-2 text-emerald-700">
-                      <MapPin className="h-4 w-4" />
-                      <span>Route: {deliveryCalc.zone.from} → {deliveryCalc.zone.to}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-emerald-700">
-                      <span className="text-base font-bold">Delivery Fee: {formatCurrency(deliveryCalc.fee)}</span>
-                    </div>
-                    {deliveryCalc.totalWeight > 1 && (
-                      <p className="text-xs text-emerald-600">
-                        {formatCurrency(deliveryCalc.firstKgCharge)} for 1st kg + {formatCurrency(deliveryCalc.additionalKgCharge)} per additional kg
-                      </p>
+                {deliveryLoading && (
+                  <div className="mt-4 flex items-center gap-2 rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
+                    Calculating delivery...
+                  </div>
+                )}
+
+                {deliveryCalc && !deliveryLoading && (
+                  <div className={`mt-4 rounded-lg border p-4 ${deliveryCalc.available ? "border-emerald-200 bg-emerald-50" : "border-red-200 bg-red-50"}`}>
+                    {deliveryCalc.available ? (
+                      <div className="space-y-1 text-sm">
+                        <p className="font-semibold text-emerald-800">Delivery Available</p>
+                        <div className="flex items-center gap-2 text-emerald-700">
+                          <Package className="h-4 w-4" />
+                          <span>Package Weight: <strong>{deliveryCalc.totalWeight} kg</strong></span>
+                        </div>
+                        <div className="flex items-center gap-2 text-emerald-700">
+                          <MapPin className="h-4 w-4" />
+                          <span>Route: {deliveryCalc.zone.from} → {deliveryCalc.zone.to}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-emerald-700">
+                          <span className="text-base font-bold">Delivery Fee: {formatCurrency(deliveryCalc.fee)}</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm font-medium text-red-700">{deliveryCalc.message || "Delivery not available to this location."}</p>
                     )}
                   </div>
-                ) : (
-                  <p className="text-sm font-medium text-red-700">{deliveryCalc.message || "Delivery not available to this location."}</p>
                 )}
               </div>
-            )}
 
-            {errors.deliveryUnavailable && (
-              <p className="mt-1 text-xs text-red-600">{errors.deliveryUnavailable}</p>
-            )}
-          </div>
-
-          <div className="rounded-lg border bg-white p-4 sm:p-6">
-            <h2 className="text-lg font-bold">Payment Method</h2>
-            <div className="mt-4 grid gap-3">
-              {paymentMethods.length === 0 && (
-                <p className="text-sm text-gray-400">Loading payment methods...</p>
-              )}
-              {paymentMethods.map((method) => (
-                <label key={method.code} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${paymentMethod === method.code ? "border-ember bg-ember/5" : "hover:border-gray-400"}`}>
-                  <input type="radio" name="payment" className="accent-ember mt-0.5 shrink-0" checked={paymentMethod === method.code} onChange={() => setPaymentMethod(method.code)} />
-                  <div className="min-w-0">
-                    <p className="font-semibold">{method.name}</p>
-                  </div>
-                </label>
-              ))}
+              <button className="btn-primary w-full min-h-[48px]" onClick={handleNext}>
+                Continue to Payment
+              </button>
             </div>
+          )}
 
-            {selectedMethod?.requiresSlipUpload && (
-              <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-                <p className="font-semibold text-emerald-800">Bank Details for Transfer</p>
-                <div className="mt-2 space-y-1 text-sm text-emerald-700">
-                  <p>Bank: {bankDetails.bankName}</p>
-                  <p>Account Name: {bankDetails.accountName}</p>
-                  <p>Account Number: {bankDetails.accountNumber}</p>
-                  <p>Branch: {bankDetails.branch}</p>
+          {step === 1 && (
+            <div className="space-y-6">
+              <div className="rounded-lg border bg-white p-4 sm:p-6">
+                <h2 className="text-lg font-bold">Payment Method</h2>
+                <div className="mt-4 grid gap-3">
+                  {paymentMethods.map((method) => (
+                    <label key={method.code} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${paymentMethod === method.code ? "border-ember bg-ember/5" : "hover:border-gray-400"}`}>
+                      <input type="radio" name="payment" className="accent-ember mt-0.5 shrink-0" checked={paymentMethod === method.code} onChange={() => setPaymentMethod(method.code)} />
+                      <div className="min-w-0">
+                        <p className="font-semibold">{method.name}</p>
+                      </div>
+                    </label>
+                  ))}
                 </div>
-                {selectedMethod && !selectedMethod.supportsPartialPayment && (
-                  <div className="mt-4">
-                    <label className="text-sm font-medium">Upload Payment Slip</label>
-                    <div className="mt-1 flex flex-wrap items-center gap-3">
-                      <label className="btn-secondary cursor-pointer min-h-[44px]">
-                        <Upload className="h-4 w-4" />
-                        {slipFile ? "Change file" : "Choose file"}
-                        <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSlipFile(e.target.files[0] || null)} />
-                      </label>
-                      {slipFile && <span className="max-w-[200px] truncate text-sm text-gray-600">{slipFile.name}</span>}
+
+                {selectedMethod?.requiresSlipUpload && (
+                  <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+                    <p className="font-semibold text-emerald-800">Bank Details for Transfer</p>
+                    <div className="mt-2 space-y-1 text-sm text-emerald-700">
+                      <p>Bank: {bankDetails.bankName}</p>
+                      <p>Account Name: {bankDetails.accountName}</p>
+                      <p>Account Number: {bankDetails.accountNumber}</p>
+                      <p>Branch: {bankDetails.branch}</p>
+                    </div>
+                    {selectedMethod && !selectedMethod.supportsPartialPayment && (
+                      <div className="mt-4">
+                        <label className="text-sm font-medium">Upload Payment Slip</label>
+                        <div className="mt-1 flex flex-wrap items-center gap-3">
+                          <label className="btn-secondary cursor-pointer min-h-[44px]">
+                            <Upload className="h-4 w-4" />
+                            {slipFile ? "Change file" : "Choose file"}
+                            <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSlipFile(e.target.files[0] || null)} />
+                          </label>
+                          {slipFile && <span className="max-w-[200px] truncate text-sm text-gray-600">{slipFile.name}</span>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {selectedMethod?.supportsPartialPayment && (
+                  <div className="mt-4 rounded-lg border border-purple-200 bg-purple-50 p-4">
+                    <p className="text-sm text-purple-700">
+                      A 50% advance of <strong>{formatCurrency(Math.round(total * 0.5))}</strong> is required to place this order.
+                      The remaining <strong>{formatCurrency(Math.round(total * 0.5))}</strong> will be due before shipping.
+                    </p>
+                    <div className="mt-4">
+                      <label className="text-sm font-medium">Upload Advance Payment Slip <span className="text-red-500">*</span></label>
+                      <div className="mt-1 flex flex-wrap items-center gap-3">
+                        <label className={`btn-secondary cursor-pointer min-h-[44px] ${errors.slip ? "border-red-400" : ""}`}>
+                          <Upload className="h-4 w-4" />
+                          {slipFile ? "Change file" : "Choose file"}
+                          <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSlipFile(e.target.files[0] || null)} />
+                        </label>
+                        {slipFile && <span className="max-w-[200px] truncate text-sm text-gray-600">{slipFile.name}</span>}
+                      </div>
+                      {errors.slip && <p className="mt-1 text-xs text-red-600">{errors.slip}</p>}
                     </div>
                   </div>
                 )}
               </div>
-            )}
 
-            {selectedMethod?.supportsPartialPayment && (
-              <div className="mt-4 rounded-lg border border-purple-200 bg-purple-50 p-4">
-                <p className="text-sm text-purple-700">
-                  A 50% advance of <strong>{formatCurrency(Math.round(total * 0.5))}</strong> is required to place this order.
-                  The remaining <strong>{formatCurrency(Math.round(total * 0.5))}</strong> will be due before shipping.
-                  Once the admin verifies your advance payment, the order will be reserved for you.
-                </p>
-                <div className="mt-4">
-                  <label className="text-sm font-medium">Upload Advance Payment Slip <span className="text-red-500">*</span></label>
-                  <div className="mt-1 flex flex-wrap items-center gap-3">
-                    <label className={`btn-secondary cursor-pointer min-h-[44px] ${errors.slip ? "border-red-400" : ""}`}>
-                      <Upload className="h-4 w-4" />
-                      {slipFile ? "Change file" : "Choose file"}
-                      <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setSlipFile(e.target.files[0] || null)} />
-                    </label>
-                    {slipFile && <span className="max-w-[200px] truncate text-sm text-gray-600">{slipFile.name}</span>}
+              <div className="flex gap-3">
+                <button className="btn-secondary flex-1 min-h-[48px]" onClick={handleBack}>
+                  Back
+                </button>
+                <button className="btn-primary flex-1 min-h-[48px]" onClick={handleNext}>
+                  Review Order
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6">
+              <div className="rounded-lg border bg-white p-4 sm:p-6">
+                <h2 className="text-lg font-bold">Review Your Order</h2>
+                <div className="mt-4 space-y-3 text-sm">
+                  <div className="rounded-lg bg-gray-50 p-3">
+                    <p className="font-semibold">Contact</p>
+                    <p>{form.name} — {form.email}</p>
+                    <p>{form.phone}</p>
                   </div>
-                  {errors.slip && <p className="mt-1 text-xs text-red-600">{errors.slip}</p>}
+                  <div className="rounded-lg bg-gray-50 p-3">
+                    <p className="font-semibold">Delivery Address</p>
+                    <p>{form.address}</p>
+                    <p className="text-gray-600">{selectedDistrictObj?.name}, {selectedCityObj?.name}</p>
+                  </div>
+                  <div className="rounded-lg bg-gray-50 p-3">
+                    <p className="font-semibold">Payment Method</p>
+                    <p>{selectedMethod?.name || paymentMethod}</p>
+                  </div>
                 </div>
               </div>
-            )}
 
-            <button
-              className="btn-primary mt-4 w-full min-h-[48px] lg:hidden"
-              disabled={submitting}
-              onClick={() => { setShowSummaryMobile(true); window.scrollTo({ top: 0, behavior: "smooth" }); }}
-            >
-              Review Order - {formatCurrency(total)}
-            </button>
-          </div>
+              <div className="flex gap-3">
+                <button className="btn-secondary flex-1 min-h-[48px]" onClick={handleBack}>
+                  Back
+                </button>
+                <button
+                  className="btn-primary flex-1 min-h-[48px]"
+                  disabled={submitting || !deliveryCalc?.available}
+                  onClick={handlePlaceOrder}
+                >
+                  {submitting ? "Placing order..." : `Place Order - ${formatCurrency(total)}`}
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className={`lg:col-span-2 space-y-6 ${showSummaryMobile ? "fixed inset-0 z-50 overflow-y-auto bg-white p-4 lg:static lg:z-auto lg:overflow-visible lg:bg-transparent lg:p-0" : "hidden lg:block"}`}>
@@ -497,11 +628,7 @@ const CheckoutPage = () => {
               <div className="mt-3 rounded-lg bg-ember/5 p-3 text-sm">
                 <div className="flex items-center gap-1 text-ember">
                   <MapPin className="h-3.5 w-3.5" />
-                  <span className="font-medium">{deliveryCalc.zone.from} → {deliveryCalc.zone.to}</span>
-                </div>
-                <div className="mt-1 flex items-center gap-1 text-gray-600">
-                  <Package className="h-3.5 w-3.5" />
-                  <span>{deliveryCalc.totalWeight} kg</span>
+                  <span className="font-medium">{selectedDistrictObj?.name} → {selectedCityObj?.name}</span>
                 </div>
               </div>
             )}
@@ -574,15 +701,11 @@ const CheckoutPage = () => {
             </div>
 
             <button
-              className="btn-primary mt-6 w-full min-h-[48px]"
+              className="btn-primary mt-6 w-full min-h-[48px] lg:hidden"
               disabled={submitting || !deliveryCalc?.available}
-              onClick={handlePlaceOrder}
+              onClick={() => setShowSummaryMobile(true)}
             >
-              {submitting ? "Placing order..." :
-               !deliveryCity ? "Select delivery location" :
-               !deliveryCalc ? "Calculating..." :
-               !deliveryCalc.available ? "Delivery unavailable" :
-               `Place Order - ${formatCurrency(total)}`}
+              Review Order - {formatCurrency(total)}
             </button>
           </div>
         </div>

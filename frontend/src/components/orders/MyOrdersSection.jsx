@@ -157,7 +157,7 @@ const DetailModal = ({ order, onClose }) => {
 
           {/* Delivery tracking */}
           {order.delivery?.shipmentCreated && (
-            <KoombiyoDeliveryPanel order={order} />
+            <KoombiyoDeliveryPanel order={order} readOnly />
           )}
 
           {/* Shipping */}

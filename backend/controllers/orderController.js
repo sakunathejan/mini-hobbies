@@ -15,6 +15,7 @@ import { normalizePhone, notifyAdminWhatsApp } from "../utils/whatsapp.js";
 import { uploadPaymentSlip } from "../services/supabaseStorageService.js";
 import { retryCustomerWhatsApp, buildCustomerWhatsAppUrl } from "../services/whatsappService.js";
 import { sendOrderStatusEmail, sendOrderConfirmationEmail } from "../services/emailService.js";
+import { cancelOrder as cancelKoombiyoOrder } from "../services/koombiyo/cancellation.service.js";
 import { normalizeTo } from "../utils/normalizeAddress.js";
 
 const calcShipping = (totalWeightKg, zone) => {
@@ -167,7 +168,9 @@ export const createOrder = asyncHandler(async (req, res) => {
   const orderData = {
     orderNumber,
     customerId: req.customer?._id || null,
-    customer: { ...customer, phone: customer.phone.trim(), district },
+    customer: { ...customer, phone: customer.phone.trim(), district, city: customer.city || "" },
+    districtId: req.body.districtId ? Number(req.body.districtId) : undefined,
+    cityId: req.body.cityId ? Number(req.body.cityId) : undefined,
     items: orderItems,
     subtotal,
     deliveryFee,
@@ -339,6 +342,18 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
   const normalized = normalizeOrder(order);
 
   res.json({ ...normalized, emailSent, emailError, customerWhatsappUrl });
+});
+
+export const cancelOrder = asyncHandler(async (req, res) => {
+  const result = await cancelKoombiyoOrder(req.params.id, {
+    reason: req.body.reason,
+    cancelledBy: req.user?.name || req.user?.email || "admin"
+  });
+  if (!result.success) {
+    res.status(400).json({ message: result.error });
+    return;
+  }
+  res.json({ success: true, message: "Order cancelled successfully", order: result.order });
 });
 
 export const retryWhatsApp = asyncHandler(async (req, res) => {

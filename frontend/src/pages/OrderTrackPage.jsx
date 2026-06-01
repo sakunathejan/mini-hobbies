@@ -300,17 +300,7 @@ const OrderTrackPage = () => {
                 )}
 
                 {order.delivery?.shipmentCreated && (
-                  <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="font-semibold text-blue-700">Koombiyo waybill:</span>{" "}
-                      <span className="text-blue-800">{order.delivery.waybillId || "—"}</span>
-                    </div>
-                    {order.delivery.trackingUrl && (
-                      <a href={order.delivery.trackingUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-ember hover:underline">
-                        <ExternalLink className="h-3.5 w-3.5" /> Track on Koombiyo
-                      </a>
-                    )}
-                  </div>
+                  <KoombiyoDeliveryPanel order={order} readOnly />
                 )}
 
                 <div className="mt-5 flex flex-wrap gap-2">

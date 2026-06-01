@@ -3,12 +3,11 @@ import { fileURLToPath } from "url";
 import { dirname, join } from "path";
 import app from "./app.js";
 import connectDB from "./config/db.js";
-import { startExpiryProcessor } from "./moderation-system/events/expiryProcessor.js";
-// KOOMBIYO DISABLED — SDK not yet built/deployed. Re-enable when ready.
-// import { initKoombiyo } from "./Integrations/koombiyo-sdk-wrapper/koombiyoClient.js";
-// import { syncAllActiveDeliveries } from "./Integrations/koombiyo-sdk-wrapper/koombiyoTrackingService.js";
+import { initKoombiyo } from "./services/koombiyo/koombiyoApiClient.js";
+import { startSyncScheduler } from "./services/koombiyo/syncScheduler.js";
 import { seedDefaultPaymentMethods } from "./controllers/paymentMethodController.js";
 import { preloadLogo } from "./services/emailService.js";
+import { startScheduler } from "./moderation/scheduler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, ".env") });
@@ -25,12 +24,15 @@ const PORT = process.env.PORT || 5000;
 
 const startServer = async () => {
   await connectDB();
-  startExpiryProcessor(60000);
-  // KOOMBIYO DISABLED — re-enable when SDK is ready:
-  // initKoombiyo(process.env.KOOMBIYO_API_KEY);
-  // syncAllActiveDeliveries();
+  if (process.env.KOOMBIYO_API_KEY) {
+    initKoombiyo(process.env.KOOMBIYO_API_KEY);
+    startSyncScheduler();
+  } else {
+    console.warn("[Koombiyo] No API key configured — integration disabled");
+  }
   seedDefaultPaymentMethods();
   preloadLogo();
+  startScheduler();
 
   const server = app.listen(PORT, () => {
     console.log(`Mini Hobbies API running on port ${PORT}`);

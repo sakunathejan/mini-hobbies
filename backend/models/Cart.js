@@ -21,5 +21,6 @@ const cartSchema = new mongoose.Schema(
 );
 
 cartSchema.index({ customerId: 1 }, { unique: true, sparse: true });
+cartSchema.index({ sessionId: 1 }, { unique: true, sparse: true });
 
 export default mongoose.model("Cart", cartSchema);

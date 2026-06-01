@@ -35,12 +35,11 @@ const ResetPasswordPage = lazy(() => import("../pages/account/ResetPasswordPage.
 const CustomerRegisterPage = lazy(() => import("../pages/customer/RegisterPage.jsx"));
 const CustomerVerifyEmailPage = lazy(() => import("../pages/customer/VerifyEmailPage.jsx"));
 const CustomerDashboardPage = lazy(() => import("../pages/customer/DashboardPage.jsx"));
-// Moderation pages
-const SuspendedPage = lazy(() => import("../moderation-system/pages/SuspendedPage.jsx"));
-const AppealPage = lazy(() => import("../moderation-system/pages/AppealPage.jsx"));
-const AdminModerationPage = lazy(() => import("../moderation-system/pages/AdminModerationPage.jsx"));
 const AdminReviewsPage = lazy(() => import("../pages/admin/AdminReviewsPage.jsx"));
-const ModerationHistoryPage = lazy(() => import("../moderation-system/pages/ModerationHistoryPage.jsx"));
+const SuspendedPage = lazy(() => import("../moderation/SuspendedPage.jsx"));
+const AppealPage = lazy(() => import("../moderation/AppealPage.jsx"));
+const AdminModerationPage = lazy(() => import("../moderation/AdminModerationPage.jsx"));
+const CustomerModerationPage = lazy(() => import("../moderation/CustomerModerationPage.jsx"));
 
 const AppRoutes = () => (
   <Routes>
@@ -64,7 +63,7 @@ const AppRoutes = () => (
         <Route path="account" element={<CustomerDashboardPage />} />
         <Route path="account/suspended" element={<SuspendedPage />} />
         <Route path="account/appeal" element={<AppealPage />} />
-        <Route path="account/moderation" element={<ModerationHistoryPage />} />
+        <Route path="account/moderation" element={<CustomerModerationPage />} />
       </Route>
     </Route>
     <Route element={<AdminRoute />}>

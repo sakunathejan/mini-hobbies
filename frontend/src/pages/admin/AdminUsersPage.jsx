@@ -4,7 +4,6 @@ import toast from "react-hot-toast";
 import { Link } from "react-router-dom";
 import ConfirmDialog from "../../components/ui/ConfirmDialog.jsx";
 import Pagination from "../../components/ui/Pagination.jsx";
-import StatusBadge from "../../moderation-system/components/StatusBadge.jsx";
 import useFetch from "../../hooks/useFetch.js";
 import { bulkDeleteUsers, deleteUser, exportUsers, getUsers, getUserStats } from "../../services/adminUserService.js";
 import { formatCurrency } from "../../utils/formatters.js";
@@ -107,7 +106,6 @@ const AdminUsersPage = () => {
 
   const stats = [
     { label: "Total Users", value: statsData?.totalUsers ?? "—", icon: Users, color: "text-gray-900" },
-    { label: "Active", value: statsData?.activeUsers ?? "—", icon: UserCheck, color: "text-emerald-600" },
     { label: "Verified", value: statsData?.verifiedUsers ?? "—", icon: UserCheck, color: "text-blue-600" },
   ];
 
@@ -227,7 +225,7 @@ const AdminUsersPage = () => {
                       </div>
                     </Link>
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <StatusBadge status={user.moderationStatus || user.status || "active"} />
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
                       {user.emailVerified ? (
                         <span className="flex items-center gap-1 text-xs text-emerald-600"><UserCheck className="h-3 w-3" /> Verified</span>
                       ) : (
@@ -272,11 +270,7 @@ const AdminUsersPage = () => {
                     </button>
                   </th>
                   <th className="p-4">Phone</th>
-                  <th className="p-4">
-                    <button type="button" onClick={() => handleSort("moderationStatus")} className="flex items-center gap-1 hover:text-gray-700">
-                      Status{sortIcon(sortBy, sortOrder, "moderationStatus")}
-                    </button>
-                  </th>
+                  <th className="p-4">Status</th>
                   <th className="p-4">Verified</th>
                   <th className="p-4 text-right">Orders</th>
                   <th className="p-4 text-right">Spent</th>
@@ -308,7 +302,7 @@ const AdminUsersPage = () => {
                     <td className="p-4 text-gray-600">{user.email}</td>
                     <td className="p-4 text-gray-600">{user.phone || "—"}</td>
                     <td className="p-4">
-                      <StatusBadge status={user.moderationStatus || user.status || "active"} />
+                      <span className="inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700">Active</span>
                     </td>
                     <td className="p-4">
                       {user.emailVerified ? (

@@ -51,6 +51,7 @@ const AdminLayout = () => {
     { to: "/admin/users", icon: User, label: "Users" },
     { to: "/admin/reviews", icon: MessageSquare, label: "Reviews" },
     { to: "/admin/moderation", icon: Shield, label: "Moderation" },
+
     { to: "/admin/settings", icon: Settings, label: "Settings" },
   ];
 

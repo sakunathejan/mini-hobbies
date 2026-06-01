@@ -7,7 +7,6 @@ export const DEFAULT_PAGE_SIZE = 20;
 
 export function buildUserFilter({ search, status, verified }) {
   const filter = { deletedAt: null };
-  if (status) filter.moderationStatus = status;
   if (verified === "true") filter.emailVerified = true;
   else if (verified === "false") filter.emailVerified = false;
   if (search) {
@@ -29,8 +28,6 @@ export function buildSortOption(sortBy, sortOrder) {
     email: "email",
     lastLoginAt: "lastLoginAt",
     loginAttempts: "loginAttempts",
-    moderationStatus: "moderationStatus",
-
   };
   return { [allowed[sortBy] || "createdAt"]: order };
 }
@@ -138,16 +135,12 @@ export async function getUserLoginHistory(id, { page = 1, limit = 20 }) {
 }
 
 export async function getUserStats() {
-  const [totalUsers, warnedUsers, suspendedUsers, bannedUsers, verifiedUsers, last30] = await Promise.all([
+  const [totalUsers, verifiedUsers, last30] = await Promise.all([
     Customer.countDocuments({ deletedAt: null }),
-    Customer.countDocuments({ deletedAt: null, moderationStatus: "warned" }),
-    Customer.countDocuments({ deletedAt: null, moderationStatus: "suspended" }),
-    Customer.countDocuments({ deletedAt: null, moderationStatus: "banned" }),
     Customer.countDocuments({ deletedAt: null, emailVerified: true }),
     Customer.countDocuments({ deletedAt: null, createdAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } }),
   ]);
-  const activeUsers = totalUsers - warnedUsers - suspendedUsers - bannedUsers;
-  return { totalUsers, activeUsers, warnedUsers, suspendedUsers, bannedUsers, verifiedUsers, newUsersLast30Days: last30 };
+  return { totalUsers, verifiedUsers, newUsersLast30Days: last30 };
 }
 
 export async function exportUsersCSV({ filter, sort }) {

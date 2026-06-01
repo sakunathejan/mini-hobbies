@@ -8,7 +8,8 @@ import {
   getOrders,
   retryWhatsApp,
   trackOrder,
-  updateOrderStatus
+  updateOrderStatus,
+  cancelOrder
 } from "../controllers/orderController.js";
 import { adminOnly, protect } from "../middleware/authMiddleware.js";
 import { optionalCustomer } from "../middleware/customerAuth.js";
@@ -50,6 +51,9 @@ router.post(
     body("customer.phone").trim().notEmpty(),
     body("customer.address").trim().notEmpty(),
     body("customer.district").optional().trim(),
+    body("customer.city").optional().trim(),
+    body("districtId").optional().isInt(),
+    body("cityId").optional().isInt(),
     body("paymentMethod").optional().isIn(["bank_transfer", "cod", "advance"]),
     body("items").isArray({ min: 1 }),
     body("couponCode").optional().trim()
@@ -68,6 +72,15 @@ router.patch(
   [body("status").isIn(orderStatuses), body("note").optional().trim(), body("trackingNumber").optional().trim()],
   validateRequest,
   updateOrderStatus
+);
+
+router.post(
+  "/:id/cancel",
+  protect,
+  adminOnly,
+  [body("reason").optional().trim()],
+  validateRequest,
+  cancelOrder
 );
 
 router.post("/:id/retry-whatsapp", protect, adminOnly, retryWhatsApp);

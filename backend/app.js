@@ -23,13 +23,11 @@ import announcementRoutes from "./routes/announcementRoutes.js";
 import customerAuthRoutes from "./routes/customerAuthRoutes.js";
 import unifiedAuthRoutes from "./routes/unifiedAuthRoutes.js";
 import adminUserRoutes from "./routes/adminUserRoutes.js";
-import moderationRoutes from "./moderation-system/routes/moderationRoutes.js";
-import customerModerationRoutes from "./moderation-system/routes/customerRoutes.js";
-// KOOMBIYO DISABLED — SDK not yet built. Re-enable when ready:
-// import koombiyoRoutes from "./Integrations/koombiyo-sdk-wrapper/koombiyoRoutes.js";
+import { adminKoombiyoRoutes, publicKoombiyoRoutes, koombiyoWebhookRoutes } from "./routes/koombiyo/index.js";
 import reviewRoutes from "./reviews/routes/reviewRoutes.js";
 import reviewReactionRoutes from "./reviews/routes/reviewReactionRoutes.js";
 import reviewReplyRoutes from "./reviews/routes/reviewReplyRoutes.js";
+import moderationRoutes from "./moderation/moderationRoutes.js";
 import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -105,15 +103,15 @@ app.use("/api/delivery", publicLimiter, deliveryRoutes);
 app.use("/api/bank-details", publicLimiter, bankDetailRoutes);
 app.use("/api/unified", publicLimiter, unifiedAuthRoutes);
 app.use("/api/admin/users", adminLimiter, adminUserRoutes);
-app.use("/api/admin/moderation", adminLimiter, moderationRoutes);
-app.use("/api/customers/moderation", publicLimiter, customerModerationRoutes);
 
-// KOOMBIYO DISABLED — re-enable when SDK is ready:
-// app.use("/api/integrations/koombiyo", adminLimiter, koombiyoRoutes);
+app.use("/api/koombiyo", publicLimiter, publicKoombiyoRoutes);
+app.use("/api/koombiyo/admin", adminLimiter, adminKoombiyoRoutes);
+app.use("/api/koombiyo/webhook", koombiyoWebhookRoutes);
 
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/reviews/reactions", reviewReactionRoutes);
 app.use("/api/reviews/replies", reviewReplyRoutes);
+app.use("/api/moderation", moderationRoutes);
 app.use(notFound);
 app.use(errorHandler);
 

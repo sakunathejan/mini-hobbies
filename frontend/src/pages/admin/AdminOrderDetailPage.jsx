@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
 import OrderStatusBadge from "../../components/orders/OrderStatusBadge.jsx";
 import OrderTimeline from "../../components/orders/OrderTimeline.jsx";
+import KoombiyoDeliveryPanel from "../../components/orders/KoombiyoDeliveryPanel.jsx";
 import { getOrderById, updateOrderStatus } from "../../services/orderService.js";
 import { formatCurrency } from "../../utils/formatters.js";
 
@@ -362,6 +363,8 @@ const AdminOrderDetailPage = () => {
                 </div>
               </div>
             </section>
+
+            <KoombiyoDeliveryPanel order={order} onShipmentCreated={(updated) => setOrder((prev) => ({ ...prev, ...updated }))} showActions />
 
             <section className="rounded-lg border border-gray-200 bg-white p-6">
               <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-gray-500">

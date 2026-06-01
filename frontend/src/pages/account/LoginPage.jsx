@@ -19,21 +19,12 @@ const LoginPage = () => {
     setError("");
     try {
       const result = await login(form);
-      const modStatus = result?.user?.moderationStatus;
-      if (modStatus === "suspended" || modStatus === "banned") {
-        navigate("/account/suspended", { replace: true });
-        return;
-      }
       if (result?.role === "admin") {
         navigate(state?.from || "/admin", { replace: true });
       } else {
         navigate(state?.from || "/account", { replace: true });
       }
     } catch (err) {
-      if (err.response?.data?.moderationStatus === "suspended" || err.response?.data?.moderationStatus === "banned") {
-        navigate("/account/suspended", { replace: true });
-        return;
-      }
       const status = err.response?.status;
       if (status === 429) {
         setError("Too many attempts. Account temporarily locked for 15 minutes.");

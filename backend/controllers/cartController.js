@@ -17,29 +17,21 @@ export const getCart = asyncHandler(async (req, res) => {
 });
 
 const getOrCreateCart = async (scope) => {
-  console.log("[CART] getOrCreateCart scope:", JSON.stringify(scope));
   let cart = await Cart.findOne(scope);
   if (cart) {
-    console.log("[CART] Found existing cart:", cart._id);
-  } else {
-    console.log("[CART] No cart found, creating new one");
-    try {
-      cart = await Cart.create({ ...scope, items: [] });
-      console.log("[CART] Created cart:", cart._id);
-    } catch (err) {
-      console.log("[CART] Create error:", err.code, err.message);
-      if (err.code === 11000) {
-        cart = await Cart.findOne(scope);
-        if (cart) {
-          console.log("[CART] Retry found cart:", cart._id);
-        } else {
-          console.log("[CART] Retry still not found, rethrowing");
-          throw err;
-        }
-      } else {
-        throw err;
-      }
-    }
+    if (!cart.items) cart.items = [];
+    return cart;
+  }
+  try {
+    cart = await Cart.create({ ...scope, items: [] });
+  } catch (err) {
+    cart = await Cart.findOne(scope);
+  }
+  if (!cart) {
+    cart = await Cart.findOne(scope);
+  }
+  if (!cart) {
+    throw new Error("Failed to create or retrieve cart");
   }
   if (!cart.items) cart.items = [];
   return cart;
@@ -47,7 +39,6 @@ const getOrCreateCart = async (scope) => {
 
 export const addToCart = asyncHandler(async (req, res) => {
   const scope = getCartScope(req);
-  console.log("[CART addToCart] scope:", JSON.stringify(scope), "customer:", !!req.customer, "sessionId:", req.header("x-session-id"));
   if (!scope) {
     res.status(400);
     throw new Error("Unable to identify cart session.");

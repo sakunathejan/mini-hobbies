@@ -5,6 +5,7 @@ export const notFound = (req, res, next) => {
 };
 
 export const errorHandler = (err, req, res, _next) => {
+  console.error("[ERROR]", err.name, err.code, err.message, err.stack?.split('\n')[1]?.trim());
   const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
 
   if (err.name === "ValidationError") {

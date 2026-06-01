@@ -1,7 +1,7 @@
 import express from "express";
 import { body } from "express-validator";
 import { protectCustomer, identifyCustomer } from "../middleware/customerAuth.js";
-import { requireActiveAccount } from "../moderation-system/middleware/enforcement.js";
+import { requireActiveAccount } from "../moderation/enforcement.js";
 import { validateRequest, PASSWORD_VALIDATOR } from "../middleware/validateRequest.js";
 import {
   register, login, refreshCustomerToken, logout,

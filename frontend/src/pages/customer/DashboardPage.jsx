@@ -10,8 +10,9 @@ import {
 } from "../../services/customerAuthService.js";
 import MyOrdersSection from "../../components/orders/MyOrdersSection.jsx";
 import MyReviewsSection from "../../components/reviews/MyReviewsSection.jsx";
-import WarningBanner from "../../moderation-system/components/WarningBanner.jsx";
-import { getMyModerationStatus } from "../../moderation-system/services/moderationService.js";
+import WarningBanner from "../../moderation/WarningBanner.jsx";
+import { getMyModerationStatus } from "../../moderation/moderationService.js";
+
 
 const TABS = ["Profile", "Orders", "Reviews", "Addresses", "Security", "Preferences"];
 
@@ -40,7 +41,6 @@ const DashboardPage = () => {
   // Preferences
   const [prefs, setPrefs] = useState({ emailNotifications: true, marketingEmails: false });
 
-  // Moderation
   const [activeWarnings, setActiveWarnings] = useState([]);
 
   // Delete
@@ -60,8 +60,7 @@ const DashboardPage = () => {
         navigate("/account/suspended", { replace: true });
         return;
       }
-      if (s.status === "warned" && s.case) setActiveWarnings([s.case]);
-      else setActiveWarnings([]);
+      setActiveWarnings(s.warnings || []);
     }).catch(() => {});
   }, [customer, navigate]);
 
@@ -187,12 +186,6 @@ const DashboardPage = () => {
             </div>
           )}
 
-          {activeWarnings.length > 0 && (
-            <div className="mt-4">
-              <WarningBanner cases={activeWarnings} />
-            </div>
-          )}
-
           {!customer.emailVerified && (
             <div className="mt-4 flex items-center justify-between rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
               <span>Please verify your email address.</span>
@@ -217,6 +210,12 @@ const DashboardPage = () => {
               Moderation History
             </Link>
           </div>
+
+          {activeWarnings.length > 0 && (
+            <div className="mt-4">
+              <WarningBanner cases={activeWarnings} />
+            </div>
+          )}
 
           <div className="mt-6">
             {tab === "Profile" && (

@@ -3,7 +3,7 @@ import { protect } from "../../middleware/authMiddleware.js";
 import { protectCustomer } from "../../middleware/customerAuth.js";
 import { adminOnly, auditLog } from "../../middleware/authMiddleware.js";
 import asyncHandler from "../../utils/asyncHandler.js";
-import { requireActiveCustomer, checkSpamAndAbuse } from "../middleware/reviewGuard.js";
+import { requireActiveAccount } from "../../moderation/enforcement.js";
 import * as ctrl from "../controllers/reviewController.js";
 
 const router = Router();
@@ -12,10 +12,10 @@ const router = Router();
 router.get("/product/:productId", asyncHandler(ctrl.getProductReviews));
 
 // Customer — my reviews
-router.get("/mine", protectCustomer, requireActiveCustomer, asyncHandler(ctrl.getCustomerReviews));
-router.post("/", protectCustomer, requireActiveCustomer, checkSpamAndAbuse, asyncHandler(ctrl.createReview));
-router.put("/:id", protectCustomer, requireActiveCustomer, asyncHandler(ctrl.editReview));
-router.delete("/:id", protectCustomer, requireActiveCustomer, asyncHandler(ctrl.deleteReview));
+router.get("/mine", protectCustomer, requireActiveAccount, asyncHandler(ctrl.getCustomerReviews));
+router.post("/", protectCustomer, requireActiveAccount, asyncHandler(ctrl.createReview));
+router.put("/:id", protectCustomer, requireActiveAccount, asyncHandler(ctrl.editReview));
+router.delete("/:id", protectCustomer, requireActiveAccount, asyncHandler(ctrl.deleteReview));
 
 // Admin — review management
 router.get("/admin", protect, adminOnly, asyncHandler(ctrl.getAdminReviews));

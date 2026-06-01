@@ -1,4 +1,4 @@
-import { ArrowLeft, Key, LogOut, Mail, MailCheck, MessageSquare, Save, Trash2, UserCheck, UserX } from "lucide-react";
+import { ArrowLeft, Ban, Clock, Key, Loader2, LogOut, Mail, MailCheck, MessageSquare, Save, Shield, Trash2, UserCheck, UserX } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { Link, useNavigate, useParams } from "react-router-dom";
@@ -7,16 +7,16 @@ import Pagination from "../../components/ui/Pagination.jsx";
 import OrderStatusBadge from "../../components/orders/OrderStatusBadge.jsx";
 import { addAdminNote, deleteUser, forceLogoutUser, getUserById, getUserOrders, resetUserPassword, updateUser, verifyUserEmail } from "../../services/adminUserService.js";
 import { formatCurrency } from "../../utils/formatters.js";
-import StatusBadge from "../../moderation-system/components/StatusBadge.jsx";
-import ModerationTimeline from "../../moderation-system/components/ModerationTimeline.jsx";
-import ModerationModal from "../../moderation-system/modals/ModerationModal.jsx";
+import StatusBadge from "../../moderation/StatusBadge.jsx";
+import ModerationTimeline from "../../moderation/ModerationTimeline.jsx";
 import {
-  getModerationHistory,
+  getCustomerModerationStatus,
   warnUser,
   suspendUser,
   banUser,
   liftModeration,
-} from "../../moderation-system/services/moderationService.js";
+} from "../../moderation/moderationService.js";
+
 
 const AdminUserDetailPage = () => {
   const { id } = useParams();
@@ -40,10 +40,18 @@ const AdminUserDetailPage = () => {
   const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [showResetForm, setShowResetForm] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
-  const [moderationHistory, setModerationHistory] = useState(null);
-  const [modHistoryLoading, setModHistoryLoading] = useState(false);
-  const [moderationAction, setModerationAction] = useState(null);
-  const [liftConfirm, setLiftConfirm] = useState(false);
+
+  const [modData, setModData] = useState(null);
+  const [modLoading, setModLoading] = useState(false);
+  const [showModModal, setShowModModal] = useState(false);
+  const [modType, setModType] = useState(null);
+  const [modReason, setModReason] = useState("");
+  const [modDuration, setModDuration] = useState(24);
+  const [modEvidence, setModEvidence] = useState("");
+  const [modNotes, setModNotes] = useState("");
+  const [modSubmitting, setModSubmitting] = useState(false);
+  const [liftTarget, setLiftTarget] = useState(false);
+
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
@@ -72,18 +80,13 @@ const AdminUserDetailPage = () => {
   useEffect(() => { fetchOrders(ordersPage); }, [fetchOrders, ordersPage]);
 
   useEffect(() => {
-    if (!id) return;
-    const fetchMod = async () => {
-      setModHistoryLoading(true);
-      try {
-        const data = await getModerationHistory(id);
-        setModerationHistory(data);
-      } catch {} finally {
-        setModHistoryLoading(false);
-      }
-    };
-    if (user && !loading) fetchMod();
-  }, [id, user, loading]);
+    if (activeTab !== "moderation" || !id) return;
+    setModLoading(true);
+    getCustomerModerationStatus(id)
+      .then(setModData)
+      .catch(() => {})
+      .finally(() => setModLoading(false));
+  }, [activeTab, id]);
 
   const handleEdit = async () => {
     setSaving(true);
@@ -116,6 +119,40 @@ const AdminUserDetailPage = () => {
       toast.error(err.response?.data?.message || "Failed to add note.");
     } finally {
       setSendingNote(false);
+    }
+  };
+
+  const handleModSubmit = async () => {
+    if (!modReason.trim()) { toast.error("Reason is required."); return; }
+    setModSubmitting(true);
+    try {
+      let result;
+      if (modType === "warn") result = await warnUser(id, modReason.trim(), modEvidence.trim(), modNotes.trim());
+      else if (modType === "suspend") result = await suspendUser(id, modReason.trim(), modDuration, modEvidence.trim(), modNotes.trim());
+      else result = await banUser(id, modReason.trim(), modEvidence.trim(), modNotes.trim());
+      toast.success(result.message);
+      setShowModModal(false);
+      setModReason("");
+      setModEvidence("");
+      setModNotes("");
+      const data = await getCustomerModerationStatus(id);
+      setModData(data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Action failed.");
+    } finally {
+      setModSubmitting(false);
+    }
+  };
+
+  const handleLift = async () => {
+    try {
+      const result = await liftModeration(id);
+      toast.success(result.message);
+      setLiftTarget(false);
+      const data = await getCustomerModerationStatus(id);
+      setModData(data);
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Failed to lift moderation.");
     }
   };
 
@@ -152,19 +189,6 @@ const AdminUserDetailPage = () => {
       toast.error(err.response?.data?.message || "Action failed.");
     } finally {
       setConfirmAction(null);
-    }
-  };
-
-  const handleLift = async () => {
-    try {
-      const result = await liftModeration(id);
-      toast.success(result.message);
-      await Promise.all([
-        fetchUser(),
-        getModerationHistory(id).then((data) => setModerationHistory(data)),
-      ]);
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to lift moderation.");
     }
   };
 
@@ -464,34 +488,33 @@ const AdminUserDetailPage = () => {
         <div className="mt-6 space-y-6">
           <div className="rounded-lg border border-gray-200 bg-white p-5">
             <h3 className="mb-4 text-sm font-bold">Account Moderation</h3>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-3">
-                <StatusBadge status={user.moderationStatus || "active"} />
-                <span className="text-sm text-gray-600">
-                  {user.moderationStatus === "warned" ? "Account has active warnings" :
-                   user.moderationStatus === "suspended" ? "Account is temporarily suspended" :
-                   user.moderationStatus === "banned" ? "Account is permanently banned" :
-                   "No active moderation actions."}
-                </span>
+            {modLoading ? (
+              <div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-gray-400" /></div>
+            ) : (
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-3">
+                  <StatusBadge status={modData?.status || "active"} />
+                  <span className="text-sm text-gray-600">
+                    {modData?.status === "banned" ? "Account is permanently banned" :
+                     modData?.status === "suspended" ? "Account is temporarily suspended" :
+                     "No active moderation actions."}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button type="button" onClick={() => { setModType("warn"); setShowModModal(true); }} className="rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">Warn</button>
+                  <button type="button" onClick={() => { setModType("suspend"); setShowModModal(true); }} className="rounded bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600">Suspend</button>
+                  <button type="button" onClick={() => { setModType("ban"); setShowModModal(true); }} className="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">Ban</button>
+                  <button type="button" onClick={() => setLiftTarget(true)} className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">Lift</button>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={() => setModerationAction({ type: "warn" })} className="rounded bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600">Warn</button>
-                <button type="button" onClick={() => setModerationAction({ type: "suspend" })} className="rounded bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-600">Suspend</button>
-                <button type="button" onClick={() => setModerationAction({ type: "ban" })} className="rounded bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700">Ban</button>
-                <button type="button" onClick={() => setLiftConfirm(true)} className="rounded bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700">Lift</button>
-              </div>
-            </div>
+            )}
           </div>
           <div className="rounded-lg border border-gray-200 bg-white p-5">
             <h3 className="mb-4 text-sm font-bold">Moderation History</h3>
-            {modHistoryLoading ? (
-              <div className="space-y-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="h-12 animate-pulse rounded bg-gray-100" />
-                ))}
-              </div>
+            {modLoading ? (
+              <div className="flex items-center justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-gray-400" /></div>
             ) : (
-              <ModerationTimeline cases={moderationHistory?.cases || []} />
+              <ModerationTimeline cases={modData?.history || []} />
             )}
           </div>
         </div>
@@ -525,24 +548,6 @@ const AdminUserDetailPage = () => {
         </div>
       )}
 
-      <ModerationModal
-        open={!!moderationAction}
-        type={moderationAction?.type}
-        customer={{ _id: id, name: user?.name }}
-        onClose={() => setModerationAction(null)}
-        onConfirm={async (payload) => {
-          const fn = moderationAction.type === "warn" ? warnUser :
-                     moderationAction.type === "ban" ? banUser : suspendUser;
-          const result = await fn(id, payload);
-          toast.success(result.message + (result.case?.emailSent ? " — Email sent to customer." : ""));
-          await Promise.all([
-            fetchUser(),
-            getModerationHistory(id).then((data) => setModerationHistory(data)),
-          ]);
-          setModerationAction(null);
-        }}
-      />
-
       <ConfirmDialog
         open={!!confirmAction}
         title={confirmAction === "delete" ? "Delete customer?" : confirmAction === "force-logout" ? "Force logout?" : "Confirm action"}
@@ -554,16 +559,61 @@ const AdminUserDetailPage = () => {
         onCancel={() => setConfirmAction(null)}
       />
 
+      {showModModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setShowModModal(false)}>
+          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold capitalize">{modType} Customer</h3>
+            <p className="mt-1 text-sm text-gray-500">{user?.name}</p>
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Reason</label>
+                <textarea value={modReason} onChange={(e) => setModReason(e.target.value)} rows={3} className="input w-full text-sm" placeholder="Describe the reason..." />
+              </div>
+              {modType === "suspend" && (
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-gray-600">Duration</label>
+                  <select value={modDuration} onChange={(e) => setModDuration(Number(e.target.value))} className="input w-full text-sm">
+                    <option value={6}>6 hours</option>
+                    <option value={12}>12 hours</option>
+                    <option value={24}>24 hours</option>
+                    <option value={72}>3 days</option>
+                    <option value={168}>7 days</option>
+                    <option value={336}>14 days</option>
+                    <option value={720}>30 days</option>
+                  </select>
+                </div>
+              )}
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Evidence (optional)</label>
+                <input type="text" value={modEvidence} onChange={(e) => setModEvidence(e.target.value)} className="input w-full text-sm" placeholder="Link or reference..." />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-medium text-gray-600">Admin Notes (optional)</label>
+                <textarea value={modNotes} onChange={(e) => setModNotes(e.target.value)} rows={2} className="input w-full text-sm" placeholder="Internal notes..." />
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <button type="button" onClick={() => setShowModModal(false)} className="btn-secondary text-xs">Cancel</button>
+              <button type="button" onClick={handleModSubmit} disabled={modSubmitting} className="btn-primary text-xs">
+                {modSubmitting ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : null}
+                {modSubmitting ? "Processing..." : `Issue ${modType === "suspend" ? "Suspension" : modType === "warn" ? "Warning" : "Ban"}`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <ConfirmDialog
-        open={liftConfirm}
+        open={liftTarget}
         title="Lift Moderation?"
         message={`Remove all active warnings, suspensions, or bans on ${user?.name || "this user"}?`}
         confirmLabel="Lift"
         cancelLabel="Cancel"
         destructive={false}
-        onConfirm={async () => { await handleLift(); setLiftConfirm(false); }}
-        onCancel={() => setLiftConfirm(false)}
+        onConfirm={handleLift}
+        onCancel={() => setLiftTarget(false)}
       />
+
     </div>
   );
 };

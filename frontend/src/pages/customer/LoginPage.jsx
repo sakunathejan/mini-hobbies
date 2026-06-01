@@ -16,18 +16,9 @@ const LoginPage = () => {
     e.preventDefault();
     setError("");
     try {
-      const result = await login(form);
-      const modStatus = result?.user?.moderationStatus || result?.moderationStatus;
-      if (modStatus === "suspended" || modStatus === "banned") {
-        navigate("/account/suspended", { replace: true });
-        return;
-      }
+      await login(form);
       navigate(state?.from || "/account", { replace: true });
     } catch (err) {
-      if (err.response?.data?.moderationStatus === "suspended" || err.response?.data?.moderationStatus === "banned") {
-        navigate("/account/suspended", { replace: true });
-        return;
-      }
       setError(err.response?.data?.message || "Invalid email or password.");
     }
   };

@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ORDER_STATUS, VALID_STATUSES } from "../constants/orderStatus.js";
 
 const orderItemSchema = new mongoose.Schema(
   {
@@ -45,8 +46,16 @@ const orderSchema = new mongoose.Schema(
       email: { type: String, required: true },
       phone: { type: String, required: true },
       address: { type: String, required: true },
-      district: { type: String, default: "" }
+      district: { type: String, default: "" },
+      city: { type: String, default: "" }
     },
+    districtId: { type: Number },
+    cityId: { type: Number },
+    koombiyoWaybillId: { type: String, default: "" },
+    isKoombiyoActive: { type: Boolean, default: false },
+    productValue: { type: Number, default: 0 },
+    deliveryCharge: { type: Number, default: 0 },
+    codTotal: { type: Number, default: 0 },
     items: [orderItemSchema],
     subtotal: { type: Number, required: true },
     deliveryFee: { type: Number, default: 0 },
@@ -82,14 +91,37 @@ const orderSchema = new mongoose.Schema(
       ],
       default: "Pending Advance Payment"
     },
+    lifecycleStatus: {
+      type: String,
+      enum: VALID_STATUSES,
+      default: ORDER_STATUS.PENDING
+    },
+    cancellationReason: { type: String, default: "" },
+    cancelledAt: { type: Date },
+    shippedAt: { type: Date },
+    deliveredAt: { type: Date },
+    lastSyncAt: { type: Date },
+    emailLogs: [{
+      eventType: { type: String },
+      to: { type: String },
+      subject: { type: String },
+      sentAt: { type: Date, default: Date.now },
+      status: { type: String, enum: ["sent", "failed"], default: "sent" }
+    }],
     statusHistory: [statusHistorySchema],
     notes: { type: String, default: "" },
     delivery: {
       provider: { type: String, default: "koombiyo" },
       shipmentCreated: { type: Boolean, default: false },
+      shipmentId: { type: mongoose.Schema.Types.ObjectId, ref: "KoombiyoShipment" },
       waybillId: { type: String, default: "" },
       trackingUrl: { type: String, default: "" },
       deliveryStatus: { type: String, default: "pending" },
+      shipmentCreatedAt: { type: Date },
+      lastTrackingSyncAt: { type: Date },
+      lastPickupRequest: { type: Date },
+      pickupResponse: mongoose.Schema.Types.Mixed,
+      returnReceivedAt: { type: Date },
       history: [{
         status: String,
         label: String,
@@ -109,6 +141,7 @@ const orderSchema = new mongoose.Schema(
 );
 
 orderSchema.index({ customerId: 1, createdAt: -1 });
+orderSchema.index({ lifecycleStatus: 1, createdAt: -1 });
 orderSchema.index({ status: 1, createdAt: -1 });
 orderSchema.index({ "customer.phone": 1, orderNumber: 1 });
 orderSchema.index({ createdAt: -1 });

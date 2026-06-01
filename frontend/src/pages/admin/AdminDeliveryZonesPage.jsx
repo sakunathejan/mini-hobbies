@@ -166,7 +166,7 @@ const AdminDeliveryZonesPage = () => {
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-3xl font-black">Delivery Zones</h1>
-          <p className="mt-1 text-sm text-gray-600">Import Koombiyo CSV rates or manage delivery routes.</p>
+          <p className="mt-1 text-sm text-gray-600">Import delivery rate CSV or manage routes manually.</p>
         </div>
         <button className="btn-secondary text-sm min-h-[44px] self-start" onClick={refreshAll}>
           <RefreshCw className="h-4 w-4" /> Refresh
@@ -239,10 +239,10 @@ const AdminDeliveryZonesPage = () => {
           <div className="rounded-lg border bg-white p-6">
             <h2 className="text-lg font-bold flex items-center gap-2">
               <CloudUpload className="h-5 w-5 text-ember" />
-              Upload Koombiyo CSV
+              Upload Rate CSV
             </h2>
             <p className="mt-1 text-xs text-gray-500">
-              Upload the official Koombiyo delivery rate CSV to import or update routes.
+              Upload a delivery rate CSV (e.g. Koombiyo rate card) to import or update routes.
             </p>
 
             <div
