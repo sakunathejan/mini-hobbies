@@ -1,22 +1,23 @@
+import customerApi from "../services/customerApi.js";
 import api from "../services/api.js";
 
 export async function getMyModerationStatus() {
-  const { data } = await api.get("/moderation/my-status");
+  const { data } = await customerApi.get("/moderation/my-status");
   return data;
 }
 
 export async function getMyHistory({ page = 1, limit = 20 } = {}) {
-  const { data } = await api.get("/moderation/my-history", { params: { page, limit } });
+  const { data } = await customerApi.get("/moderation/my-history", { params: { page, limit } });
   return data;
 }
 
 export async function getMyAppealableCases() {
-  const { data } = await api.get("/moderation/my-appealable");
+  const { data } = await customerApi.get("/moderation/my-appealable");
   return data;
 }
 
 export async function submitAppeal(caseId, message) {
-  const { data } = await api.post("/moderation/appeal", { caseId, message });
+  const { data } = await customerApi.post("/moderation/appeal", { caseId, message });
   return data;
 }
 

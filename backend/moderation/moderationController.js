@@ -1,13 +1,14 @@
+import asyncHandler from "../utils/asyncHandler.js";
 import * as svc from "./moderationService.js";
 import { sendModerationEmail, sendAppealEmail, sendAppealResponseEmail } from "./moderationEmailService.js";
 import Customer from "../models/Customer.js";
 import ModerationCase from "./ModerationCase.js";
 
-export const getMyStatus = async (req, res) => {
+export const getMyStatus = asyncHandler(async (req, res) => {
   const status = await svc.getAccountStatus(req.customer._id);
   const warnings = await svc.getActiveWarnings(req.customer._id);
   res.json({ ...status, warnings });
-};
+});
 
 export const getMyHistory = async (req, res) => {
   const page = Math.max(1, Number(req.query.page) || 1);

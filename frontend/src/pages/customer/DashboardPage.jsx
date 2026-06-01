@@ -196,12 +196,14 @@ const DashboardPage = () => {
           )}
 
           {/* Tab bar */}
-          <div className="mt-6 flex gap-1 border-b border-gray-200">
-            {TABS.map((t) => (
-              <button key={t} onClick={() => setTab(t)} className={`px-4 py-3 text-sm font-semibold transition border-b-2 -mb-[1px] ${tab === t ? "border-ember text-ember" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-                {t}
-              </button>
-            ))}
+          <div className="mt-6 overflow-x-auto">
+            <div className="flex gap-1 border-b border-gray-200 min-w-max">
+              {TABS.map((t) => (
+                <button key={t} onClick={() => setTab(t)} className={`shrink-0 px-3 sm:px-4 py-3 text-sm font-semibold transition border-b-2 -mb-[1px] ${tab === t ? "border-ember text-ember" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+                  {t}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="mt-3 flex items-center justify-end">
