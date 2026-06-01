@@ -38,6 +38,7 @@ const deliveryIcon = (status) => {
 };
 
 export const canCreateShipment = (order) => {
+  if (order.status === "Cancelled" || order.status === "Returned") return false;
   const eligibleStatuses = ["Fully Paid", "Preparing Order", "Shipped", "Delivered"];
   return eligibleStatuses.includes(order.status) || order.paymentMethod === "cod";
 };
@@ -289,9 +290,15 @@ const KoombiyoDeliveryPanel = ({ order, onShipmentCreated, compact, showActions,
     try {
       const result = await refreshKoombiyoTracking(order._id);
       if (result.success) {
-        const updatedOrder = { ...order, delivery: result.delivery || order.delivery };
-        if (onShipmentCreated) onShipmentCreated(updatedOrder);
-        toast.success("Tracking refreshed");
+        if (result.lifecycleStatus === "CANCELLED") {
+          const updatedOrder = { ...order, status: "Cancelled", delivery: result.delivery || order.delivery, lifecycleStatus: "CANCELLED" };
+          if (onShipmentCreated) onShipmentCreated(updatedOrder);
+          toast.success("Order cancelled — deleted from Koombiyo portal");
+        } else {
+          const updatedOrder = { ...order, delivery: result.delivery || order.delivery };
+          if (onShipmentCreated) onShipmentCreated(updatedOrder);
+          toast.success("Tracking refreshed");
+        }
       } else {
         toast.error(result.error || "Could not refresh tracking.");
       }

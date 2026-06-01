@@ -7,12 +7,37 @@ const CartContext = createContext(null);
 
 const LOCAL_KEY = "mini_hobbies_cart";
 
-const getItemId = (productId, variantId) => variantId ? `${productId}_${variantId}` : productId;
+const getItemId = (productId, variantId) => {
+  const base = productId == null ? "" : String(productId);
+  return variantId ? base + "_" + String(variantId) : base;
+};
+
+const dedupItems = (arr) => {
+  const seen = new Set();
+  const out = [];
+  for (const item of arr) {
+    const key = item._cartId;
+    if (key == null) continue;
+    if (seen.has(key)) {
+      const existing = out[out.length - 1];
+      if (existing && existing._cartId === key) {
+        existing.quantity = Math.max(existing.quantity, item.quantity);
+      }
+      continue;
+    }
+    seen.add(key);
+    out.push({ ...item });
+  }
+  return out;
+};
 
 const loadLocalCart = () => {
   try {
     const stored = localStorage.getItem(LOCAL_KEY);
-    return stored ? JSON.parse(stored) : [];
+    if (!stored) return [];
+    const parsed = JSON.parse(stored);
+    if (!Array.isArray(parsed)) return [];
+    return dedupItems(parsed);
   } catch { return []; }
 };
 
@@ -31,14 +56,15 @@ export const CartProvider = ({ children }) => {
     const raw = (dataItems || []).map((item) => ({
       ...item.product,
       _cartItemId: item._id,
-      _cartId: getItemId(item.product._id, item.variantId || ""),
+      _cartId: getItemId(item.product && item.product._id, item.variantId || ""),
       quantity: item.quantity,
       variantId: item.variantId || "",
       variantName: item.variantName || "",
     }));
     const hasVariantId = new Set();
     raw.forEach((i) => { if (i.variantId) hasVariantId.add(i._id); });
-    return raw.filter((i) => !(!i.variantId && hasVariantId.has(i._id)));
+    const filtered = raw.filter((i) => !(!i.variantId && hasVariantId.has(i._id)));
+    return dedupItems(filtered);
   };
 
   useEffect(() => {
@@ -80,12 +106,17 @@ export const CartProvider = ({ children }) => {
   }, []);
 
   const syncToLocal = useCallback((nextItems) => {
-    setItems(nextItems);
-    if (!isLoggedIn()) saveLocalCart(nextItems);
+    const deduped = dedupItems(nextItems);
+    setItems(deduped);
+    if (!isLoggedIn()) saveLocalCart(deduped);
   }, []);
 
   const addItem = useCallback(async (product, quantity = 1, variantId = null) => {
     const currentItems = items;
+    if (!product || !product._id) {
+      toast.error("Invalid product.");
+      return;
+    }
     const id = getItemId(product._id, variantId);
     const variant = variantId ? product.variants?.find((v) => v._id === variantId) : null;
     const existingItem = currentItems.find((item) => item._cartId === id);

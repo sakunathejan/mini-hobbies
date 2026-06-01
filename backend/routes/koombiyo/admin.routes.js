@@ -53,7 +53,7 @@ router.get(
   requireInit,
   asyncHandler(async (req, res) => {
     const result = await refreshTracking(req.params.orderId);
-    const freshOrder = await Order.findById(req.params.orderId).select("delivery orderNumber status");
+    const freshOrder = await Order.findById(req.params.orderId).select("delivery orderNumber status lifecycleStatus");
     res.json({
       success: result.success,
       order: freshOrder || null,
@@ -61,6 +61,7 @@ router.get(
       tracking: result.tracking || null,
       history: result.history || [],
       fullHistory: result.fullHistory || [],
+      lifecycleStatus: result.lifecycleStatus || null,
       error: result.error || null
     });
   })

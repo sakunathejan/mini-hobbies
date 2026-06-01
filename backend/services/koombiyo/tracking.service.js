@@ -6,6 +6,7 @@ import * as cache from "../../utils/cache.js";
 import { ORDER_STATUS, KOOMBIYO_TO_LIFECYCLE, shouldSendEmail, LIFECYCLE_TO_LEGACY } from "../../constants/orderStatus.js";
 import { emit, EVENTS } from "../event.service.js";
 import { sendStatusUpdateEmail } from "../email/email.service.js";
+import { cancelOrderByKoombioSync } from "./cancellation.service.js";
 import { addTimelineEntry } from "../../helpers/orderTimeline.js";
 import { logAudit } from "../audit.service.js";
 
@@ -44,6 +45,26 @@ export async function refreshTracking(orderId) {
     const historyRaw = historyResult.status === "fulfilled" ? historyResult.value : [];
 
     const orderData = Array.isArray(trackingRaw?.cust_orders) ? trackingRaw.cust_orders[0] : trackingRaw;
+    const foundInKoombiyo = orderData && Object.keys(orderData).length > 0;
+
+    if (!foundInKoombiyo) {
+      await logAudit({
+        action: "SHIPMENT_CANCELLED",
+        orderId: order._id,
+        orderNumber: order.orderNumber,
+        details: { reason: "Waybill not found in Koombiyo (deleted from portal via refresh)", waybillId }
+      });
+      const result = await cancelOrderByKoombioSync(order, "Waybill not found in Koombiyo (deleted from portal)");
+      return {
+        success: result.success,
+        delivery: order.delivery,
+        tracking: null,
+        history: [],
+        fullHistory: [],
+        lifecycleStatus: ORDER_STATUS.CANCELLED
+      };
+    }
+
     const statusLabel = orderData?.status || trackingRaw?.status || "";
     const mappedStatus = mapDeliveryStatus(statusLabel);
     const newLifecycleStatus = KOOMBIYO_TO_LIFECYCLE[mappedStatus] || currentLifecycleStatus;
