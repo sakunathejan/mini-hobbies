@@ -292,7 +292,7 @@ const CheckoutPage = () => {
       };
 
       let order;
-      if (slipFile) {
+      if (sm?.supportsPartialPayment && slipFile) {
         const fd = new FormData();
         fd.append("customer", JSON.stringify(orderPayload.customer));
         fd.append("items", JSON.stringify(orderPayload.items));
@@ -310,6 +310,21 @@ const CheckoutPage = () => {
         order = await createOrder(fd);
       } else {
         order = await createOrder(orderPayload);
+      }
+
+      if (slipFile && !sm?.supportsPartialPayment) {
+        const fd = new FormData();
+        fd.append("orderId", order._id);
+        fd.append("slip", slipFile);
+        fd.append("bankName", bankDetails.bankName);
+        fd.append("accountName", bankDetails.accountName);
+        fd.append("accountNumber", bankDetails.accountNumber);
+        fd.append("branch", bankDetails.branch);
+
+        const api = (await import("../services/api.js")).default;
+        api.post("/payments/bank-transfer", fd).catch((err) => {
+          console.error("Slip upload (non-blocking) failed:", err);
+        });
       }
 
       clearCart();

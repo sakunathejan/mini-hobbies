@@ -19,9 +19,13 @@ export const submitBankTransferPayment = asyncHandler(async (req, res) => {
   let slipUrl = "";
   let slipPath = "";
   if (req.file) {
-    const upload = await uploadPaymentSlip(req.file);
-    slipUrl = upload.url;
-    slipPath = upload.path;
+    try {
+      const upload = await uploadPaymentSlip(req.file);
+      slipUrl = upload.url;
+      slipPath = upload.path;
+    } catch (uploadErr) {
+      console.error("Payment slip upload failed for order", orderId, ":", uploadErr.message);
+    }
   }
 
   const payment = await Payment.create({

@@ -224,54 +224,62 @@ export const createOrder = asyncHandler(async (req, res) => {
   }
 
   if (paymentMethod === "advance" && req.file) {
-    const upload = await uploadPaymentSlip(req.file);
-    const slipUrl = upload.url;
-    const slipPath = upload.path;
+    try {
+      const upload = await uploadPaymentSlip(req.file);
+      const slipUrl = upload.url;
+      const slipPath = upload.path;
 
-    const payment = await Payment.create({
-      order: order._id,
-      method: "advance",
-      status: "awaiting_verification",
-      advance: { percentage: 50, amount: advanceAmount, remainingAmount: remainingBalance },
-      bankTransfer: {
-        slipUrl,
-        slipPath,
-        bankName: req.body.bankName || "",
-        accountName: req.body.accountName || "",
-        accountNumber: req.body.accountNumber || "",
-        branch: req.body.branch || ""
-      }
-    });
+      const payment = await Payment.create({
+        order: order._id,
+        method: "advance",
+        status: "awaiting_verification",
+        advance: { percentage: 50, amount: advanceAmount, remainingAmount: remainingBalance },
+        bankTransfer: {
+          slipUrl,
+          slipPath,
+          bankName: req.body.bankName || "",
+          accountName: req.body.accountName || "",
+          accountNumber: req.body.accountNumber || "",
+          branch: req.body.branch || ""
+        }
+      });
 
-    order.payment = payment._id;
-    order.status = "Advance Payment Submitted";
-    order.statusHistory.push({ status: "Advance Payment Submitted", note: "Advance payment slip uploaded at checkout, awaiting verification", updatedAt: new Date() });
-    await order.save();
+      order.payment = payment._id;
+      order.status = "Advance Payment Submitted";
+      order.statusHistory.push({ status: "Advance Payment Submitted", note: "Advance payment slip uploaded at checkout, awaiting verification", updatedAt: new Date() });
+      await order.save();
+    } catch (slipErr) {
+      console.error("Advance slip upload/payment failed for order", order.orderNumber, ":", slipErr.message);
+    }
   }
 
   if (paymentMethod === "bank_transfer" && req.file) {
-    const upload = await uploadPaymentSlip(req.file);
-    const slipUrl = upload.url;
-    const slipPath = upload.path;
+    try {
+      const upload = await uploadPaymentSlip(req.file);
+      const slipUrl = upload.url;
+      const slipPath = upload.path;
 
-    const payment = await Payment.create({
-      order: order._id,
-      method: "bank_transfer",
-      status: "awaiting_verification",
-      bankTransfer: {
-        slipUrl,
-        slipPath,
-        bankName: req.body.bankName || "",
-        accountName: req.body.accountName || "",
-        accountNumber: req.body.accountNumber || "",
-        branch: req.body.branch || ""
-      }
-    });
+      const payment = await Payment.create({
+        order: order._id,
+        method: "bank_transfer",
+        status: "awaiting_verification",
+        bankTransfer: {
+          slipUrl,
+          slipPath,
+          bankName: req.body.bankName || "",
+          accountName: req.body.accountName || "",
+          accountNumber: req.body.accountNumber || "",
+          branch: req.body.branch || ""
+        }
+      });
 
-    order.payment = payment._id;
-    order.status = "Fully Paid Pending Verification";
-    order.statusHistory.push({ status: "Fully Paid Pending Verification", note: "Payment slip uploaded at checkout, awaiting verification", updatedAt: new Date() });
-    await order.save();
+      order.payment = payment._id;
+      order.status = "Fully Paid Pending Verification";
+      order.statusHistory.push({ status: "Fully Paid Pending Verification", note: "Payment slip uploaded at checkout, awaiting verification", updatedAt: new Date() });
+      await order.save();
+    } catch (slipErr) {
+      console.error("Bank transfer slip upload/payment failed for order", order.orderNumber, ":", slipErr.message);
+    }
   }
 
   for (const item of orderItems) {
