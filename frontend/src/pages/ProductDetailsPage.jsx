@@ -1,6 +1,7 @@
 import { Heart, ShoppingCart, Star, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
+import toast from "react-hot-toast";
 import ReviewSection from "../components/reviews/ReviewSection.jsx";
 import StarRating from "../components/reviews/StarRating.jsx";
 import Seo from "../components/Seo.jsx";
@@ -45,6 +46,10 @@ const ProductDetailsPage = () => {
 
   const handleAddToCart = () => {
     if (activeStock < 1) return;
+    if (product.hasVariants && !selectedVariant) {
+      toast.error("Please select a variant first.");
+      return;
+    }
     addItem(product, 1, selectedVariant);
   };
 
