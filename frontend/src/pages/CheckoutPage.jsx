@@ -292,7 +292,7 @@ const CheckoutPage = () => {
       };
 
       let order;
-      if (slipFile) {
+      if (sm?.supportsPartialPayment && slipFile) {
         const fd = new FormData();
         fd.append("customer", JSON.stringify(orderPayload.customer));
         fd.append("items", JSON.stringify(orderPayload.items));
@@ -310,6 +310,24 @@ const CheckoutPage = () => {
         order = await createOrder(fd);
       } else {
         order = await createOrder(orderPayload);
+
+        if (slipFile && sm?.requiresSlipUpload && !sm.supportsPartialPayment) {
+          try {
+            const fd = new FormData();
+            fd.append("orderId", order._id);
+            fd.append("slip", slipFile);
+            fd.append("bankName", bankDetails.bankName);
+            fd.append("accountName", bankDetails.accountName);
+            fd.append("accountNumber", bankDetails.accountNumber);
+            fd.append("branch", bankDetails.branch);
+
+            const api = (await import("../services/api.js")).default;
+            await api.post("/payments/bank-transfer", fd);
+          } catch (slipErr) {
+            console.error("Payment slip upload failed:", slipErr);
+            toast("Order placed! But we could not upload your payment slip. You can upload it later from your orders.", { icon: "⚠️" });
+          }
+        }
       }
 
       clearCart();
