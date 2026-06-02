@@ -322,13 +322,26 @@ export const deleteAccount = asyncHandler(async (req, res) => {
     throw new Error("Password is incorrect.");
   }
 
-  customer.deletedAt = new Date();
-  customer.refreshToken = null;
-  customer.email = `deleted_${customer._id}@minihobbies.lk`;
-  await customer.save();
+  const { default: Order } = await import("../models/Order.js");
+  const { default: Cart } = await import("../models/Cart.js");
+  const { default: Wishlist } = await import("../models/Wishlist.js");
+  const { default: Payment } = await import("../models/Payment.js");
+  const { default: LoginHistory } = await import("../models/LoginHistory.js");
+
+  const orderIds = await Order.find({ customerId: customer._id }).distinct("_id");
+
+  await Promise.all([
+    Cart.deleteMany({ customerId: customer._id }),
+    Wishlist.deleteMany({ customerId: customer._id }),
+    LoginHistory.deleteMany({ customer: customer._id }),
+    Payment.deleteMany({ order: { $in: orderIds } }),
+    Order.deleteMany({ customerId: customer._id }),
+  ]);
+
+  await Customer.findByIdAndDelete(customer._id);
 
   res.clearCookie("customerRefreshToken", { path: "/api/customers/auth" });
-  res.json({ message: "Account deleted successfully." });
+  res.json({ message: "Account and all associated data deleted successfully." });
 });
 
 // --- Addresses ---

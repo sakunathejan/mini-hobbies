@@ -3,6 +3,9 @@ import Customer from "../models/Customer.js";
 import AuditLog from "../models/AuditLog.js";
 import LoginHistory from "../models/LoginHistory.js";
 import Order from "../models/Order.js";
+import Cart from "../models/Cart.js";
+import Wishlist from "../models/Wishlist.js";
+import Payment from "../models/Payment.js";
 
 export const DEFAULT_PAGE_SIZE = 20;
 
@@ -95,20 +98,29 @@ export async function softDeleteUser(id, adminId) {
   if (customer.deletedAt) {
     throw Object.assign(new Error("This customer has already been deleted."), { status: 409 });
   }
-  customer.deletedAt = new Date();
-  customer.email = `deleted_${customer._id}_${Date.now()}@minihobbies.lk`;
-  customer.refreshToken = null;
-  await customer.save();
+
+  const orderIds = await Order.find({ customerId: id }).distinct("_id");
+
+  await Promise.all([
+    Cart.deleteMany({ customerId: id }),
+    Wishlist.deleteMany({ customerId: id }),
+    LoginHistory.deleteMany({ customer: id }),
+    Payment.deleteMany({ order: { $in: orderIds } }),
+    Order.deleteMany({ customerId: id }),
+  ]);
+
+  await Customer.findByIdAndDelete(id);
+
   try {
     await AuditLog.create({
       admin: adminId,
       action: "delete_user",
       resource: "Customer",
       resourceId: String(customer._id),
-      details: { email: customer.email },
+      details: { email: customer.email, orderCount: orderIds.length },
     });
   } catch {
-    // Audit log is non-critical; deletion already succeeded
+    // Audit log is non-critical
   }
   return { id: customer._id, deleted: true };
 }
