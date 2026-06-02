@@ -235,11 +235,11 @@ const OrderTrackPage = () => {
           )}
 
           {order && (
-            <div className="mt-8 animate-fade-in space-y-6">
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div className="flex flex-wrap items-start justify-between gap-4">
+            <div className="mt-8 animate-fade-in space-y-4 sm:space-y-6">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Order number</p>
                       {liveRefresh && (
                         <span className="flex items-center gap-1 text-xs text-emerald-600">
@@ -248,32 +248,32 @@ const OrderTrackPage = () => {
                         </span>
                       )}
                     </div>
-                    <div className="mt-1 flex items-center gap-2">
-                      <p className="text-2xl font-black tracking-tight">{order.orderNumber}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      <p className="break-all text-xl font-black tracking-tight sm:text-2xl">{order.orderNumber}</p>
                       <button
                         type="button"
                         onClick={copyOrderNumber}
-                        className="rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+                        className="shrink-0 rounded-md p-1.5 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
                         title="Copy order number"
                       >
-                        {copied ? <CheckCircle className="h-4 w-4 text-emerald-500" /> : <Copy className="h-4 w-4" />}
+                        {copied ? <CheckCircle className="h-5 w-5 text-emerald-500" /> : <Copy className="h-5 w-5" />}
                       </button>
                     </div>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1.5 text-sm leading-relaxed text-gray-500">
                       Placed {new Date(order.createdAt).toLocaleString("en-LK", { dateStyle: "long", timeStyle: "short" })}
                     </p>
                   </div>
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:flex-col sm:items-end">
                     <OrderStatusBadge status={order.status} />
                     <button
                       type="button"
                       onClick={refreshStatus}
                       disabled={loading}
-                      className="btn-secondary min-h-[44px]"
+                      className="btn-secondary w-full sm:w-auto min-h-[44px]"
                       title="Refresh status"
                     >
                       <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-                      <span className="hidden sm:inline">Refresh</span>
+                      <span>Refresh</span>
                     </button>
                   </div>
                 </div>
@@ -295,7 +295,7 @@ const OrderTrackPage = () => {
                 {order.trackingNumber && (
                   <div className="mt-4 rounded-lg bg-blue-50 p-3 text-sm">
                     <span className="font-semibold text-blue-700">Tracking number:</span>{" "}
-                    <span className="text-blue-800">{order.trackingNumber}</span>
+                    <span className="break-all text-blue-800">{order.trackingNumber}</span>
                   </div>
                 )}
 
@@ -304,27 +304,27 @@ const OrderTrackPage = () => {
                 )}
 
                 <div className="mt-5 flex flex-wrap gap-2">
-                  <button type="button" onClick={contactSupport} className="btn-secondary text-sm min-h-[44px]">
+                  <button type="button" onClick={contactSupport} className="btn-secondary w-full sm:w-auto text-sm min-h-[44px]">
                     <MessageCircle className="h-4 w-4" /> Contact support
                   </button>
                 </div>
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
                 <h2 className="flex items-center gap-2 text-sm font-black text-gray-700">
                   <Truck className="h-4 w-4" /> Delivery progress
                 </h2>
-                <div className="mt-5">
+                <div className="mt-4 sm:mt-5">
                   <OrderTimeline order={order} />
                 </div>
               </div>
 
               {(order.paymentType === "advance_50" || order.paymentMethod === "advance") && (
-                <div className="rounded-xl border border-purple-100 bg-white p-5 shadow-sm">
+                <div className="rounded-xl border border-purple-100 bg-white p-4 shadow-sm sm:p-5">
                   <h2 className="flex items-center gap-2 text-sm font-black text-purple-800">
                     <Package className="h-4 w-4" /> Payment progress
                   </h2>
-                  <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2 sm:gap-4">
                     <div className="rounded-lg bg-purple-50 p-4">
                       <p className="text-xs text-purple-600">Advance paid</p>
                       <p className="mt-1 text-xl font-black text-purple-900">{formatCurrency(order.advanceAmount || 0)}</p>
@@ -352,13 +352,13 @@ const OrderTrackPage = () => {
                     <div className="mt-5 rounded-lg border border-purple-200 bg-purple-50 p-4">
                       <p className="text-sm font-semibold text-purple-800">Pay remaining balance</p>
                       <div className="mt-3 flex flex-wrap items-center gap-3">
-                        <label className="btn-secondary cursor-pointer text-sm min-h-[44px]">
+                        <label className="btn-secondary w-full sm:w-auto cursor-pointer justify-center text-sm min-h-[44px]">
                           <Upload className="h-4 w-4" />
                           {balanceSlip ? "Change slip" : "Upload slip"}
                           <input type="file" className="hidden" accept="image/*,application/pdf" onChange={(e) => setBalanceSlip(e.target.files[0] || null)} />
                         </label>
                         {balanceSlip && <span className="max-w-[160px] truncate text-xs text-gray-600">{balanceSlip.name}</span>}
-                        <button className="btn-primary text-sm min-h-[44px]" disabled={payingBalance || !balanceSlip} onClick={handlePayBalance}>
+                        <button className="btn-primary w-full sm:w-auto justify-center text-sm min-h-[44px]" disabled={payingBalance || !balanceSlip} onClick={handlePayBalance}>
                           {payingBalance ? "Submitting..." : "Pay Now"}
                         </button>
                       </div>
@@ -367,8 +367,8 @@ const OrderTrackPage = () => {
                 </div>
               )}
 
-              <div className="grid gap-6 lg:grid-cols-2">
-                <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
                   <h2 className="flex items-center gap-2 text-sm font-black text-gray-700">
                     <Package className="h-4 w-4" /> Items
                   </h2>
@@ -413,16 +413,16 @@ const OrderTrackPage = () => {
                   </div>
                 </div>
 
-                <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+                <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5">
                   <h2 className="flex items-center gap-2 text-sm font-black text-gray-700">
                     <Clock className="h-4 w-4" /> Status history
                   </h2>
                   <ul className="mt-4 space-y-3">
                     {(order.statusHistory || []).slice().reverse().map((entry, index) => (
                       <li key={`${entry.status}-${index}`} className="rounded-lg bg-gray-50 p-3 text-sm transition hover:bg-gray-100">
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
                           <OrderStatusBadge status={entry.status} />
-                          <span className="shrink-0 text-xs text-gray-500">
+                          <span className="text-xs text-gray-500">
                             {new Date(entry.updatedAt).toLocaleString("en-LK", { dateStyle: "medium", timeStyle: "short" })}
                           </span>
                         </div>
@@ -433,20 +433,20 @@ const OrderTrackPage = () => {
                 </div>
               </div>
 
-              <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-gray-200 bg-gray-50 p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between rounded-xl border border-gray-200 bg-gray-50 p-4 sm:p-5">
                 <div className="flex items-center gap-3">
-                  <Phone className="h-5 w-5 text-gray-500" />
+                  <Phone className="h-5 w-5 shrink-0 text-gray-500" />
                   <div>
                     <p className="text-sm font-semibold text-gray-700">Need help with your order?</p>
                     <p className="text-sm text-gray-500">Contact us on WhatsApp for quick support.</p>
                   </div>
                 </div>
-                <button type="button" onClick={contactSupport} className="btn-primary min-h-[44px]">
+                <button type="button" onClick={contactSupport} className="btn-primary w-full sm:w-auto justify-center min-h-[44px]">
                   <MessageCircle className="h-4 w-4" /> Chat on WhatsApp
                 </button>
               </div>
 
-              <Link to="/products" className="btn-secondary inline-flex w-full sm:w-auto min-h-[44px]">
+              <Link to="/products" className="btn-secondary inline-flex w-full sm:w-auto justify-center min-h-[44px]">
                 <Package className="h-4 w-4" /> Continue shopping
               </Link>
             </div>

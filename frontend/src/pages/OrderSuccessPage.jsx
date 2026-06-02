@@ -206,9 +206,9 @@ const OrderSuccessPage = () => {
                   href={whatsappCustomerUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-95"
+                  className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-700 active:scale-95 sm:w-auto"
                 >
-                  <MessageCircle className="h-4 w-4" /> Send receipt to WhatsApp
+                  <MessageCircle className="h-4 w-4 shrink-0" /> Send receipt to WhatsApp
                 </a>
               </motion.div>
             )}
