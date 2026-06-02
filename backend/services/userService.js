@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import Customer from "../models/Customer.js";
 import AuditLog from "../models/AuditLog.js";
 import LoginHistory from "../models/LoginHistory.js";
@@ -49,16 +50,17 @@ export async function getUserById(id) {
   const customer = await Customer.findById(id).lean();
   if (!customer || customer.deletedAt) return null;
   const escapedEmail = customer.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const customerObjectId = new mongoose.Types.ObjectId(id);
   const orderMatch = {
     $or: [
-      { customerId: id },
+      { customerId: customerObjectId },
       { "customer.email": { $regex: `^${escapedEmail}$`, $options: "i" } }
     ]
   };
   const [totalOrders, totalSpent, loginHistory] = await Promise.all([
     Order.countDocuments(orderMatch),
     Order.aggregate([
-      { $match: { ...orderMatch, status: { $in: ["delivered", "completed"] } } },
+      { $match: orderMatch },
       { $group: { _id: null, total: { $sum: "$total" } } },
     ]),
     LoginHistory.find({ customer: id }).sort({ createdAt: -1 }).limit(5).lean(),

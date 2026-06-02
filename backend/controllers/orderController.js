@@ -1,5 +1,6 @@
 import Coupon from "../models/Coupon.js";
 import Customer from "../models/Customer.js";
+import Cart from "../models/Cart.js";
 import DeliveryZone from "../models/DeliveryZone.js";
 import Order from "../models/Order.js";
 import Payment from "../models/Payment.js";
@@ -313,6 +314,10 @@ export const createOrder = asyncHandler(async (req, res) => {
   notifyAdminWhatsApp(normalized).catch(() => {});
 
   enqueue("order-confirmation-email", () => sendOrderConfirmationEmail(order));
+
+  if (req.customer) {
+    Cart.findOneAndDelete({ customerId: req.customer._id }).catch(() => {});
+  }
 
   res.status(201).json({ ...normalized, whatsappUrl });
 });
