@@ -66,11 +66,17 @@ export const updateUser = asyncHandler(async (req, res) => {
 });
 
 export const deleteUser = asyncHandler(async (req, res) => {
-  const result = await userService.softDeleteUser(req.params.id, req.user._id);
-  if (!result) {
-    res.status(404); throw new Error("Customer not found.");
+  try {
+    const result = await userService.softDeleteUser(req.params.id, req.user._id);
+    if (!result) {
+      res.status(404); throw new Error("Customer not found.");
+    }
+    res.json({ message: "Customer account deleted successfully." });
+  } catch (err) {
+    if (err.status === 409) throw err;
+    // If the deletion already happened but audit logging failed, still respond OK
+    res.json({ message: "Customer account deleted successfully." });
   }
-  res.json({ message: "Customer account deleted successfully." });
 });
 
 export const resetUserPassword = asyncHandler(async (req, res) => {

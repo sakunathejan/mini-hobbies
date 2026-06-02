@@ -3,24 +3,6 @@ import mongoose from "mongoose";
 const auditLogSchema = new mongoose.Schema({
   action: {
     type: String,
-    enum: [
-      "SHIPMENT_CREATED",
-      "SHIPMENT_UPDATED",
-      "SHIPMENT_CANCELLED",
-      "STATUS_CHANGED",
-      "EMAIL_SENT",
-      "SYNC_FAILED",
-      "WAYBILL_ALLOCATED",
-      "ORDER_CANCELLED",
-      "PAYMENT_UPDATED",
-      "LOCATION_VALIDATION_FAILED",
-      "CREATE",
-      "UPDATE",
-      "DELETE",
-      "BULK_DELETE",
-      "BULK_UPDATE",
-      "DUPLICATE"
-    ],
     required: true,
     index: true
   },

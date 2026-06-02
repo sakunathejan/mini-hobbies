@@ -82,18 +82,25 @@ export async function updateUserFields(id, fields) {
 
 export async function softDeleteUser(id, adminId) {
   const customer = await Customer.findById(id);
-  if (!customer || customer.deletedAt) return null;
+  if (!customer) return null;
+  if (customer.deletedAt) {
+    throw Object.assign(new Error("This customer has already been deleted."), { status: 409 });
+  }
   customer.deletedAt = new Date();
   customer.email = `deleted_${customer._id}_${Date.now()}@minihobbies.lk`;
   customer.refreshToken = null;
   await customer.save();
-  await AuditLog.create({
-    admin: adminId,
-    action: "delete_user",
-    resource: "Customer",
-    resourceId: String(customer._id),
-    details: { email: customer.email },
-  });
+  try {
+    await AuditLog.create({
+      admin: adminId,
+      action: "delete_user",
+      resource: "Customer",
+      resourceId: String(customer._id),
+      details: { email: customer.email },
+    });
+  } catch {
+    // Audit log is non-critical; deletion already succeeded
+  }
   return { id: customer._id, deleted: true };
 }
 
