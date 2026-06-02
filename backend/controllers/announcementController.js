@@ -123,8 +123,8 @@ export const createAnnouncement = asyncHandler(async (req, res) => {
   });
 
   await AuditLog.create({
-    admin: req.user._id,
-    action: "create",
+    user: req.user._id,
+    action: "CREATE",
     resource: "announcement",
     resourceId: announcement._id,
     details: { title: announcement.title },
@@ -175,8 +175,8 @@ export const updateAnnouncement = asyncHandler(async (req, res) => {
   }
 
   await AuditLog.create({
-    admin: req.user._id,
-    action: "update",
+    user: req.user._id,
+    action: "UPDATE",
     resource: "announcement",
     resourceId: announcement._id,
     details: { changes: Object.keys(update) },
@@ -196,8 +196,8 @@ export const deleteAnnouncement = asyncHandler(async (req, res) => {
   }
 
   await AuditLog.create({
-    admin: req.user._id,
-    action: "delete",
+    user: req.user._id,
+    action: "DELETE",
     resource: "announcement",
     resourceId: req.params.id,
     details: { title: announcement.title },
@@ -218,8 +218,8 @@ export const bulkDeleteAnnouncements = asyncHandler(async (req, res) => {
   const result = await Announcement.deleteMany({ _id: { $in: ids } });
 
   await AuditLog.create({
-    admin: req.user._id,
-    action: "bulk_delete",
+    user: req.user._id,
+    action: "BULK_DELETE",
     resource: "announcement",
     details: { count: result.deletedCount, ids },
     ip: req.ip,
@@ -254,8 +254,8 @@ export const bulkUpdateAnnouncements = asyncHandler(async (req, res) => {
   );
 
   await AuditLog.create({
-    admin: req.user._id,
-    action: "bulk_update",
+    user: req.user._id,
+    action: "BULK_UPDATE",
     resource: "announcement",
     details: { count: result.modifiedCount, ids, changes: safeChanges },
     ip: req.ip,

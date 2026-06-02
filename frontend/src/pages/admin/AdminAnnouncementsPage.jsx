@@ -98,7 +98,7 @@ const AdminAnnouncementsPage = () => {
         ctaText: form.ctaText || undefined,
         ctaUrl: form.ctaUrl || undefined,
         audience: form.audience,
-        publishAt: form.publishAt || undefined,
+        publishAt: form.publishAt ? form.publishAt + ":00.000Z" : undefined,
         expiresAt: form.expiresAt || undefined,
         image: imageFile || (existingImage && !imageFile ? undefined : "null")
       };
@@ -114,7 +114,12 @@ const AdminAnnouncementsPage = () => {
       }
       resetForm();
     } catch (err) {
-      toast.error(err.response?.data?.message || "Could not save announcement.");
+      const errors = err.response?.data?.errors;
+      if (errors && errors.length > 0) {
+        toast.error(errors.map((e) => e.message).join(". "));
+      } else {
+        toast.error(err.response?.data?.message || "Could not save announcement.");
+      }
     } finally {
       setSaving(false);
     }
@@ -176,7 +181,9 @@ const AdminAnnouncementsPage = () => {
       await updateAnnouncement(a._id, { isActive: !a.isActive });
       fetchData();
       toast.success(a.isActive ? "Deactivated." : "Activated.");
-    } catch { toast.error("Toggle failed."); }
+    } catch (err) {
+      toast.error(err.response?.data?.message || "Toggle failed.");
+    }
   };
 
   const pageOrders = announcements;
