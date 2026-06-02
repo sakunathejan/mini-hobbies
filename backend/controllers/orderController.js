@@ -459,6 +459,7 @@ export const deleteOrder = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error("Order not found.");
   }
+  cache.clear("dashboard:");
   res.json({ message: "Order deleted successfully." });
 });
 
@@ -469,5 +470,6 @@ export const deleteOrders = asyncHandler(async (req, res) => {
     throw new Error("No order IDs provided.");
   }
   const result = await Order.deleteMany({ _id: { $in: ids } });
+  cache.clear("dashboard:");
   res.json({ message: `${result.deletedCount} order(s) deleted.`, deletedCount: result.deletedCount });
 });
