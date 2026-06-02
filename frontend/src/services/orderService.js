@@ -1,7 +1,8 @@
 import api from "./api.js";
+import customerApi from "./customerApi.js";
 
 export const createOrder = (payload) => {
-  return api.post("/orders", payload).then((res) => res.data);
+  return customerApi.post("/orders", payload).then((res) => res.data);
 };
 export const getOrders = () => api.get("/orders").then((res) => res.data);
 export const getOrderById = (id) => api.get(`/orders/${id}`).then((res) => res.data);

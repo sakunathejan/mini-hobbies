@@ -295,11 +295,11 @@ const AdminUserDetailPage = () => {
         <div className="mt-4 grid grid-cols-2 gap-4 border-t border-gray-100 pt-4 text-sm sm:grid-cols-4">
           <div>
             <span className="text-xs text-gray-500">Orders</span>
-            <p className="font-semibold">{user.orderCount ?? "—"}</p>
+            <p className="font-semibold">{user.stats?.totalOrders ?? 0}</p>
           </div>
           <div>
             <span className="text-xs text-gray-500">Total Spent</span>
-            <p className="font-semibold">{formatCurrency(user.totalSpent || 0)}</p>
+            <p className="font-semibold">{formatCurrency(user.stats?.totalSpent ?? 0)}</p>
           </div>
           <div>
             <span className="text-xs text-gray-500">Registered</span>

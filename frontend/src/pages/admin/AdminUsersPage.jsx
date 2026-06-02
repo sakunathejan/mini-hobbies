@@ -234,7 +234,7 @@ const AdminUsersPage = () => {
                     </div>
                     <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
                       <span>{user.phone || "—"}</span>
-                      <span>{user.orderCount} orders</span>
+                      <span>{user.orderCount ?? 0} orders</span>
                       <span>{formatCurrency(user.totalSpent)}</span>
                     </div>
                     <div className="mt-1 text-xs text-gray-400">

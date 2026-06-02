@@ -51,7 +51,12 @@ export const getUserById = asyncHandler(async (req, res) => {
     res.status(404); throw new Error("Customer not found.");
   }
   const { default: Order } = await import("../models/Order.js");
-  const recentOrders = await Order.find({ customerId: req.params.id })
+  const recentOrConditions = [{ customerId: req.params.id }];
+  if (customer.email) {
+    const escapedEmail = customer.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    recentOrConditions.push({ "customer.email": { $regex: `^${escapedEmail}$`, $options: "i" } });
+  }
+  const recentOrders = await Order.find({ $or: recentOrConditions })
     .sort({ createdAt: -1 }).limit(10).populate("payment", "status method").lean();
   res.json({ ...customer, recentOrders });
 });

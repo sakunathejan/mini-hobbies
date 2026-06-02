@@ -180,7 +180,7 @@ export const createOrder = asyncHandler(async (req, res) => {
   const orderData = {
     orderNumber,
     customerId: req.customer?._id || null,
-    customer: { ...customer, phone: customer.phone.trim(), district, city: customer.city || "" },
+    customer: { ...customer, email: customer.email.toLowerCase().trim(), phone: customer.phone.trim(), district, city: customer.city || "" },
     districtId: req.body.districtId ? Number(req.body.districtId) : undefined,
     cityId: req.body.cityId ? Number(req.body.cityId) : undefined,
     items: orderItems,
@@ -199,6 +199,7 @@ export const createOrder = asyncHandler(async (req, res) => {
   };
 
   const order = await Order.create(orderData);
+  console.log(`[ORDER CREATED] orderNumber=${order.orderNumber}, customerId=${order.customerId}, customerEmail=${order.customer?.email}, formEmail=${customer.email}`);
 
   if (!order.customerId && customer.email) {
     try {
@@ -206,11 +207,15 @@ export const createOrder = asyncHandler(async (req, res) => {
       if (matched) {
         order.customerId = matched._id;
         await order.save();
-        console.log(`[ORDER] Linked order ${order.orderNumber} to customer ${matched._id} by email fallback`);
+        console.log(`[ORDER LINKED] order ${order.orderNumber} linked to customer ${matched._id} (email: ${customer.email})`);
+      } else {
+        console.log(`[ORDER LINK FAILED] No customer found with email: ${customer.email.toLowerCase().trim()}`);
       }
     } catch (linkErr) {
-      console.error(`[ORDER] Email fallback failed for ${order.orderNumber}:`, linkErr.message);
+      console.error(`[ORDER LINK ERROR] ${order.orderNumber}:`, linkErr.message);
     }
+  } else {
+    console.log(`[ORDER SKIP LINK] customerId=${order.customerId}, email=${customer.email}`);
   }
 
   if (paymentMethod === "cod") {

@@ -11,7 +11,7 @@ import {
   getAddresses, addAddress, updateAddress, deleteAddress,
 } from "../controllers/customerAuthController.js";
 import { googleAuth } from "../controllers/googleAuthController.js";
-import { getMyOrders, getMyOrder } from "../controllers/customerOrderController.js";
+import { getMyOrders, getMyOrder, debugMyOrders } from "../controllers/customerOrderController.js";
 
 const router = express.Router();
 
@@ -133,5 +133,6 @@ router.delete("/auth/addresses/:addressId", protectCustomer, requireActiveAccoun
 // --- Customer order routes ---
 router.get("/auth/orders", protectCustomer, requireActiveAccount, getMyOrders);
 router.get("/auth/orders/:id", protectCustomer, requireActiveAccount, getMyOrder);
+router.get("/auth/orders-debug", protectCustomer, requireActiveAccount, debugMyOrders);
 
 export default router;

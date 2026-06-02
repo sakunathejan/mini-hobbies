@@ -48,10 +48,17 @@ export async function listUsers({ filter, sort, page, limit }) {
 export async function getUserById(id) {
   const customer = await Customer.findById(id).lean();
   if (!customer || customer.deletedAt) return null;
+  const escapedEmail = customer.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const orderMatch = {
+    $or: [
+      { customerId: id },
+      { "customer.email": { $regex: `^${escapedEmail}$`, $options: "i" } }
+    ]
+  };
   const [totalOrders, totalSpent, loginHistory] = await Promise.all([
-    Order.countDocuments({ customerId: id }),
+    Order.countDocuments(orderMatch),
     Order.aggregate([
-      { $match: { customerId: id, status: { $in: ["delivered", "completed"] } } },
+      { $match: { ...orderMatch, status: { $in: ["delivered", "completed"] } } },
       { $group: { _id: null, total: { $sum: "$total" } } },
     ]),
     LoginHistory.find({ customer: id }).sort({ createdAt: -1 }).limit(5).lean(),
@@ -123,10 +130,20 @@ export async function forceLogout(id) {
 
 export async function getUserOrders(id, { page = 1, limit = 20 }) {
   console.log(`[ADMIN USER ORDERS] getUserOrders: customerId=${id}`);
+  const customer = await Customer.findById(id).lean();
+  const orderMatch = { customerId: id };
+  if (customer?.email) {
+    const escapedEmail = customer.email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    orderMatch.$or = [
+      { customerId: id },
+      { "customer.email": { $regex: `^${escapedEmail}$`, $options: "i" } }
+    ];
+    delete orderMatch.customerId;
+  }
   const skip = (page - 1) * limit;
   const [data, total] = await Promise.all([
-    Order.find({ customerId: id }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-    Order.countDocuments({ customerId: id }),
+    Order.find(orderMatch).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Order.countDocuments(orderMatch),
   ]);
   console.log(`[ADMIN USER ORDERS] result: count=${data.length}, total=${total}`);
   return { data, total, page, pages: Math.ceil(total / limit) };
