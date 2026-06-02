@@ -249,6 +249,31 @@ export const createOrder = asyncHandler(async (req, res) => {
     await order.save();
   }
 
+  if (paymentMethod === "bank_transfer" && req.file) {
+    const upload = await uploadPaymentSlip(req.file);
+    const slipUrl = upload.url;
+    const slipPath = upload.path;
+
+    const payment = await Payment.create({
+      order: order._id,
+      method: "bank_transfer",
+      status: "awaiting_verification",
+      bankTransfer: {
+        slipUrl,
+        slipPath,
+        bankName: req.body.bankName || "",
+        accountName: req.body.accountName || "",
+        accountNumber: req.body.accountNumber || "",
+        branch: req.body.branch || ""
+      }
+    });
+
+    order.payment = payment._id;
+    order.status = "Fully Paid Pending Verification";
+    order.statusHistory.push({ status: "Fully Paid Pending Verification", note: "Payment slip uploaded at checkout, awaiting verification", updatedAt: new Date() });
+    await order.save();
+  }
+
   for (const item of orderItems) {
     const variantId = item.variantId || null;
     if (variantId) {

@@ -291,7 +291,8 @@ const CheckoutPage = () => {
         cityId: selectedCityId
       };
 
-      if (sm?.supportsPartialPayment && slipFile) {
+      let order;
+      if (slipFile) {
         const fd = new FormData();
         fd.append("customer", JSON.stringify(orderPayload.customer));
         fd.append("items", JSON.stringify(orderPayload.items));
@@ -306,52 +307,25 @@ const CheckoutPage = () => {
         fd.append("accountNumber", bankDetails.accountNumber);
         fd.append("branch", bankDetails.branch);
 
-        const order = await createOrder(fd);
-        clearCart();
-        navigate("/order-success", {
-          state: {
-            orderNumber: order.orderNumber,
-            phone: form.phone,
-            total: order.total,
-            advanceAmount: order.advanceAmount,
-            remainingBalance: order.remainingBalance,
-            paymentMethod,
-            paymentType: order.paymentType,
-            status: order.status,
-            whatsappUrl: order.whatsappUrl
-          }
-        });
+        order = await createOrder(fd);
       } else {
-        const order = await createOrder(orderPayload);
-
-        if (sm?.requiresSlipUpload && slipFile && !sm.supportsPartialPayment) {
-          const fd = new FormData();
-          fd.append("orderId", order._id);
-          fd.append("slip", slipFile);
-          fd.append("bankName", bankDetails.bankName);
-          fd.append("accountName", bankDetails.accountName);
-          fd.append("accountNumber", bankDetails.accountNumber);
-          fd.append("branch", bankDetails.branch);
-
-          const api = (await import("../services/api.js")).default;
-          await api.post("/payments/bank-transfer", fd);
-        }
-
-        clearCart();
-        navigate("/order-success", {
-          state: {
-            orderNumber: order.orderNumber,
-            phone: form.phone,
-            total: order.total,
-            advanceAmount: order.advanceAmount,
-            remainingBalance: order.remainingBalance,
-            paymentMethod,
-            paymentType: order.paymentType,
-            status: order.status,
-            whatsappUrl: order.whatsappUrl
-          }
-        });
+        order = await createOrder(orderPayload);
       }
+
+      clearCart();
+      navigate("/order-success", {
+        state: {
+          orderNumber: order.orderNumber,
+          phone: form.phone,
+          total: order.total,
+          advanceAmount: order.advanceAmount,
+          remainingBalance: order.remainingBalance,
+          paymentMethod,
+          paymentType: order.paymentType,
+          status: order.status,
+          whatsappUrl: order.whatsappUrl
+        }
+      });
     } catch (err) {
       toast.error(err.response?.data?.message || "Could not place order.");
     } finally {
