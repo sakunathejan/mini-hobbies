@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import toast from "react-hot-toast";
-import { Copy, Eye, Plus, Search, Trash2 } from "lucide-react";
+import { Copy, Eye, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import ConfirmDialog from "../../components/ui/ConfirmDialog.jsx";
 import Pagination from "../../components/ui/Pagination.jsx";
 import AnnouncementPreview from "../../components/announcements/AnnouncementPreview.jsx";
@@ -374,14 +374,18 @@ const AdminAnnouncementsPage = () => {
                           <span>{a.views || 0} views</span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
                         <button title="Preview" onClick={() => setPreviewTarget(a)} className="rounded p-1.5 text-gray-500 hover:bg-gray-100 transition"><Eye className="h-4 w-4" /></button>
                         <button title="Duplicate" onClick={() => handleDuplicate(a._id)} className="rounded p-1.5 text-gray-500 hover:bg-gray-100 transition"><Copy className="h-4 w-4" /></button>
                         <button onClick={() => handleToggleActive(a)} className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold transition ${a.isActive ? "bg-emerald-50 text-emerald-800 hover:bg-emerald-100" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
                           {a.isActive ? "Active" : "Inactive"}
                         </button>
-                        <button className="text-xs text-blue-600 hover:underline" onClick={() => handleEdit(a)}>Edit</button>
-                        <button className="text-xs text-red-600 hover:underline" onClick={() => setDeleteTarget(a._id)}><Trash2 className="h-3 w-3 inline" /></button>
+                        <button title="Edit" onClick={() => handleEdit(a)} className="rounded p-1.5 text-blue-600 hover:bg-blue-50 transition">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button title="Delete" onClick={() => setDeleteTarget(a._id)} className="rounded p-1.5 text-red-600 hover:bg-red-50 transition">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
                       </div>
                     </div>
                   </div>
