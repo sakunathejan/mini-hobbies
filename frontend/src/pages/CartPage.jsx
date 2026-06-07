@@ -25,8 +25,14 @@ const CartLineItem = ({ item, onUpdateQuantity, onRemove }) => {
         className="h-14 w-14 shrink-0 rounded-md object-cover sm:h-16 sm:w-16"
       />
       <div className="min-w-0 flex-1">
-        <h2 className="line-clamp-2 text-sm font-bold leading-snug text-gray-950 sm:text-base">{item.name}</h2>
+        <h2 className="line-clamp-2 text-sm font-bold leading-snug text-gray-950 sm:text-base">
+          {item.isPreOrder && <span className="mr-1.5 inline-block rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase text-amber-800 align-middle">Pre-Order</span>}
+          {item.name}
+        </h2>
         {item.variantName && <p className="text-xs text-gray-500">{item.variantName}</p>}
+        {item.isPreOrder && item.preOrderExpectedDate && (
+          <p className="text-xs text-amber-600">Expected: {new Date(item.preOrderExpectedDate).toLocaleDateString("en-US", { year: "numeric", month: "long" })}</p>
+        )}
         <p className="mt-0.5 text-xs text-gray-500 sm:text-sm">
           {formatCurrency(unitPrice)} each · <span className="font-semibold text-gray-800">{formatCurrency(lineTotal)}</span>
         </p>

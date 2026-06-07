@@ -12,7 +12,13 @@ const styles = {
   "Preparing Order": "bg-sky-50 text-sky-800",
   Shipped: "bg-blue-50 text-blue-800",
   Delivered: "bg-emerald-50 text-emerald-800",
-  Cancelled: "bg-red-50 text-red-700"
+  Cancelled: "bg-red-50 text-red-700",
+  "Pre-Order Reserved": "bg-amber-50 text-amber-800",
+  "Deposit Paid": "bg-purple-50 text-purple-800",
+  "Pre-Order Confirmed": "bg-emerald-50 text-emerald-800",
+  Arrived: "bg-teal-50 text-teal-800",
+  "Ready to Ship": "bg-sky-50 text-sky-800",
+  Completed: "bg-emerald-50 text-emerald-800"
 };
 
 const OrderStatusBadge = memo(({ status }) => {

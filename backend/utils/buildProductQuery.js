@@ -19,5 +19,9 @@ export const buildProductQuery = (query) => {
     if (query.maxPrice) filters.price.$lte = Number(query.maxPrice);
   }
 
+  if (query.productType && ["IN_STOCK", "PRE_ORDER", "OUT_OF_STOCK"].includes(query.productType)) {
+    filters.productType = query.productType;
+  }
+
   return filters;
 };

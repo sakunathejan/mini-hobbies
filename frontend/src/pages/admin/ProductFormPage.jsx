@@ -31,7 +31,15 @@ const ProductFormPage = () => {
     material: "Die-cast metal",
     featured: false,
     condition: "New",
-    weightKg: "0.5"
+    weightKg: "0.5",
+    productType: "IN_STOCK",
+    preOrderDeadline: "",
+    preOrderExpectedDate: "",
+    preOrderNotes: "",
+    preOrderDepositRequired: false,
+    preOrderDepositAmount: "",
+    preOrderPaymentMode: "FULL_PAYMENT",
+    preOrderLimit: ""
   });
 
   useFetch(
@@ -43,7 +51,15 @@ const ProductFormPage = () => {
         category: product.category?._id || product.category,
         discountPrice: product.discountPrice || "",
         tags: product.tags?.join(", ") || "",
-        variants: product.variants?.map((v) => ({ ...v, price: v.price || "" })) || []
+        variants: product.variants?.map((v) => ({ ...v, price: v.price || "" })) || [],
+        productType: product.productType || "IN_STOCK",
+        preOrderDeadline: product.preOrderDeadline ? product.preOrderDeadline.split("T")[0] : "",
+        preOrderExpectedDate: product.preOrderExpectedDate ? product.preOrderExpectedDate.split("T")[0] : "",
+        preOrderNotes: product.preOrderNotes || "",
+        preOrderDepositRequired: product.preOrderDepositRequired || false,
+        preOrderDepositAmount: product.preOrderDepositAmount || "",
+        preOrderPaymentMode: product.preOrderPaymentMode || "FULL_PAYMENT",
+        preOrderLimit: product.preOrderLimit || ""
       });
       return product;
     },
@@ -91,7 +107,7 @@ const ProductFormPage = () => {
       category: form.category,
       price: form.hasVariants ? 0 : Number(form.price),
       discountPrice: form.discountPrice ? Number(form.discountPrice) : undefined,
-      stock: form.hasVariants ? 0 : Number(form.stock),
+      stock: form.productType === "PRE_ORDER" || form.productType === "OUT_OF_STOCK" ? 0 : form.hasVariants ? 0 : Number(form.stock),
       hasVariants: form.hasVariants,
       variants: form.hasVariants ? form.variants.map((v) => {
         const cleaned = { ...v, price: v.price ? Number(v.price) : undefined, stock: Number(v.stock) || 0 };
@@ -104,7 +120,15 @@ const ProductFormPage = () => {
       material: form.material,
       featured: form.featured,
       condition: form.condition,
-      weightKg: parseFloat(form.weightKg) || 0.5
+      weightKg: parseFloat(form.weightKg) || 0.5,
+      productType: form.productType,
+      preOrderDeadline: form.productType === "PRE_ORDER" ? form.preOrderDeadline || null : undefined,
+      preOrderExpectedDate: form.productType === "PRE_ORDER" ? form.preOrderExpectedDate : undefined,
+      preOrderNotes: form.productType === "PRE_ORDER" ? form.preOrderNotes : undefined,
+      preOrderDepositRequired: form.productType === "PRE_ORDER" ? form.preOrderDepositRequired : undefined,
+      preOrderDepositAmount: form.productType === "PRE_ORDER" && form.preOrderDepositRequired ? Number(form.preOrderDepositAmount) : undefined,
+      preOrderPaymentMode: form.productType === "PRE_ORDER" ? form.preOrderPaymentMode : undefined,
+      preOrderLimit: form.productType === "PRE_ORDER" && form.preOrderLimit ? Number(form.preOrderLimit) : undefined
     };
     if (editing) {
       await updateProduct(id, payload);
@@ -125,22 +149,38 @@ const ProductFormPage = () => {
           <input className="input text-base" placeholder="Brand" value={form.brand} onChange={(event) => update("brand", event.target.value)} />
         </div>
         <textarea className="input min-h-32 text-base" placeholder="Description" value={form.description} onChange={(event) => update("description", event.target.value)} required />
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2">
           <select className="input text-base" value={form.category} onChange={(event) => update("category", event.target.value)} required>
             <option value="">Choose category</option>
             {(categories.data || []).map((category) => <option key={category._id} value={category._id}>{category.name}</option>)}
           </select>
-          {!form.hasVariants && (
+          <select className="input text-base" value={form.productType} onChange={(e) => {
+            update("productType", e.target.value);
+            if (e.target.value === "OUT_OF_STOCK") update("stock", 0);
+          }}>
+            <option value="IN_STOCK">In Stock</option>
+            <option value="PRE_ORDER">Pre-Order</option>
+            <option value="OUT_OF_STOCK">Out of Stock</option>
+          </select>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          {!form.hasVariants && form.productType !== "PRE_ORDER" && (
             <input className="input text-base" type="number" placeholder="Price" value={form.price} onChange={(event) => update("price", event.target.value)} required />
           )}
-          {!form.hasVariants && (
+          {!form.hasVariants && form.productType !== "PRE_ORDER" && (
             <input className="input text-base" type="number" placeholder="Discount price" value={form.discountPrice} onChange={(event) => update("discountPrice", event.target.value)} />
+          )}
+          {form.productType === "PRE_ORDER" && !form.hasVariants && (
+            <input className="input text-base" type="number" placeholder="Price" value={form.price} onChange={(event) => update("price", event.target.value)} required />
           )}
         </div>
 
         <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-          {!form.hasVariants && (
+          {!form.hasVariants && form.productType === "IN_STOCK" && (
             <input className="input text-base" type="number" placeholder="Stock" value={form.stock} onChange={(event) => update("stock", event.target.value)} />
+          )}
+          {!form.hasVariants && form.productType === "OUT_OF_STOCK" && (
+            <div className="flex items-center rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">Out of Stock</div>
           )}
           {form.hasVariants && <div />}
           <input className="input text-base" placeholder="Scale" value={form.scale} onChange={(event) => update("scale", event.target.value)} />
@@ -155,6 +195,59 @@ const ProductFormPage = () => {
             <input className="input mt-1 text-base" type="number" min="0" step="0.01" value={form.weightKg} onChange={(event) => update("weightKg", event.target.value)} />
           </div>
         </div>
+
+        {form.productType === "PRE_ORDER" && (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-4">
+            <p className="flex items-center gap-2 text-sm font-bold text-amber-800">Pre-Order Settings</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-gray-600">Pre-Order Deadline (closes on this date)</label>
+                <input className="input mt-1 text-base" type="date" value={form.preOrderDeadline} onChange={(e) => update("preOrderDeadline", e.target.value)} />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600">Expected Arrival Date</label>
+                <input className="input mt-1 text-base" type="date" value={form.preOrderExpectedDate} onChange={(e) => update("preOrderExpectedDate", e.target.value)} />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-gray-600">Pre-Order Limit (max reservations)</label>
+                <input className="input mt-1 text-base" type="number" min="0" placeholder="Unlimited" value={form.preOrderLimit} onChange={(e) => update("preOrderLimit", e.target.value)} />
+              </div>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600">Pre-Order Notes</label>
+              <textarea className="input mt-1 text-base" rows={2} placeholder="Any special notes about this pre-order..." value={form.preOrderNotes} onChange={(e) => update("preOrderNotes", e.target.value)} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-xs font-medium text-gray-600">Payment Mode</label>
+                <select className="input mt-1 text-base" value={form.preOrderPaymentMode} onChange={(e) => update("preOrderPaymentMode", e.target.value)}>
+                  <option value="FULL_PAYMENT">Full Payment</option>
+                  <option value="DEPOSIT_PAYMENT">Deposit + Balance</option>
+                  <option value="NO_PAYMENT">No Upfront Payment</option>
+                </select>
+              </div>
+              <div className="flex items-end pb-2">
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" className="accent-amber h-5 w-5" checked={form.preOrderDepositRequired} onChange={(e) => update("preOrderDepositRequired", e.target.checked)} />
+                  <span className="font-semibold">Deposit Required</span>
+                </label>
+              </div>
+            </div>
+            {form.preOrderDepositRequired && (
+              <div className="sm:w-1/2">
+                <label className="text-xs font-medium text-gray-600">Deposit Amount</label>
+                <input className="input mt-1 text-base" type="number" min="0" placeholder="0" value={form.preOrderDepositAmount} onChange={(e) => update("preOrderDepositAmount", e.target.value)} />
+              </div>
+            )}
+            {!form.hasVariants && form.preOrderSoldCount > 0 && (
+              <div className="rounded-lg bg-white px-3 py-2 text-sm text-gray-600">
+                Pre-Orders Sold: <strong className="text-amber-800">{form.preOrderSoldCount}</strong>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="rounded-lg border border-gray-200 p-4">
           <label className="flex items-center gap-3">

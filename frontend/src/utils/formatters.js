@@ -11,3 +11,23 @@ export const formatCurrency = (value) => {
     return "Rs. " + num.toLocaleString();
   }
 };
+
+export const formatDate = (dateString) => {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  } catch {
+    return dateString;
+  }
+};
+
+export const formatMonthYear = (dateString) => {
+  if (!dateString) return "";
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", { year: "numeric", month: "long" });
+  } catch {
+    return dateString;
+  }
+};

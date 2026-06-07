@@ -9,6 +9,7 @@ import {
   getProductById,
   getProductBySlug,
   getProducts,
+  getProductTypes,
   updateProduct
 } from "../controllers/productController.js";
 import { adminOnly, protect } from "../middleware/authMiddleware.js";
@@ -25,6 +26,7 @@ const productRules = [
 ];
 
 router.get("/", getProducts);
+router.get("/product-types", getProductTypes);
 router.get("/featured", getFeaturedProducts);
 router.get("/new-arrivals", getNewArrivals);
 router.get("/low-stock", protect, adminOnly, getLowStockProducts);

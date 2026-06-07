@@ -6,7 +6,10 @@ const cartItemSchema = new mongoose.Schema(
     quantity: { type: Number, min: 1, default: 1 },
     variantId: { type: String, default: "" },
     variantName: { type: String, default: "" },
-    variantImage: { type: String, default: "" }
+    variantImage: { type: String, default: "" },
+    isPreOrder: { type: Boolean, default: false },
+    preOrderExpectedDate: { type: Date },
+    preOrderPaymentMode: { type: String, default: "" }
   },
   { _id: true }
 );

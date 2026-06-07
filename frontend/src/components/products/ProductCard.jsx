@@ -59,13 +59,31 @@ const ProductCard = memo(({ product, compact }) => {
           </div>
           <span
             className={`shrink-0 rounded-full font-semibold ${
+              product.productType === "PRE_ORDER" ? "bg-amber-50 text-amber-700" :
+              product.productType === "OUT_OF_STOCK" ? "bg-red-50 text-red-700" :
               product.stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
             } ${compact ? "px-2 py-0.5 text-[10px]" : "px-2 sm:px-3 py-1 text-xs"}`}
           >
-            {product.stock > 0 ? "In stock" : "Sold out"}
+            {product.productType === "PRE_ORDER" ? "Pre-Order" :
+             product.productType === "OUT_OF_STOCK" ? "Out of Stock" :
+             product.stock > 0 ? "In stock" : "Sold out"}
           </span>
         </div>
-        {product.hasVariants ? (
+        {product.productType === "PRE_ORDER" ? (
+          <div className="mt-auto">
+            {product.preOrderDeadline && (
+              <p className={`text-center font-semibold ${new Date() > new Date(product.preOrderDeadline) ? "text-red-600" : "text-amber-600"} ${compact ? "text-[10px] mb-1" : "text-xs mb-1.5"}`}>
+                {new Date() > new Date(product.preOrderDeadline) ? "Closed" : `Closes ${new Date(product.preOrderDeadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+              </p>
+            )}
+            <Link
+              to={`/products/${product.slug}`}
+              className={`btn-primary w-full inline-flex items-center justify-center gap-2 font-semibold ${compact ? "min-h-[36px] text-xs" : "min-h-[44px] text-sm"}`}
+            >
+              <ShoppingCart className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} /> Pre-Order
+            </Link>
+          </div>
+        ) : product.hasVariants ? (
           <Link
             to={`/products/${product.slug}`}
             className={`btn-primary mt-auto w-full inline-flex items-center justify-center gap-2 font-semibold ${compact ? "min-h-[36px] text-xs" : "min-h-[44px] text-sm"}`}

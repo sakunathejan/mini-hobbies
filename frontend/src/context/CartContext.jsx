@@ -60,6 +60,9 @@ export const CartProvider = ({ children }) => {
       quantity: item.quantity,
       variantId: item.variantId || "",
       variantName: item.variantName || "",
+      isPreOrder: item.isPreOrder || item.product?.isPreOrder || false,
+      preOrderExpectedDate: item.preOrderExpectedDate || item.product?.preOrderExpectedDate || null,
+      preOrderPaymentMode: item.preOrderPaymentMode || item.product?.preOrderPaymentMode || ""
     }));
     const hasVariantId = new Set();
     raw.forEach((i) => { if (i.variantId) hasVariantId.add(i._id); });
@@ -122,10 +125,11 @@ export const CartProvider = ({ children }) => {
     const existingItem = currentItems.find((item) => item._cartId === id);
 
     const currentQty = existingItem ? existingItem.quantity : 0;
-    const maxStock = variant ? variant.stock : (product.stock || 0);
+    const isPreOrder = product.productType === "PRE_ORDER";
+    const maxStock = isPreOrder ? 999999 : (variant ? variant.stock : (product.stock || 0));
     const newQty = currentQty + quantity;
 
-    if (newQty > maxStock) {
+    if (!isPreOrder && newQty > maxStock) {
       toast.error(`Only ${maxStock} available.`);
       return;
     }
@@ -162,8 +166,11 @@ export const CartProvider = ({ children }) => {
     const item = currentItems.find((i) => i._cartId === cartId);
     if (!item) return;
 
+    const isPreOrder = item.productType === "PRE_ORDER";
     let maxStock = 0;
-    if (item.variantId && item.variants) {
+    if (isPreOrder) {
+      maxStock = 999999;
+    } else if (item.variantId && item.variants) {
       const variant = item.variants.find((v) => v._id === item.variantId);
       maxStock = variant?.stock ?? 0;
     } else {
@@ -175,7 +182,7 @@ export const CartProvider = ({ children }) => {
       }
     }
 
-    if (newQuantity > maxStock) {
+    if (!isPreOrder && newQuantity > maxStock) {
       toast.error(`Only ${maxStock} available.`);
       return;
     }

@@ -1,4 +1,4 @@
-import { Heart, ShoppingCart, Star, Tag } from "lucide-react";
+import { Heart, ShoppingCart, Star, Tag, Clock, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -11,7 +11,7 @@ import { useCart } from "../context/CartContext.jsx";
 import { useWishlist } from "../context/WishlistContext.jsx";
 import useFetch from "../hooks/useFetch.js";
 import { getProductBySlug } from "../services/productService.js";
-import { formatCurrency } from "../utils/formatters.js";
+import { formatCurrency, formatMonthYear } from "../utils/formatters.js";
 import { placeholderImage } from "../utils/constants.js";
 
 const ProductDetailsPage = () => {
@@ -40,12 +40,16 @@ const ProductDetailsPage = () => {
         ? [{ url: firstVariantImage, alt: product.name }]
         : [{ url: placeholderImage, alt: product.name }];
   const lowestVariantPrice = variants.length ? Math.min(...variants.map((v) => v.price).filter(Boolean)) : null;
+  const isPreOrder = product.productType === "PRE_ORDER";
   const activePrice = activeVariant?.price || lowestVariantPrice || product.discountPrice || product.price;
   const activeStock = activeVariant?.stock ?? product.stock;
-  const stockStatus = activeStock <= 0 ? "out_of_stock" : activeStock <= (product.lowStockThreshold || 3) ? "low_stock" : "in_stock";
+  const stockStatus = isPreOrder ? "in_stock" : activeStock <= 0 ? "out_of_stock" : activeStock <= (product.lowStockThreshold || 3) ? "low_stock" : "in_stock";
+
+  const deadlinePassed = isPreOrder && product.preOrderDeadline && new Date() > new Date(product.preOrderDeadline);
 
   const handleAddToCart = () => {
-    if (activeStock < 1) return;
+    if (deadlinePassed) return;
+    if (!isPreOrder && activeStock < 1) return;
     if (product.hasVariants && !selectedVariant) {
       toast.error("Please select a variant first.");
       return;
@@ -74,7 +78,10 @@ const ProductDetailsPage = () => {
           )}
         </div>
         <article>
-          <p className="text-sm font-bold uppercase tracking-wide text-ember">{product.category?.name}</p>
+          <p className="flex flex-wrap items-center gap-2 text-sm font-bold uppercase tracking-wide text-ember">
+            {product.category?.name}
+            {isPreOrder && <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-amber-800">Pre-Order</span>}
+          </p>
           <h1 className="mt-3 text-2xl font-black text-gray-950 sm:text-5xl">{product.name}</h1>
           {product.totalReviews > 0 && (
             <div className="mt-2 flex items-center gap-2">
@@ -91,23 +98,23 @@ const ProductDetailsPage = () => {
               <p className="text-sm font-semibold text-gray-700">Variant</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {variants.map((v) => {
-                  const outOfStock = v.stock < 1;
+                  const variantUnavailable = !isPreOrder && v.stock < 1;
                   return (
                     <button
                       key={v._id}
-                      disabled={outOfStock}
+                      disabled={variantUnavailable}
                       onClick={() => setSelectedVariant(v._id)}
                       className={`rounded-lg border px-4 py-2 text-sm font-semibold transition ${
                         selectedVariant === v._id
                           ? "border-ember bg-ember/10 text-ember"
-                          : outOfStock
+                          : variantUnavailable
                           ? "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
                           : "border-gray-300 hover:border-ember"
                       }`}
                     >
                       {v.name}
                       {v.price > 0 && <span className="ml-1 text-xs opacity-70">({formatCurrency(v.price)})</span>}
-                      {outOfStock && <span className="ml-1 text-xs">- Sold out</span>}
+                      {variantUnavailable && <span className="ml-1 text-xs">- Sold out</span>}
                     </button>
                   );
                 })}
@@ -120,12 +127,14 @@ const ProductDetailsPage = () => {
             <div className="rounded-lg bg-white p-3 sm:p-4"><dt className="text-gray-500">Scale</dt><dd className="font-bold">{product.scale || "N/A"}</dd></div>
             <div className="rounded-lg bg-white p-3 sm:p-4"><dt className="text-gray-500">Material</dt><dd className="font-bold">{product.material || "Mixed"}</dd></div>
             <div className="rounded-lg bg-white p-3 sm:p-4">
-              <dt className="text-gray-500">Stock</dt>
+              <dt className="text-gray-500">{isPreOrder ? "Expected" : "Stock"}</dt>
               <dd className={`font-bold ${
+                isPreOrder ? "text-amber-600" :
                 stockStatus === "out_of_stock" ? "text-red-600" :
                 stockStatus === "low_stock" ? "text-amber-600" : "text-emerald-600"
               }`}>
-                {stockStatus === "out_of_stock" ? "Sold out" :
+                {isPreOrder ? formatMonthYear(product.preOrderExpectedDate) :
+                 stockStatus === "out_of_stock" ? "Sold out" :
                  stockStatus === "low_stock" ? `Only ${activeStock} left` :
                  `${activeStock} available`}
               </dd>
@@ -140,9 +149,48 @@ const ProductDetailsPage = () => {
             ))}
           </div>
 
+          {isPreOrder && (
+            <div className="mt-4 space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
+              {deadlinePassed ? (
+                <p className="flex items-center gap-2 text-sm font-bold text-red-700">
+                  <Clock className="h-4 w-4" /> Pre-Order Closed
+                </p>
+              ) : (
+                <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
+                  <Clock className="h-4 w-4" /> Available for Pre-Order
+                </p>
+              )}
+              {product.preOrderDeadline && (
+                <p className={`text-sm ${deadlinePassed ? "text-red-600" : "text-amber-700"}`}>
+                  Closes: {formatMonthYear(product.preOrderDeadline)}
+                </p>
+              )}
+              {product.preOrderExpectedDate && (
+                <p className="text-sm text-amber-700">Expected: {formatMonthYear(product.preOrderExpectedDate)}</p>
+              )}
+              {product.preOrderDepositRequired && product.preOrderDepositAmount > 0 && (
+                <p className="text-sm text-amber-700">Deposit: {formatCurrency(product.preOrderDepositAmount)} required to reserve</p>
+              )}
+              {product.preOrderPaymentMode === "FULL_PAYMENT" && (
+                <p className="text-sm text-amber-700">Full payment required at time of pre-order</p>
+              )}
+              {product.preOrderPaymentMode === "DEPOSIT_PAYMENT" && (
+                <p className="text-sm text-amber-700">Deposit payment required, balance due before shipping</p>
+              )}
+              {product.preOrderPaymentMode === "NO_PAYMENT" && (
+                <p className="text-sm text-amber-700">No upfront payment required</p>
+              )}
+              {product.preOrderNotes && (
+                <p className="flex items-start gap-2 text-sm text-amber-700">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {product.preOrderNotes}
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button disabled={activeStock < 1} onClick={handleAddToCart} className="btn-primary w-full sm:flex-1 disabled:bg-gray-300">
-              <ShoppingCart className="h-4 w-4" /> {activeStock < 1 ? "Sold out" : "Add to cart"}
+            <button disabled={deadlinePassed || (!isPreOrder && activeStock < 1)} onClick={handleAddToCart} className="btn-primary w-full sm:flex-1 disabled:bg-gray-300">
+              <ShoppingCart className="h-4 w-4" /> {deadlinePassed ? "Pre-Order Closed" : isPreOrder ? "Pre-Order Now" : activeStock < 1 ? "Sold out" : "Add to cart"}
             </button>
             <button onClick={() => toggle(product)} className="btn-secondary w-full sm:w-auto">
               <Heart className="h-4 w-4" /> Wishlist
@@ -158,11 +206,11 @@ const ProductDetailsPage = () => {
             {product.discountPrice && <p className="text-xs text-gray-500 line-through">{formatCurrency(product.price)}</p>}
           </div>
           <button
-            disabled={activeStock < 1}
+            disabled={deadlinePassed || (!isPreOrder && activeStock < 1)}
             onClick={handleAddToCart}
             className="btn-primary flex-1 disabled:bg-gray-300"
           >
-            <ShoppingCart className="h-4 w-4" /> {activeStock < 1 ? "Sold out" : "Add to cart"}
+            <ShoppingCart className="h-4 w-4" /> {deadlinePassed ? "Pre-Order Closed" : isPreOrder ? "Pre-Order Now" : activeStock < 1 ? "Sold out" : "Add to cart"}
           </button>
         </div>
       </section>

@@ -1,4 +1,4 @@
-import { ArrowLeft, CreditCard, ExternalLink, FileText, MapPin, Package, Printer, Truck, User, XCircle } from "lucide-react";
+import { ArrowLeft, Clock, CreditCard, ExternalLink, FileText, MapPin, Package, Printer, Truck, User, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate, useParams } from "react-router-dom";
@@ -20,7 +20,13 @@ const statuses = [
   "Preparing Order",
   "Shipped",
   "Delivered",
-  "Cancelled"
+  "Cancelled",
+  "Pre-Order Reserved",
+  "Deposit Paid",
+  "Pre-Order Confirmed",
+  "Arrived",
+  "Ready to Ship",
+  "Completed"
 ];
 
 const paymentLabels = {
@@ -438,6 +444,32 @@ const AdminOrderDetailPage = () => {
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-gray-500">Order Notes</label>
                     <p className="rounded-md bg-amber-50 p-3 text-sm text-amber-800">{order.notes}</p>
+                  </div>
+                )}
+
+                {order.isPreOrder && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <p className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-800">
+                      <Clock className="h-4 w-4" /> Pre-Order Management
+                    </p>
+                    <div className="space-y-2 text-sm text-amber-700">
+                      <p>Status: <strong>{order.preOrderStatus || "—"}</strong></p>
+                      {order.preOrderInfo?.expectedDate && (
+                        <p>Expected: {new Date(order.preOrderInfo.expectedDate).toLocaleDateString("en-US", { year: "numeric", month: "long" })}</p>
+                      )}
+                      {order.preOrderInfo?.paymentMode && (
+                        <p>Payment Mode: <strong>{order.preOrderInfo.paymentMode}</strong></p>
+                      )}
+                      {order.preOrderInfo?.depositAmount > 0 && (
+                        <p>Deposit: {formatCurrency(order.preOrderInfo.depositAmount)}</p>
+                      )}
+                      {order.preOrderInfo?.remainingBalance > 0 && (
+                        <p>Remaining Balance: {formatCurrency(order.preOrderInfo.remainingBalance)}</p>
+                      )}
+                      {order.preOrderInfo?.balancePaid && (
+                        <p className="text-emerald-700">Balance Paid: {order.preOrderInfo.balancePaidAt ? new Date(order.preOrderInfo.balancePaidAt).toLocaleDateString("en-US") : "Yes"}</p>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

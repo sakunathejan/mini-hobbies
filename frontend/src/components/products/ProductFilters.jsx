@@ -39,6 +39,16 @@ const ProductFilters = memo(({ categories, filters, setFilters }) => (
         <input className="input mt-2" type="number" value={filters.maxPrice} onChange={(event) => setFilters({ ...filters, maxPrice: event.target.value })} />
       </div>
     </div>
+    <label className="mt-5 block text-sm font-semibold text-gray-700">Availability</label>
+    <select
+      className="input mt-2"
+      value={filters.productType}
+      onChange={(event) => setFilters({ ...filters, productType: event.target.value, page: 1 })}
+    >
+      <option value="">All Products</option>
+      <option value="IN_STOCK">In Stock Only</option>
+      <option value="PRE_ORDER">Pre-Order Only</option>
+    </select>
   </aside>
 ));
 

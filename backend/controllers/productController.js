@@ -1,4 +1,5 @@
 import Product from "../models/Product.js";
+import Setting from "../models/Setting.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { buildProductQuery } from "../utils/buildProductQuery.js";
 import * as cache from "../utils/cache.js";
@@ -145,6 +146,12 @@ export const getLowStockProducts = asyncHandler(async (_req, res) => {
     .sort("stock")
     .limit(20);
   res.json(products);
+});
+
+export const getProductTypes = asyncHandler(async (_req, res) => {
+  res.json({
+    types: ["IN_STOCK", "PRE_ORDER", "OUT_OF_STOCK"]
+  });
 });
 
 export const deleteProduct = asyncHandler(async (req, res) => {

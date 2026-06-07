@@ -1,6 +1,12 @@
 import api from "./api.js";
 
-export const getProducts = (params) => api.get("/products", { params }).then((res) => res.data);
+export const getProducts = (params) => {
+  const clean = Object.entries(params || {}).reduce((acc, [key, val]) => {
+    if (val !== "" && val !== null && val !== undefined) acc[key] = val;
+    return acc;
+  }, {});
+  return api.get("/products", { params: clean }).then((res) => res.data);
+};
 export const getFeaturedProducts = () => api.get("/products/featured").then((res) => res.data);
 export const getNewArrivals = () => api.get("/products/new-arrivals").then((res) => res.data);
 export const getProductBySlug = (slug) => api.get(`/products/${slug}`).then((res) => res.data);

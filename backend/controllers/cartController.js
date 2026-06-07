@@ -1,5 +1,6 @@
 import Cart from "../models/Cart.js";
 import Product from "../models/Product.js";
+import Setting from "../models/Setting.js";
 import asyncHandler from "../utils/asyncHandler.js";
 
 const getCartScope = (req) => {
@@ -51,6 +52,11 @@ export const addToCart = asyncHandler(async (req, res) => {
     throw new Error("Product not found.");
   }
 
+  if (product.isPreOrder && product.preOrderDeadline && new Date() > new Date(product.preOrderDeadline)) {
+    res.status(400);
+    throw new Error("The pre-order period for this product has ended.");
+  }
+
   const selectedVariant = variantId ? product.variants?.find((v) => v._id.toString() === variantId) : null;
   const variantName = selectedVariant?.name || "";
   const variantImage = selectedVariant?.image?.url || "";
@@ -69,7 +75,16 @@ export const addToCart = asyncHandler(async (req, res) => {
   if (existing) {
     existing.quantity += Number(quantity);
   } else {
-    cart.items.push({ product: productId, quantity, variantId, variantName, variantImage });
+    cart.items.push({
+      product: productId,
+      quantity,
+      variantId,
+      variantName,
+      variantImage,
+      isPreOrder: product.isPreOrder || false,
+      preOrderExpectedDate: product.preOrderExpectedDate || null,
+      preOrderPaymentMode: product.preOrderPaymentMode || ""
+    });
   }
 
   await cart.save();
@@ -190,4 +205,25 @@ export const mergeCart = asyncHandler(async (req, res) => {
   await Cart.deleteOne({ sessionId });
 
   res.json(await cart.populate("items.product"));
+});
+
+export const validateCart = asyncHandler(async (req, res) => {
+  const scope = getCartScope(req);
+  if (!scope) return res.json({ valid: true, errors: [] });
+
+  const cart = await Cart.findOne(scope).populate("items.product");
+  if (!cart || !cart.items.length) return res.json({ valid: true, errors: [] });
+
+  const errors = [];
+  const hasPreOrder = cart.items.some(item => item.product?.productType === "PRE_ORDER");
+  const hasInStock = cart.items.some(item => item.product?.productType === "IN_STOCK");
+
+  const setting = await Setting.findOne({ key: "ALLOW_MIXED_CARTS" }).lean();
+  const allowMixed = setting ? setting.value : true;
+
+  if (!allowMixed && hasPreOrder && hasInStock) {
+    errors.push("Mixed carts are not allowed. Please separate pre-order and in-stock items.");
+  }
+
+  res.json({ valid: errors.length === 0, errors });
 });

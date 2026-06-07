@@ -6,13 +6,18 @@ import {
   deleteOrders,
   getOrderById,
   getOrders,
+  getPreOrderDashboard,
+  markPreOrderArrived,
+  payRemainingBalance,
+  cancelPreOrder,
   retryWhatsApp,
   trackOrder,
   updateOrderStatus,
   cancelOrder
 } from "../controllers/orderController.js";
+import { validateCart } from "../controllers/cartController.js";
 import { adminOnly, protect } from "../middleware/authMiddleware.js";
-import { optionalCustomer } from "../middleware/customerAuth.js";
+import { optionalCustomer, protectCustomer } from "../middleware/customerAuth.js";
 import { upload, validateFileContent } from "../middleware/uploadMiddleware.js";
 import { validateRequest } from "../middleware/validateRequest.js";
 
@@ -52,8 +57,8 @@ router.post(
     body("customer.address").trim().notEmpty(),
     body("customer.district").optional().trim(),
     body("customer.city").optional().trim(),
-    body("districtId").optional().isInt(),
-    body("cityId").optional().isInt(),
+    body("districtId").optional({ values: "falsy" }).isInt(),
+    body("cityId").optional({ values: "falsy" }).isInt(),
     body("paymentMethod").optional().isIn(["bank_transfer", "cod", "advance", "online_payment", "card"]),
     body("items").isArray({ min: 1 }),
     body("couponCode").optional().trim()
@@ -64,6 +69,8 @@ router.post(
 
 router.get("/track/:orderNumber", trackOrder);
 router.get("/", protect, adminOnly, getOrders);
+router.get("/pre-order/dashboard", protect, adminOnly, getPreOrderDashboard);
+router.get("/validate-cart", optionalCustomer, validateCart);
 router.get("/:id", protect, adminOnly, getOrderById);
 router.patch(
   "/:id/status",
@@ -84,6 +91,9 @@ router.post(
 );
 
 router.post("/:id/retry-whatsapp", protect, adminOnly, retryWhatsApp);
+router.post("/:id/mark-arrived", protect, adminOnly, markPreOrderArrived);
+router.post("/:id/pay-balance", protectCustomer, payRemainingBalance);
+router.post("/:id/cancel-pre-order", protect, adminOnly, cancelPreOrder);
 router.delete("/:id", protect, adminOnly, deleteOrder);
 router.post("/delete-bulk", protect, adminOnly, deleteOrders);
 

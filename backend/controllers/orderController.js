@@ -15,7 +15,7 @@ import { normalizeOrder, toTitleStatus } from "../utils/normalizeOrder.js";
 import { normalizePhone, notifyAdminWhatsApp, formatOrderWhatsAppMessage, buildWhatsAppUrl } from "../utils/whatsapp.js";
 import { uploadPaymentSlip } from "../services/supabaseStorageService.js";
 import { retryCustomerWhatsApp, buildCustomerWhatsAppUrl } from "../services/whatsappService.js";
-import { sendOrderStatusEmail, sendOrderConfirmationEmail } from "../services/emailService.js";
+import { sendOrderStatusEmail, sendOrderConfirmationEmail, sendPreOrderConfirmationEmail, sendDepositReceivedEmail, sendArrivalNotificationEmail, sendBalancePaymentRequestEmail, sendPreOrderShippedEmail } from "../services/emailService.js";
 import { cancelOrder as cancelKoombiyoOrder } from "../services/koombiyo/cancellation.service.js";
 import { normalizeTo } from "../utils/normalizeAddress.js";
 
@@ -199,6 +199,45 @@ export const createOrder = asyncHandler(async (req, res) => {
     statusHistory: [{ status: initialStatus, note: initialNote, updatedAt: new Date() }]
   };
 
+  const hasPreOrder = products.some(p => p.isPreOrder);
+  if (hasPreOrder) {
+    const preOrderProduct = products.find(p => p.isPreOrder);
+    if (preOrderProduct.preOrderDeadline && new Date() > new Date(preOrderProduct.preOrderDeadline)) {
+      res.status(400);
+      throw new Error("The pre-order period for this product has ended.");
+    }
+    const mode = preOrderProduct.preOrderPaymentMode || "FULL_PAYMENT";
+
+    orderData.isPreOrder = true;
+    orderData.preOrderInfo = {
+      expectedDate: preOrderProduct.preOrderExpectedDate || null,
+      notes: preOrderProduct.preOrderNotes || "",
+      paymentMode: mode,
+      depositPaid: false,
+      depositAmount: preOrderProduct.preOrderDepositAmount || 0,
+      remainingBalance: mode === "DEPOSIT_PAYMENT" ? total - (preOrderProduct.preOrderDepositAmount || 0) : 0,
+      balancePaid: false,
+      balancePaidAt: null
+    };
+
+    if (mode === "FULL_PAYMENT") {
+      orderData.preOrderStatus = "PRE_ORDER_CONFIRMED";
+      orderData.status = "Pre-Order Confirmed";
+      orderData.statusHistory[0].status = "Pre-Order Confirmed";
+      orderData.statusHistory[0].note = "Pre-order placed with full payment";
+    } else if (mode === "DEPOSIT_PAYMENT") {
+      orderData.preOrderStatus = "PRE_ORDER_DEPOSIT_PAID";
+      orderData.status = "Deposit Paid";
+      orderData.statusHistory[0].status = "Deposit Paid";
+      orderData.statusHistory[0].note = "Pre-order placed, deposit paid";
+    } else {
+      orderData.preOrderStatus = "PRE_ORDER_RESERVED";
+      orderData.status = "Pre-Order Reserved";
+      orderData.statusHistory[0].status = "Pre-Order Reserved";
+      orderData.statusHistory[0].note = "Pre-order reserved without payment";
+    }
+  }
+
   const order = await Order.create(orderData);
   console.log(`[ORDER CREATED] orderNumber=${order.orderNumber}, customerId=${order.customerId}, customerEmail=${order.customer?.email}, formEmail=${customer.email}`);
 
@@ -288,19 +327,25 @@ export const createOrder = asyncHandler(async (req, res) => {
     }
   }
 
-  for (const item of orderItems) {
-    const variantId = item.variantId || null;
-    if (variantId) {
-      const product = await Product.findById(item.product);
-      if (product && product.hasVariants) {
-        const variant = product.variants.id(variantId);
-        if (variant) {
-          variant.stock = Math.max(0, variant.stock - item.quantity);
-          await product.save();
+  if (!order.isPreOrder) {
+    for (const item of orderItems) {
+      const variantId = item.variantId || null;
+      if (variantId) {
+        const product = await Product.findById(item.product);
+        if (product && product.hasVariants) {
+          const variant = product.variants.id(variantId);
+          if (variant) {
+            variant.stock = Math.max(0, variant.stock - item.quantity);
+            await product.save();
+          }
         }
+      } else {
+        await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } });
       }
-    } else {
-      await Product.findByIdAndUpdate(item.product, { $inc: { stock: -item.quantity } });
+    }
+  } else {
+    for (const item of orderItems) {
+      await Product.findByIdAndUpdate(item.product, { $inc: { preOrderSoldCount: item.quantity } });
     }
   }
 
@@ -313,7 +358,11 @@ export const createOrder = asyncHandler(async (req, res) => {
 
   notifyAdminWhatsApp(normalized).catch(() => {});
 
-  enqueue("order-confirmation-email", () => sendOrderConfirmationEmail(order));
+  if (order.isPreOrder) {
+    enqueue("pre-order-confirmation-email", () => sendPreOrderConfirmationEmail(order));
+  } else {
+    enqueue("order-confirmation-email", () => sendOrderConfirmationEmail(order));
+  }
 
   if (req.customer) {
     Cart.findOneAndDelete({ customerId: req.customer._id }).catch(() => {});
@@ -474,4 +523,148 @@ export const deleteOrders = asyncHandler(async (req, res) => {
   await Payment.deleteMany({ order: { $in: ids } });
   cache.clear("dashboard:");
   res.json({ message: `${result.deletedCount} order(s) deleted.`, deletedCount: result.deletedCount });
+});
+
+export const getPreOrderDashboard = asyncHandler(async (_req, res) => {
+  const [
+    totalPreOrders,
+    pendingDeposits,
+    awaitingArrival,
+    readyToShip,
+    revenueResult,
+    expectedRevenueResult
+  ] = await Promise.all([
+    Order.countDocuments({ isPreOrder: true }),
+    Order.countDocuments({ isPreOrder: true, preOrderStatus: "PRE_ORDER_RESERVED" }),
+    Order.countDocuments({ isPreOrder: true, preOrderStatus: { $in: ["PRE_ORDER_CONFIRMED", "PRE_ORDER_ARRIVED"] } }),
+    Order.countDocuments({ isPreOrder: true, preOrderStatus: "PRE_ORDER_READY_TO_SHIP" }),
+    Order.aggregate([
+      { $match: { isPreOrder: true } },
+      { $group: { _id: null, total: { $sum: "$total" } } }
+    ]),
+    Order.aggregate([
+      { $match: { isPreOrder: true, preOrderStatus: { $nin: ["PRE_ORDER_COMPLETED", "PRE_ORDER_READY_TO_SHIP"] } } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ["$preOrderInfo.remainingBalance", 0] } } } }
+    ])
+  ]);
+
+  res.json({
+    totalPreOrders,
+    pendingDeposits,
+    awaitingArrival,
+    readyToShip,
+    revenueCollected: revenueResult[0]?.total || 0,
+    expectedRevenue: expectedRevenueResult[0]?.total || 0
+  });
+});
+
+export const markPreOrderArrived = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found.");
+  }
+  if (!order.isPreOrder) {
+    res.status(400);
+    throw new Error("This order is not a pre-order.");
+  }
+  if (order.preOrderStatus !== "PRE_ORDER_CONFIRMED") {
+    res.status(400);
+    throw new Error(`Cannot mark as arrived. Current status: ${order.preOrderStatus}. Expected: PRE_ORDER_CONFIRMED.`);
+  }
+
+  order.preOrderStatus = "PRE_ORDER_ARRIVED";
+  order.status = "Arrived";
+  pushStatusHistory(order, "Arrived", "Pre-order shipment arrived");
+
+  for (const item of order.items) {
+    const product = await Product.findById(item.product);
+    if (product) {
+      if (item.variantId && product.hasVariants) {
+        const variant = product.variants.id(item.variantId);
+        if (variant) {
+          variant.stock = (variant.stock || 0) + item.quantity;
+        }
+      } else {
+        product.stock = (product.stock || 0) + item.quantity;
+      }
+      await product.save();
+    }
+  }
+
+  order.markModified("statusHistory");
+  await order.save({ validateBeforeSave: false });
+  cache.clear("dashboard:");
+
+  enqueue("pre-order-arrived-email", () => sendArrivalNotificationEmail(order));
+
+  res.json({ message: "Pre-order marked as arrived and stock updated.", order });
+});
+
+export const payRemainingBalance = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found.");
+  }
+  if (!order.isPreOrder) {
+    res.status(400);
+    throw new Error("This order is not a pre-order.");
+  }
+  if (order.preOrderInfo?.paymentMode !== "DEPOSIT_PAYMENT") {
+    res.status(400);
+    throw new Error("This order does not require balance payment.");
+  }
+  if (order.preOrderInfo?.balancePaid) {
+    res.status(400);
+    throw new Error("Balance already paid for this order.");
+  }
+
+  order.preOrderInfo.balancePaid = true;
+  order.preOrderInfo.balancePaidAt = new Date();
+  order.preOrderInfo.remainingBalance = 0;
+  order.preOrderStatus = "PRE_ORDER_CONFIRMED";
+  order.status = "Pre-Order Confirmed";
+  pushStatusHistory(order, "Pre-Order Confirmed", "Remaining balance paid");
+  order.markModified("preOrderInfo");
+  order.markModified("statusHistory");
+  await order.save({ validateBeforeSave: false });
+  cache.clear("dashboard:");
+
+  enqueue("pre-order-balance-paid-email", () => sendDepositReceivedEmail(order));
+
+  res.json({ message: "Remaining balance paid successfully.", order });
+});
+
+export const cancelPreOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error("Order not found.");
+  }
+  if (!order.isPreOrder) {
+    res.status(400);
+    throw new Error("This order is not a pre-order.");
+  }
+
+  const { reason, refundStatus, refundAmount } = req.body;
+
+  order.cancellation = {
+    reason: reason || "Cancelled by admin",
+    cancelledBy: req.user?.name || req.user?.email || "admin",
+    cancelledAt: new Date(),
+    refundStatus: refundStatus || "none",
+    refundAmount: refundAmount || 0,
+    refundDate: refundStatus === "processed" ? new Date() : null
+  };
+
+  order.status = "Cancelled";
+  order.preOrderStatus = undefined;
+  pushStatusHistory(order, "Cancelled", reason || "Pre-order cancelled");
+
+  order.markModified("statusHistory");
+  await order.save({ validateBeforeSave: false });
+  cache.clear("dashboard:");
+
+  res.json({ message: "Pre-order cancelled.", order });
 });

@@ -23,7 +23,8 @@ const statuses = [
   "Awaiting Final Payment",
   "Fully Paid",
   "Preparing Order",
-  "Shipped", "Delivered", "Cancelled"
+  "Shipped", "Delivered", "Cancelled",
+  "Pre-Order Reserved", "Deposit Paid", "Pre-Order Confirmed", "Arrived", "Ready to Ship"
 ];
 
 const AdminOrdersPage = () => {

@@ -17,12 +17,15 @@ const AdminProductsPage = () => {
   const [error, setError] = useState("");
   const [view, setView] = useState(() => localStorage.getItem("admin_products_view") || "grid");
   const [page, setPage] = useState(1);
+  const [productTypeFilter, setProductTypeFilter] = useState("");
 
   const fetchProducts = async () => {
     setLoading(true);
     setError("");
     try {
-      const result = await getProducts({ limit: 48 });
+      const params = { limit: 48 };
+      if (productTypeFilter) params.productType = productTypeFilter;
+      const result = await getProducts(params);
       setData(result);
     } catch (err) {
       setError(err.response?.data?.message || err.message || "Failed to load products.");
@@ -33,7 +36,7 @@ const AdminProductsPage = () => {
 
   useEffect(() => {
     fetchProducts();
-  }, [location.pathname]);
+  }, [location.pathname, productTypeFilter]);
 
   const products = data?.products || [];
   const totalPages = Math.ceil(products.length / PER_PAGE);
@@ -105,7 +108,15 @@ const AdminProductsPage = () => {
         </div>
       </div>
 
-      <p className="mt-2 text-sm text-gray-500">{products.length} products total</p>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <p className="text-sm text-gray-500">{products.length} products total</p>
+        <select className="input w-44 text-sm" value={productTypeFilter} onChange={(e) => { setProductTypeFilter(e.target.value); setPage(1); }}>
+          <option value="">All Types</option>
+          <option value="IN_STOCK">In Stock</option>
+          <option value="PRE_ORDER">Pre-Order</option>
+          <option value="OUT_OF_STOCK">Out of Stock</option>
+        </select>
+      </div>
 
       <div className="mt-6">
         {view === "list" ? (

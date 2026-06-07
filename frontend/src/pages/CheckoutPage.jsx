@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp, Minus, Plus, ShoppingBag, Trash2, Upload, Package, MapPin, X, Check } from "lucide-react";
+import { ChevronDown, ChevronUp, Info, Minus, Plus, ShoppingBag, Trash2, Upload, Package, MapPin, X, Check } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import toast from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
@@ -287,8 +287,8 @@ const CheckoutPage = () => {
         notes: form.notes,
         paymentMethod,
         couponCode: appliedCoupon ? appliedCoupon.code : "",
-        districtId: selectedDistrictId,
-        cityId: selectedCityId
+        ...(selectedDistrictId != null && { districtId: selectedDistrictId }),
+        ...(selectedCityId != null && { cityId: selectedCityId })
       };
 
       let order;
@@ -299,8 +299,8 @@ const CheckoutPage = () => {
         fd.append("notes", orderPayload.notes);
         fd.append("paymentMethod", orderPayload.paymentMethod);
         fd.append("couponCode", orderPayload.couponCode);
-        fd.append("districtId", String(orderPayload.districtId));
-        fd.append("cityId", String(orderPayload.cityId));
+        if (selectedDistrictId != null) fd.append("districtId", String(selectedDistrictId));
+        if (selectedCityId != null) fd.append("cityId", String(selectedCityId));
         fd.append("paymentSlip", slipFile);
         fd.append("bankName", bankDetails.bankName);
         fd.append("accountName", bankDetails.accountName);
@@ -378,6 +378,22 @@ const CheckoutPage = () => {
           </div>
         ))}
       </div>
+
+      {items.some((item) => item.isPreOrder) && (
+        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
+            <Info className="h-4 w-4" /> Pre-Order Items
+          </p>
+          <p className="mt-1 text-sm text-amber-700">
+            This order contains pre-order items. Your payment will be processed according to the pre-order terms.
+          </p>
+          {items.filter((item) => item.isPreOrder && item.preOrderPaymentMode === "DEPOSIT_PAYMENT").length > 0 && (
+            <p className="mt-1 text-sm text-amber-700">
+              Deposit payment items require a deposit to reserve. Remaining balance will be due before shipping.
+            </p>
+          )}
+        </div>
+      )}
 
       <div className="mt-8 grid gap-8 lg:grid-cols-5">
         <div className="lg:col-span-3 space-y-6">
@@ -641,7 +657,10 @@ const CheckoutPage = () => {
                 <div key={item._id} className="flex items-center gap-3 py-3">
                   <img src={cartItemImage} alt={item.name} className="h-14 w-14 shrink-0 rounded-lg object-cover sm:h-16 sm:w-16" loading="lazy" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium">{item.name}</p>
+                    <p className="truncate text-sm font-medium">
+                      {item.isPreOrder && <span className="mr-1 inline-block rounded bg-amber-100 px-1 py-0.5 text-[10px] font-bold uppercase text-amber-800">Pre-Order</span>}
+                      {item.name}
+                    </p>
                     <p className="text-sm text-gray-600">{formatCurrency(cartItemVariant?.price || item.discountPrice || item.price)} each</p>
                     <div className="mt-1 flex items-center gap-2">
                       <button className="rounded border p-0.5 hover:bg-gray-100 min-h-[28px] min-w-[28px]" onClick={() => { if (item.quantity > 1) updateQuantity(item._id, item.quantity - 1); }}>

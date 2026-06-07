@@ -91,6 +91,10 @@ export const normalizeOrder = (order) => {
     whatsappStatus: doc.whatsappStatus || "",
     whatsappSentAt: doc.whatsappSentAt || null,
     whatsappErrorLog: doc.whatsappErrorLog || [],
+    isPreOrder: doc.isPreOrder || false,
+    preOrderInfo: doc.preOrderInfo || null,
+    preOrderStatus: doc.preOrderStatus || null,
+    cancellation: doc.cancellation || null,
     createdAt: doc.createdAt,
     updatedAt: doc.updatedAt
   };

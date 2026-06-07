@@ -1,4 +1,4 @@
-import { AlertTriangle, CircleDollarSign, Package, Plus, ShoppingBag, Tags, Users } from "lucide-react";
+import { AlertTriangle, CircleDollarSign, Clock, CreditCard, Package, Plus, ShoppingBag, Tags, Truck, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import useFetch from "../../hooks/useFetch.js";
 import { getDashboardStats } from "../../services/authService.js";
@@ -16,6 +16,13 @@ const DashboardPage = () => {
     { label: "Categories", value: data?.categories || 0, icon: Tags },
     { label: "Orders", value: data?.orders || 0, icon: ShoppingBag },
     { label: "Revenue", value: formatCurrency(data?.revenue || 0), icon: CircleDollarSign }
+  ];
+
+  const preOrderCards = [
+    { label: "Total Pre-Orders", value: data?.preOrders || 0, icon: Clock },
+    { label: "Pending Deposits", value: data?.pendingDeposits || 0, icon: CreditCard },
+    { label: "Awaiting Arrival", value: data?.awaitingArrival || 0, icon: Package },
+    { label: "Ready to Ship", value: data?.readyToShip || 0, icon: Truck }
   ];
 
   return (
@@ -47,6 +54,19 @@ const DashboardPage = () => {
               <Icon className="h-6 w-6 text-ember" />
               <p className="mt-4 text-sm text-gray-600">{card.label}</p>
               <p className="mt-1 text-2xl font-black">{card.value}</p>
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {preOrderCards.map((card) => {
+          const Icon = card.icon;
+          return (
+            <article key={card.label} className="rounded-lg border border-amber-200 bg-amber-50 p-5">
+              <Icon className="h-6 w-6 text-amber-600" />
+              <p className="mt-4 text-sm text-amber-700">{card.label}</p>
+              <p className="mt-1 text-2xl font-black text-amber-900">{card.value}</p>
             </article>
           );
         })}

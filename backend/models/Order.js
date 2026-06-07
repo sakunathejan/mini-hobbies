@@ -100,7 +100,13 @@ const orderSchema = new mongoose.Schema(
         "Preparing Order",
         "Shipped",
         "Delivered",
-        "Cancelled"
+        "Cancelled",
+        "Pre-Order Reserved",
+        "Deposit Paid",
+        "Pre-Order Confirmed",
+        "Arrived",
+        "Ready to Ship",
+        "Completed"
       ],
       default: "Pending Advance Payment"
     },
@@ -148,7 +154,44 @@ const orderSchema = new mongoose.Schema(
     whatsappMessageId: { type: String, default: "" },
     whatsappStatus: { type: String, enum: ["", "sent", "failed", "retrying"], default: "" },
     whatsappSentAt: { type: Date },
-    whatsappErrorLog: [{ message: String, timestamp: { type: Date, default: Date.now } }]
+    whatsappErrorLog: [{ message: String, timestamp: { type: Date, default: Date.now } }],
+    isPreOrder: { type: Boolean, default: false },
+    preOrderInfo: {
+      expectedDate: { type: Date },
+      notes: { type: String, default: "" },
+      paymentMode: {
+        type: String,
+        enum: ["FULL_PAYMENT", "DEPOSIT_PAYMENT", "NO_PAYMENT"]
+      },
+      depositPaid: { type: Boolean, default: false },
+      depositAmount: { type: Number, default: 0 },
+      remainingBalance: { type: Number, default: 0 },
+      balancePaid: { type: Boolean, default: false },
+      balancePaidAt: { type: Date }
+    },
+    preOrderStatus: {
+      type: String,
+      enum: [
+        "PRE_ORDER_RESERVED",
+        "PRE_ORDER_DEPOSIT_PAID",
+        "PRE_ORDER_CONFIRMED",
+        "PRE_ORDER_ARRIVED",
+        "PRE_ORDER_READY_TO_SHIP",
+        "PRE_ORDER_COMPLETED"
+      ]
+    },
+    cancellation: {
+      reason: { type: String, default: "" },
+      cancelledBy: { type: String, default: "" },
+      cancelledAt: { type: Date },
+      refundStatus: {
+        type: String,
+        enum: ["pending", "processed", "none"],
+        default: "none"
+      },
+      refundAmount: { type: Number, default: 0 },
+      refundDate: { type: Date }
+    }
   },
   { timestamps: true, strict: false }
 );

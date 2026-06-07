@@ -77,6 +77,10 @@ export async function createKoombiyoShipment(orderId) {
     return { success: false, error: `Cannot create shipment for order in ${currentStatus} status` };
   }
 
+  if (order.isPreOrder && order.preOrderStatus !== "PRE_ORDER_READY_TO_SHIP") {
+    return { success: false, error: "Pre-order items are not ready for shipment yet" };
+  }
+
   console.log(`[Koombiyo] createKoombiyoShipment for order ${order.orderNumber}: paymentMethod="${order.paymentMethod}" paymentStatus="${order.paymentStatus}" paymentType="${order.paymentType}" status="${order.status}" lifecycleStatus="${order.lifecycleStatus}" total=${order.total}`);
 
   const codResult = calculateCOD(order);

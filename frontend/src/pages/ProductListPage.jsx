@@ -15,6 +15,7 @@ const ProductListPage = () => {
     category: "",
     minPrice: "",
     maxPrice: "",
+    productType: "",
     page: 1
   });
   const [products, setProducts] = useState(null);

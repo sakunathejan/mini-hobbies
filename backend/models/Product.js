@@ -51,7 +51,25 @@ const productSchema = new mongoose.Schema(
       enum: ["New", "Pre-owned", "Limited Edition"],
       default: "New"
     },
-    weightKg: { type: Number, default: 0.5, min: 0 }
+    weightKg: { type: Number, default: 0.5, min: 0 },
+    productType: {
+      type: String,
+      enum: ["IN_STOCK", "PRE_ORDER", "OUT_OF_STOCK"],
+      default: "IN_STOCK"
+    },
+    isPreOrder: { type: Boolean, default: false },
+    preOrderDeadline: { type: Date },
+    preOrderExpectedDate: { type: Date },
+    preOrderNotes: { type: String, default: "" },
+    preOrderDepositRequired: { type: Boolean, default: false },
+    preOrderDepositAmount: { type: Number, default: 0, min: 0 },
+    preOrderPaymentMode: {
+      type: String,
+      enum: ["FULL_PAYMENT", "DEPOSIT_PAYMENT", "NO_PAYMENT"],
+      default: "FULL_PAYMENT"
+    },
+    preOrderLimit: { type: Number, default: 0, min: 0 },
+    preOrderSoldCount: { type: Number, default: 0, min: 0 }
   },
   { timestamps: true }
 );
@@ -70,7 +88,22 @@ productSchema.pre("save", function makeSlug(next) {
   if (this.hasVariants && this.variants.length > 0) {
     this.stock = this.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
   }
-  if (this.stock <= 0) {
+  if (this.productType === "PRE_ORDER") {
+    this.isPreOrder = true;
+    this.stock = 0;
+    if (this.hasVariants && this.variants.length > 0) {
+      this.variants.forEach(v => { v.stock = 0; });
+    }
+    if (!this.preOrderPaymentMode) this.preOrderPaymentMode = "FULL_PAYMENT";
+  } else {
+    this.isPreOrder = false;
+  }
+  if (this.productType === "OUT_OF_STOCK") {
+    this.stockStatus = "out_of_stock";
+    this.stock = 0;
+  } else if (this.isPreOrder) {
+    this.stockStatus = "in_stock";
+  } else if (this.stock <= 0) {
     this.stockStatus = "out_of_stock";
   } else if (this.stock <= (this.lowStockThreshold || 3)) {
     this.stockStatus = "low_stock";

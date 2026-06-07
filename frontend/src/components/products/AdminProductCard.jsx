@@ -26,11 +26,15 @@ const AdminProductCard = memo(({ product, onDelete }) => {
         <div className="mt-auto flex items-center justify-between pt-2">
           <p className="text-xs font-black">{formatCurrency(product.discountPrice || product.price)}</p>
           <span className={`inline-flex rounded-full px-1.5 py-0.5 text-[10px] font-bold ${
+            product.productType === "PRE_ORDER" ? "bg-amber-50 text-amber-800" :
+            product.productType === "OUT_OF_STOCK" ? "bg-red-50 text-red-700" :
             product.stockStatus === "out_of_stock" ? "bg-red-50 text-red-700" :
             product.stockStatus === "low_stock" ? "bg-amber-50 text-amber-800" :
             "bg-emerald-50 text-emerald-800"
           }`}>
-            {product.stockStatus === "out_of_stock" ? "Sold out" :
+            {product.productType === "PRE_ORDER" ? "Pre-Order" :
+             product.productType === "OUT_OF_STOCK" ? "Out of Stock" :
+             product.stockStatus === "out_of_stock" ? "Sold out" :
              product.stockStatus === "low_stock" ? `${product.stock} left` :
              product.stock}
           </span>

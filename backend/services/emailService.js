@@ -406,6 +406,107 @@ Happy collecting!
   await sendMail(customer.email, subject, html, text);
 };
 
+const formatPreOrderHtml = (order, subject, bodyMsg) => {
+  const base = process.env.CLIENT_URL || "http://localhost:5173";
+  const logo = loadLogo();
+  const items = order.items || [];
+  const c = order.customer || {};
+  const pinfo = order.preOrderInfo || {};
+
+  const itemRows = items.map((item, i) =>
+    `<tr${i === items.length - 1 ? '' : ''}>
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;font-size:13px;color:#1e293b;">${item.name || "Product"}${item.variantName ? ' <span style="color:#64748b;font-size:11px;">(' + item.variantName + ')</span>' : ''}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;text-align:center;font-size:13px;color:#64748b;">${item.quantity || 1}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid #e2e8f0;text-align:right;font-size:13px;color:#1e293b;font-weight:600;">${fmt((item.price || 0) * (item.quantity || 1))}</td>
+    </tr>`
+  ).join("");
+
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head><body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
+<center>
+<table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center" style="padding:24px 10px;">
+<table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:12px;">
+<tr><td style="padding:32px 28px 24px;text-align:center;background:linear-gradient(135deg,#7c3aed,#a78bfa);">
+${logo ? '<img src="' + logo + '" alt="Mini Hobbies" width="100" style="display:inline-block;margin-bottom:16px;filter:brightness(0)invert(1);" />' : '<h1 style="margin:0 0 16px;font-size:20px;color:#fff;">Mini Hobbies</h1>'}
+<h2 style="margin:0;font-size:20px;color:#fff;letter-spacing:-0.3px;">${subject}</h2>
+<p style="margin:6px 0 0;font-size:13px;color:rgba(255,255,255,0.85);">Order #${order.orderNumber}</p>
+</td></tr>
+<tr><td style="padding:24px 28px 0;text-align:center;">
+<h3 style="margin:0;font-size:16px;color:#0f172a;">Hi ${c.name || "there"},</h3>
+<p style="margin:8px 0 0;font-size:13px;color:#475569;">${bodyMsg}</p>
+</td></tr>
+${pinfo.expectedDate ? '<tr><td style="padding:12px 28px 0;"><table width="100%" cellpadding="0" cellspacing="0" style="background:#f5f3ff;border:1px solid #ddd6fe;"><tr><td style="padding:10px 16px;"><p style="margin:0;font-size:11px;color:#7c3aed;font-weight:700;">EXPECTED ARRIVAL</p><p style="margin:2px 0 0;font-size:14px;color:#5b21b6;font-weight:600;">${new Date(pinfo.expectedDate).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" })}</p></td></tr></table></td></tr>' : ""}
+${pinfo.notes ? '<tr><td style="padding:8px 28px 0;text-align:center;"><p style="margin:0;font-size:12px;color:#64748b;font-style:italic;">' + pinfo.notes + '</p></td></tr>' : ""}
+<tr><td style="padding:16px 28px 0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;">
+<tr style="background:#f8fafc;">
+<td style="padding:7px 14px;font-size:10px;color:#94a3b8;font-weight:700;">Item</td>
+<td style="padding:7px 14px;font-size:10px;color:#94a3b8;font-weight:700;text-align:center;">Qty</td>
+<td style="padding:7px 14px;font-size:10px;color:#94a3b8;font-weight:700;text-align:right;">Total</td>
+</tr>
+${itemRows}
+</table>
+</td></tr>
+<tr><td style="padding:12px 28px 0;">
+<table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;">
+<tr><td style="padding:8px 16px;font-size:13px;color:#64748b;">Subtotal</td><td style="padding:8px 16px;text-align:right;font-size:13px;color:#0f172a;">${fmt(order.subtotal)}</td></tr>
+<tr><td style="padding:6px 16px;font-size:13px;color:#64748b;">Delivery</td><td style="padding:6px 16px;text-align:right;font-size:13px;color:#0f172a;">${fmt(order.deliveryFee)}</td></tr>
+${order.discount > 0 ? '<tr><td style="padding:6px 16px;font-size:13px;color:#64748b;">Discount</td><td style="padding:6px 16px;text-align:right;font-size:13px;color:#dc2626;">-' + fmt(order.discount) + '</td></tr>' : ""}
+${pinfo.depositAmount > 0 ? '<tr><td style="padding:6px 16px;font-size:13px;color:#64748b;">Deposit Paid</td><td style="padding:6px 16px;text-align:right;font-size:13px;color:#16a34a;font-weight:600;">-' + fmt(pinfo.depositAmount) + '</td></tr>' : ""}
+${pinfo.remainingBalance > 0 ? '<tr><td style="padding:6px 16px;font-size:13px;color:#64748b;">Remaining Balance</td><td style="padding:6px 16px;text-align:right;font-size:13px;color:#d97706;font-weight:700;">' + fmt(pinfo.remainingBalance) + '</td></tr>' : ""}
+<tr><td style="padding:10px 16px;font-size:14px;font-weight:800;color:#0f172a;border-top:2px solid #0f172a;">Total</td><td style="padding:10px 16px;text-align:right;font-size:16px;font-weight:800;color:#0f172a;border-top:2px solid #0f172a;">${fmt(order.total)}</td></tr>
+</table>
+</td></tr>
+<tr><td style="padding:20px 28px 0;text-align:center;">
+<a href="${base}/track-order?order=${order.orderNumber}&phone=${encodeURIComponent(c.phone || "")}" style="display:inline-block;background:#0f172a;color:#fff;padding:12px 36px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;">Track Your Order</a>
+</td></tr>
+<tr><td style="padding:24px 28px;text-align:center;">
+<div style="height:1px;background:#e2e8f0;margin-bottom:14px;"></div>
+<p style="margin:0;font-size:12px;color:#64748b;">Thank you for shopping with <b style="color:#0f172a;">Mini Hobbies</b></p>
+<p style="margin:3px 0 0;font-size:11px;color:#94a3b8;">This is an automated message &mdash; please do not reply.</p>
+</td></tr>
+</table>
+<p style="margin:10px 0 0;font-size:11px;color:#94a3b8;">&copy; ${new Date().getFullYear()} Mini Hobbies</p>
+</td></tr></table>
+</center>
+</body></html>`;
+};
+
+export const sendPreOrderConfirmationEmail = async (order) => {
+  const e = order.customer?.email;
+  if (!e) throw new Error("Customer email not available");
+  const html = formatPreOrderHtml(order, "Pre-Order Confirmed", "Your pre-order has been confirmed. We will notify you when it arrives.");
+  await sendMail(e, "Mini Hobbies - Pre-Order Confirmed " + order.orderNumber, html);
+};
+
+export const sendDepositReceivedEmail = async (order) => {
+  const e = order.customer?.email;
+  if (!e) throw new Error("Customer email not available");
+  const html = formatPreOrderHtml(order, "Deposit Received", "Your deposit payment has been received. Your pre-order is now confirmed.");
+  await sendMail(e, "Mini Hobbies - Deposit Received " + order.orderNumber, html);
+};
+
+export const sendArrivalNotificationEmail = async (order) => {
+  const e = order.customer?.email;
+  if (!e) throw new Error("Customer email not available");
+  const html = formatPreOrderHtml(order, "Pre-Order Arrived", "Your pre-order has arrived! Please arrange remaining payment to proceed with shipping.");
+  await sendMail(e, "Mini Hobbies - Pre-Order Arrived " + order.orderNumber, html);
+};
+
+export const sendBalancePaymentRequestEmail = async (order) => {
+  const e = order.customer?.email;
+  if (!e) throw new Error("Customer email not available");
+  const html = formatPreOrderHtml(order, "Balance Payment Request", "Your pre-order is ready! Please pay the remaining balance to confirm shipment.");
+  await sendMail(e, "Mini Hobbies - Balance Payment Request " + order.orderNumber, html);
+};
+
+export const sendPreOrderShippedEmail = async (order) => {
+  const e = order.customer?.email;
+  if (!e) throw new Error("Customer email not available");
+  const html = formatPreOrderHtml(order, "Pre-Order Shipped", "Your pre-order has been shipped! Track your delivery below.");
+  await sendMail(e, "Mini Hobbies - Pre-Order Shipped " + order.orderNumber, html);
+};
+
 export const sendCustomerVerificationEmail = async (customer, rawToken) => {
   const base = process.env.CLIENT_URL || "http://localhost:5173";
   const logo = loadLogo();
