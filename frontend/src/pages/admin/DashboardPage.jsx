@@ -1,14 +1,15 @@
-import { AlertTriangle, CircleDollarSign, Clock, CreditCard, Package, Plus, ShoppingBag, Tags, Truck, Users } from "lucide-react";
+import { AlertTriangle, CircleDollarSign, Clock, CreditCard, Package, Plus, ShoppingBag, Tags, Truck, Users, XCircle, BarChart3 } from "lucide-react";
 import { Link } from "react-router-dom";
 import useFetch from "../../hooks/useFetch.js";
 import { getDashboardStats } from "../../services/authService.js";
-import { getLowStockProducts } from "../../services/productService.js";
+import { getLowStockProducts, getPreOrderAnalytics } from "../../services/productService.js";
 
 import { formatCurrency } from "../../utils/formatters.js";
 
 const DashboardPage = () => {
   const { data } = useFetch(getDashboardStats, []);
   const { data: lowStock } = useFetch(getLowStockProducts, []);
+  const { data: preOrderLifecycle } = useFetch(getPreOrderAnalytics, []);
   const lowStockItems = Array.isArray(lowStock) ? lowStock : [];
 
   const cards = [
@@ -71,6 +72,43 @@ const DashboardPage = () => {
           );
         })}
       </div>
+
+      {preOrderLifecycle && (
+        <div className="mt-6">
+          <h2 className="flex items-center gap-2 text-lg font-bold text-gray-800">
+            <BarChart3 className="h-5 w-5" /> Pre-Order Lifecycle
+          </h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-3 xl:grid-cols-6">
+            <article className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs font-semibold text-amber-700">Active</p>
+              <p className="mt-1 text-xl font-black text-amber-900">{preOrderLifecycle.active || 0}</p>
+            </article>
+            <article className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              <p className="text-xs font-semibold text-gray-600">Closed (Awaiting)</p>
+              <p className="mt-1 text-xl font-black text-gray-800">{preOrderLifecycle.closed || 0}</p>
+            </article>
+            <article className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+              <p className="text-xs font-semibold text-amber-700">Delayed</p>
+              <p className="mt-1 text-xl font-black text-amber-900">{preOrderLifecycle.delayed || 0}</p>
+            </article>
+            <article className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-xs font-semibold text-emerald-700">Arrived</p>
+              <p className="mt-1 text-xl font-black text-emerald-900">{preOrderLifecycle.arrived || 0}</p>
+            </article>
+            <article className="rounded-lg border border-red-200 bg-red-50 p-4">
+              <p className="text-xs font-semibold text-red-700">Cancelled</p>
+              <p className="mt-1 text-xl font-black text-red-900">{preOrderLifecycle.cancelled || 0}</p>
+            </article>
+            <article className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
+              <p className="text-xs font-semibold text-emerald-700">Converted</p>
+              <p className="mt-1 text-xl font-black text-emerald-900">{preOrderLifecycle.converted || 0}</p>
+            </article>
+          </div>
+          {preOrderLifecycle.conversionRate > 0 && (
+            <p className="mt-2 text-xs text-gray-500">Conversion rate: {preOrderLifecycle.conversionRate}%</p>
+          )}
+        </div>
+      )}
 
       <section className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Link

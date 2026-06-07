@@ -3,6 +3,13 @@ import Setting from "../models/Setting.js";
 import asyncHandler from "../utils/asyncHandler.js";
 import { buildProductQuery } from "../utils/buildProductQuery.js";
 import * as cache from "../utils/cache.js";
+import { transitionPreOrder, getPreOrderAnalytics, getComputedPreOrderAnalytics } from "../services/preOrderStateMachine.js";
+import { getProductLifecycleStatus } from "../utils/preOrderStatusResolver.js";
+
+const addStatus = (product) => {
+  if (!product) return product;
+  return { ...product, status: getProductLifecycleStatus(product) };
+};
 
 export const getProducts = asyncHandler(async (req, res) => {
   const page = Math.max(Number(req.query.page) || 1, 1);
@@ -13,14 +20,14 @@ export const getProducts = asyncHandler(async (req, res) => {
   const cacheKey = `products:${JSON.stringify({ filters, sort, page, limit })}`;
 
   const cached = cache.get(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) return res.json({ ...cached, products: cached.products.map(addStatus) });
 
   const [products, total] = await Promise.all([
     Product.find(filters).populate("category", "name slug").sort(sort).skip(skip).limit(limit).lean(),
     Product.countDocuments(filters)
   ]);
 
-  const result = { products, page, pages: Math.ceil(total / limit), total };
+  const result = { products: products.map(addStatus), page, pages: Math.ceil(total / limit), total };
   cache.set(cacheKey, result, 30 * 1000);
   res.json(result);
 });
@@ -28,7 +35,7 @@ export const getProducts = asyncHandler(async (req, res) => {
 export const getFeaturedProducts = asyncHandler(async (_req, res) => {
   const cacheKey = "products:featured";
   const cached = cache.get(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) return res.json(cached.map(addStatus));
 
   const products = await Product.find({ featured: true })
     .populate("category", "name slug")
@@ -37,13 +44,13 @@ export const getFeaturedProducts = asyncHandler(async (_req, res) => {
     .lean();
 
   cache.set(cacheKey, products, 60 * 1000);
-  res.json(products);
+  res.json(products.map(addStatus));
 });
 
 export const getNewArrivals = asyncHandler(async (_req, res) => {
   const cacheKey = "products:new-arrivals";
   const cached = cache.get(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) return res.json(cached.map(addStatus));
 
   const products = await Product.find()
     .populate("category", "name slug")
@@ -52,13 +59,13 @@ export const getNewArrivals = asyncHandler(async (_req, res) => {
     .lean();
 
   cache.set(cacheKey, products, 60 * 1000);
-  res.json(products);
+  res.json(products.map(addStatus));
 });
 
 export const getProductBySlug = asyncHandler(async (req, res) => {
   const cacheKey = `product:slug:${req.params.slug}`;
   const cached = cache.get(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) return res.json(addStatus(cached));
 
   const product = await Product.findOne({ slug: req.params.slug }).populate("category", "name slug").lean();
 
@@ -68,13 +75,13 @@ export const getProductBySlug = asyncHandler(async (req, res) => {
   }
 
   cache.set(cacheKey, product, 30 * 1000);
-  res.json(product);
+  res.json(addStatus(product));
 });
 
 export const getProductById = asyncHandler(async (req, res) => {
   const cacheKey = `product:id:${req.params.id}`;
   const cached = cache.get(cacheKey);
-  if (cached) return res.json(cached);
+  if (cached) return res.json(addStatus(cached));
 
   const product = await Product.findById(req.params.id).populate("category", "name slug").lean();
 
@@ -84,7 +91,7 @@ export const getProductById = asyncHandler(async (req, res) => {
   }
 
   cache.set(cacheKey, product, 30 * 1000);
-  res.json(product);
+  res.json(addStatus(product));
 });
 
 export const createProduct = asyncHandler(async (req, res) => {
@@ -99,7 +106,7 @@ export const createProduct = asyncHandler(async (req, res) => {
   const product = await Product.create(data);
   const populated = await product.populate("category", "name slug");
   cache.clear("products:");
-  res.status(201).json(populated);
+  res.status(201).json(addStatus(populated.toObject()));
 });
 
 export const updateProduct = asyncHandler(async (req, res) => {
@@ -121,7 +128,8 @@ export const updateProduct = asyncHandler(async (req, res) => {
   Object.assign(product, data);
   const saved = await product.save();
   cache.clear("products:");
-  res.json(await saved.populate("category", "name slug"));
+  const populated = await saved.populate("category", "name slug");
+  res.json(addStatus(populated.toObject()));
 });
 
 export const decrementStock = async (productId, variantId, quantity) => {
@@ -145,13 +153,61 @@ export const getLowStockProducts = asyncHandler(async (_req, res) => {
     .populate("category", "name")
     .sort("stock")
     .limit(20);
-  res.json(products);
+  res.json(products.map(addStatus));
 });
 
 export const getProductTypes = asyncHandler(async (_req, res) => {
   res.json({
     types: ["IN_STOCK", "PRE_ORDER", "OUT_OF_STOCK"]
   });
+});
+
+export const transitionPreOrderStatus = asyncHandler(async (req, res) => {
+  const { toState, note } = req.body;
+  const trigger = req.user?.role === "admin" ? "admin" : "system";
+  const result = await transitionPreOrder(req.params.id, toState, { trigger, note: note || "" });
+  cache.clear("products:");
+  res.json({ ...result, status: getProductLifecycleStatus(result.product) });
+});
+
+export const getPreOrderLifecycle = asyncHandler(async (req, res) => {
+  const product = await Product.findById(req.params.id).select("preOrderStatus preOrderClosedAt preOrderArrivedAt preOrderDelayedAt preOrderCancelledAt preOrderDeadline preOrderExpectedDate preOrderDelayNote preOrderDelayExpectedDate preOrderLog preOrderSoldCount preOrderLimit productType").lean();
+  if (!product) {
+    res.status(404);
+    throw new Error("Product not found.");
+  }
+  res.json(addStatus(product));
+});
+
+export const extendPreOrderDeadline = asyncHandler(async (req, res) => {
+  const { newDeadline } = req.body;
+  if (!newDeadline) {
+    res.status(400);
+    throw new Error("New deadline is required.");
+  }
+  const product = await Product.findById(req.params.id);
+  if (!product) {
+    res.status(404);
+    throw new Error("Product not found.");
+  }
+  if (product.productType !== "PRE_ORDER") {
+    res.status(400);
+    throw new Error("Product is not a pre-order.");
+  }
+  product.preOrderDeadline = new Date(newDeadline);
+  await product.save();
+  cache.clear("products:");
+  res.json({ message: "Deadline updated.", product: addStatus(product.toObject()) });
+});
+
+export const getPreOrderAnalyticsHandler = asyncHandler(async (_req, res) => {
+  const stats = await getPreOrderAnalytics();
+  res.json(stats);
+});
+
+export const getComputedPreOrderAnalyticsHandler = asyncHandler(async (_req, res) => {
+  const stats = await getComputedPreOrderAnalytics();
+  res.json(stats);
 });
 
 export const deleteProduct = asyncHandler(async (req, res) => {
@@ -166,3 +222,5 @@ export const deleteProduct = asyncHandler(async (req, res) => {
   cache.clear("products:");
   res.json({ message: "Product deleted." });
 });
+
+export { addStatus };

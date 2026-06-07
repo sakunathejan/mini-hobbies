@@ -1,10 +1,19 @@
 import { memo } from "react";
-import { Heart, ShoppingCart, Eye } from "lucide-react";
+import { Heart, ShoppingCart, Eye, Clock, Package } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCart } from "../../context/CartContext.jsx";
 import { useWishlist } from "../../context/WishlistContext.jsx";
 import { formatCurrency } from "../../utils/formatters.js";
 import { placeholderImage } from "../../utils/constants.js";
+
+const getPreOrderBadge = (product) => {
+  const state = product.status || "";
+  if (state === "PRE_ORDER_CANCELLED") return { label: "Cancelled", style: "bg-red-50 text-red-700" };
+  if (state === "PRE_ORDER_CLOSED") return { label: "Awaiting Arrival", style: "bg-gray-100 text-gray-600" };
+  if (state === "PRE_ORDER_DELAYED") return { label: "Delayed", style: "bg-amber-50 text-amber-700" };
+  if (state === "IN_STOCK") return { label: "In stock", style: "bg-emerald-50 text-emerald-700" };
+  return { label: "Pre-Order", style: "bg-amber-50 text-amber-700" };
+};
 
 const ProductCard = memo(({ product, compact }) => {
   const { addItem } = useCart();
@@ -14,6 +23,17 @@ const ProductCard = memo(({ product, compact }) => {
   const image = product.images?.[0]?.url || variantImage || placeholderImage;
   const lowestVariantPrice = product.hasVariants && product.variants?.length
     ? Math.min(...product.variants.map((v) => v.price).filter(Boolean)) : null;
+
+  const state = product.status || "";
+  const isPreOrder = state && state !== "IN_STOCK";
+  const preOrderClosed = state === "PRE_ORDER_CLOSED";
+  const preOrderDelayed = state === "PRE_ORDER_DELAYED";
+  const preOrderArrived = state === "PRE_ORDER_ARRIVED";
+  const preOrderCancelled = state === "PRE_ORDER_CANCELLED";
+  const preOrderActive = state === "PRE_ORDER_ACTIVE";
+  const canPurchase = !isPreOrder || preOrderActive || preOrderArrived;
+  const badge = getPreOrderBadge(product);
+  const showStatusText = preOrderClosed || preOrderDelayed || preOrderCancelled;
 
   return (
     <article className={`group flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-soft ${compact ? "" : ""}`}>
@@ -57,40 +77,57 @@ const ProductCard = memo(({ product, compact }) => {
               <p className={`text-gray-500 line-through ${compact ? "text-[10px]" : "text-xs"}`}>{formatCurrency(product.price)}</p>
             ) : null}
           </div>
-          <span
-            className={`shrink-0 rounded-full font-semibold ${
-              product.productType === "PRE_ORDER" ? "bg-amber-50 text-amber-700" :
-              product.productType === "OUT_OF_STOCK" ? "bg-red-50 text-red-700" :
-              product.stock > 0 ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"
-            } ${compact ? "px-2 py-0.5 text-[10px]" : "px-2 sm:px-3 py-1 text-xs"}`}
-          >
-            {product.productType === "PRE_ORDER" ? "Pre-Order" :
-             product.productType === "OUT_OF_STOCK" ? "Out of Stock" :
-             product.stock > 0 ? "In stock" : "Sold out"}
+          <span className={`shrink-0 rounded-full font-semibold ${badge.style} ${compact ? "px-2 py-0.5 text-[10px]" : "px-2 sm:px-3 py-1 text-xs"}`}>
+            {badge.label}
           </span>
         </div>
-        {product.productType === "PRE_ORDER" ? (
+        {isPreOrder && (
           <div className="mt-auto">
-            {product.preOrderDeadline && (
-              <p className={`text-center font-semibold ${new Date() > new Date(product.preOrderDeadline) ? "text-red-600" : "text-amber-600"} ${compact ? "text-[10px] mb-1" : "text-xs mb-1.5"}`}>
-                {new Date() > new Date(product.preOrderDeadline) ? "Closed" : `Closes ${new Date(product.preOrderDeadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+            {showStatusText && (
+              <p className={`text-center font-semibold ${preOrderCancelled ? "text-red-600" : "text-gray-500"} ${compact ? "text-[10px] mb-1" : "text-xs mb-1.5"}`}>
+                {preOrderCancelled ? "Cancelled" : preOrderDelayed ? (product.preOrderDelayExpectedDate ? `Expected ${new Date(product.preOrderDelayExpectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}` : "Delayed") : "Awaiting Arrival"}
               </p>
             )}
-            <Link
-              to={`/products/${product.slug}`}
-              className={`btn-primary w-full inline-flex items-center justify-center gap-2 font-semibold ${compact ? "min-h-[36px] text-xs" : "min-h-[44px] text-sm"}`}
-            >
-              <ShoppingCart className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} /> Pre-Order
-            </Link>
+            {preOrderActive && product.preOrderDeadline && (
+              <p className={`text-center font-semibold text-amber-600 ${compact ? "text-[10px] mb-1" : "text-xs mb-1.5"}`}>
+                Closes {new Date(product.preOrderDeadline).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+              </p>
+            )}
+            {preOrderActive && (
+              <Link
+                to={`/products/${product.slug}`}
+                className={`btn-primary w-full inline-flex items-center justify-center gap-2 font-semibold ${compact ? "min-h-[36px] text-xs" : "min-h-[44px] text-sm"}`}
+              >
+                <ShoppingCart className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} /> Pre-Order
+              </Link>
+            )}
+            {preOrderArrived && (
+              <Link
+                to={`/products/${product.slug}`}
+                className={`btn-primary w-full inline-flex items-center justify-center gap-2 font-semibold bg-emerald-600 hover:bg-emerald-700 ${compact ? "min-h-[36px] text-xs" : "min-h-[44px] text-sm"}`}
+              >
+                <ShoppingCart className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} /> View
+              </Link>
+            )}
+            {(preOrderClosed || preOrderDelayed || preOrderCancelled) && (
+              <Link
+                to={`/products/${product.slug}`}
+                className={`btn-primary w-full inline-flex items-center justify-center gap-2 font-semibold bg-gray-400 hover:bg-gray-500 cursor-pointer ${compact ? "min-h-[36px] text-xs" : "min-h-[44px] text-sm"}`}
+              >
+                <Eye className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} /> View
+              </Link>
+            )}
           </div>
-        ) : product.hasVariants ? (
+        )}
+        {!isPreOrder && product.hasVariants && (
           <Link
             to={`/products/${product.slug}`}
             className={`btn-primary mt-auto w-full inline-flex items-center justify-center gap-2 font-semibold ${compact ? "min-h-[36px] text-xs" : "min-h-[44px] text-sm"}`}
           >
             <Eye className={compact ? "h-3.5 w-3.5" : "h-4 w-4"} /> View options
           </Link>
-        ) : (
+        )}
+        {!isPreOrder && !product.hasVariants && (
           <button
             disabled={product.stock < 1}
             onClick={() => addItem(product)}

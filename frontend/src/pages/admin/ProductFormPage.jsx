@@ -199,6 +199,23 @@ const ProductFormPage = () => {
         {form.productType === "PRE_ORDER" && (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 space-y-4">
             <p className="flex items-center gap-2 text-sm font-bold text-amber-800">Pre-Order Settings</p>
+            {form.preOrderStatus && form.preOrderStatus !== "PRE_ORDER_ACTIVE" && (
+              <div className={`rounded-lg px-3 py-2 text-sm font-semibold ${
+                form.preOrderStatus === "PRE_ORDER_CANCELLED" ? "bg-red-100 text-red-800" :
+                form.preOrderStatus === "PRE_ORDER_CLOSED" ? "bg-gray-100 text-gray-700" :
+                form.preOrderStatus === "PRE_ORDER_DELAYED" ? "bg-amber-100 text-amber-800" :
+                form.preOrderStatus === "PRE_ORDER_ARRIVED" ? "bg-emerald-100 text-emerald-800" :
+                form.preOrderStatus === "IN_STOCK" ? "bg-emerald-100 text-emerald-800" :
+                ""
+              }`}>
+                Status: {form.preOrderStatus === "PRE_ORDER_CLOSED" ? "Closed (Awaiting Arrival)" :
+                         form.preOrderStatus === "PRE_ORDER_ARRIVED" ? "Arrived — Convert to Stock" :
+                         form.preOrderStatus === "PRE_ORDER_CANCELLED" ? "Cancelled" :
+                         form.preOrderStatus === "PRE_ORDER_DELAYED" ? "Delayed" :
+                         form.preOrderStatus === "IN_STOCK" ? "Converted to Stock" :
+                         form.preOrderStatus}
+              </div>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <label className="text-xs font-medium text-gray-600">Pre-Order Deadline (closes on this date)</label>

@@ -1,4 +1,4 @@
-import { Heart, ShoppingCart, Star, Tag, Clock, Info } from "lucide-react";
+import { Heart, ShoppingCart, Star, Tag, Clock, Info, Package } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import toast from "react-hot-toast";
@@ -40,16 +40,29 @@ const ProductDetailsPage = () => {
         ? [{ url: firstVariantImage, alt: product.name }]
         : [{ url: placeholderImage, alt: product.name }];
   const lowestVariantPrice = variants.length ? Math.min(...variants.map((v) => v.price).filter(Boolean)) : null;
-  const isPreOrder = product.productType === "PRE_ORDER";
+  const state = product.status || "";
+  const isPreOrder = state && state !== "IN_STOCK";
   const activePrice = activeVariant?.price || lowestVariantPrice || product.discountPrice || product.price;
   const activeStock = activeVariant?.stock ?? product.stock;
-  const stockStatus = isPreOrder ? "in_stock" : activeStock <= 0 ? "out_of_stock" : activeStock <= (product.lowStockThreshold || 3) ? "low_stock" : "in_stock";
+  const stockStatus = state === "IN_STOCK" ? (activeStock <= 0 ? "out_of_stock" : activeStock <= (product.lowStockThreshold || 3) ? "low_stock" : "in_stock") : "in_stock";
 
-  const deadlinePassed = isPreOrder && product.preOrderDeadline && new Date() > new Date(product.preOrderDeadline);
+  const preOrderClosed = state === "PRE_ORDER_CLOSED";
+  const preOrderDelayed = state === "PRE_ORDER_DELAYED";
+  const preOrderCancelled = state === "PRE_ORDER_CANCELLED";
+  const preOrderActive = state === "PRE_ORDER_ACTIVE";
+  const preOrderArrived = state === "PRE_ORDER_ARRIVED";
+
+  const canPurchase = !isPreOrder || preOrderActive || preOrderArrived;
+  const ctaDisabled = (!canPurchase) || (!isPreOrder && activeStock < 1);
+  const ctaLabel = preOrderCancelled ? "Pre-Order Cancelled" :
+                   preOrderClosed ? "Awaiting Arrival" :
+                   preOrderDelayed ? "Delayed" :
+                   preOrderArrived ? "Now In Stock — Add to Cart" :
+                   preOrderActive ? "Pre-Order Now" :
+                   activeStock < 1 ? "Sold out" : "Add to cart";
 
   const handleAddToCart = () => {
-    if (deadlinePassed) return;
-    if (!isPreOrder && activeStock < 1) return;
+    if (ctaDisabled) return;
     if (product.hasVariants && !selectedVariant) {
       toast.error("Please select a variant first.");
       return;
@@ -80,7 +93,20 @@ const ProductDetailsPage = () => {
         <article>
           <p className="flex flex-wrap items-center gap-2 text-sm font-bold uppercase tracking-wide text-ember">
             {product.category?.name}
-            {isPreOrder && <span className="rounded-full bg-amber-100 px-2.5 py-0.5 text-[10px] font-bold uppercase text-amber-800">Pre-Order</span>}
+            {isPreOrder && (
+              <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase ${
+                preOrderCancelled ? "bg-red-100 text-red-800" :
+                preOrderClosed || preOrderDelayed ? "bg-gray-100 text-gray-700" :
+                preOrderArrived ? "bg-emerald-100 text-emerald-800" :
+                "bg-amber-100 text-amber-800"
+              }`}>
+                {preOrderCancelled ? "Cancelled" :
+                 preOrderClosed ? "Awaiting Arrival" :
+                 preOrderDelayed ? "Delayed" :
+                 preOrderArrived ? "Now In Stock" :
+                 "Pre-Order"}
+              </span>
+            )}
           </p>
           <h1 className="mt-3 text-2xl font-black text-gray-950 sm:text-5xl">{product.name}</h1>
           {product.totalReviews > 0 && (
@@ -98,7 +124,7 @@ const ProductDetailsPage = () => {
               <p className="text-sm font-semibold text-gray-700">Variant</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {variants.map((v) => {
-                  const variantUnavailable = !isPreOrder && v.stock < 1;
+                  const variantUnavailable = (!canPurchase) || (!isPreOrder && v.stock < 1);
                   return (
                     <button
                       key={v._id}
@@ -127,13 +153,21 @@ const ProductDetailsPage = () => {
             <div className="rounded-lg bg-white p-3 sm:p-4"><dt className="text-gray-500">Scale</dt><dd className="font-bold">{product.scale || "N/A"}</dd></div>
             <div className="rounded-lg bg-white p-3 sm:p-4"><dt className="text-gray-500">Material</dt><dd className="font-bold">{product.material || "Mixed"}</dd></div>
             <div className="rounded-lg bg-white p-3 sm:p-4">
-              <dt className="text-gray-500">{isPreOrder ? "Expected" : "Stock"}</dt>
+              <dt className="text-gray-500">{isPreOrder && !preOrderArrived ? "Expected" : "Stock"}</dt>
               <dd className={`font-bold ${
-                isPreOrder ? "text-amber-600" :
+                preOrderCancelled ? "text-red-600" :
+                preOrderClosed ? "text-gray-500" :
+                preOrderDelayed ? "text-amber-600" :
+                preOrderArrived ? "text-emerald-600" :
+                preOrderActive ? "text-amber-600" :
                 stockStatus === "out_of_stock" ? "text-red-600" :
                 stockStatus === "low_stock" ? "text-amber-600" : "text-emerald-600"
               }`}>
-                {isPreOrder ? formatMonthYear(product.preOrderExpectedDate) :
+                {preOrderCancelled ? "Cancelled" :
+                 preOrderClosed ? "Awaiting Arrival" :
+                 preOrderDelayed ? (product.preOrderDelayExpectedDate ? formatMonthYear(product.preOrderDelayExpectedDate) : "Delayed") :
+                 preOrderArrived ? (activeStock > 0 ? `${activeStock} available` : "Sold out") :
+                 preOrderActive ? (product.preOrderExpectedDate ? formatMonthYear(product.preOrderExpectedDate) : "Pre-Order") :
                  stockStatus === "out_of_stock" ? "Sold out" :
                  stockStatus === "low_stock" ? `Only ${activeStock} left` :
                  `${activeStock} available`}
@@ -150,34 +184,64 @@ const ProductDetailsPage = () => {
           </div>
 
           {isPreOrder && (
-            <div className="mt-4 space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-4">
-              {deadlinePassed ? (
+            <div className={`mt-4 space-y-2 rounded-lg border p-4 ${
+              preOrderCancelled ? "border-red-200 bg-red-50" :
+              preOrderArrived ? "border-emerald-200 bg-emerald-50" :
+              preOrderClosed || preOrderDelayed ? "border-gray-200 bg-gray-50" :
+              "border-amber-200 bg-amber-50"
+            }`}>
+              {preOrderCancelled && (
                 <p className="flex items-center gap-2 text-sm font-bold text-red-700">
-                  <Clock className="h-4 w-4" /> Pre-Order Closed
+                  <Clock className="h-4 w-4" /> Pre-Order Cancelled
                 </p>
-              ) : (
+              )}
+              {preOrderArrived && (
+                <p className="flex items-center gap-2 text-sm font-bold text-emerald-800">
+                  <Package className="h-4 w-4" /> Now In Stock — Order Now
+                </p>
+              )}
+              {preOrderClosed && (
+                <p className="flex items-center gap-2 text-sm font-bold text-gray-700">
+                  <Clock className="h-4 w-4" /> Pre-Order Closed — Awaiting Arrival
+                </p>
+              )}
+              {preOrderDelayed && (
+                <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
+                  <Clock className="h-4 w-4" /> Supplier Delay
+                </p>
+              )}
+              {preOrderActive && (
                 <p className="flex items-center gap-2 text-sm font-bold text-amber-800">
                   <Clock className="h-4 w-4" /> Available for Pre-Order
                 </p>
               )}
-              {product.preOrderDeadline && (
-                <p className={`text-sm ${deadlinePassed ? "text-red-600" : "text-amber-700"}`}>
-                  Closes: {formatMonthYear(product.preOrderDeadline)}
-                </p>
+              {preOrderActive && product.preOrderDeadline && (
+                <p className="text-sm text-amber-700">Closes: {formatMonthYear(product.preOrderDeadline)}</p>
               )}
-              {product.preOrderExpectedDate && (
+              {preOrderDelayed && product.preOrderDelayExpectedDate && (
+                <p className="text-sm text-amber-700">New Expected: {formatMonthYear(product.preOrderDelayExpectedDate)}</p>
+              )}
+              {(preOrderActive || preOrderClosed) && product.preOrderExpectedDate && (
                 <p className="text-sm text-amber-700">Expected: {formatMonthYear(product.preOrderExpectedDate)}</p>
               )}
-              {product.preOrderDepositRequired && product.preOrderDepositAmount > 0 && (
+              {preOrderDelayed && product.preOrderDelayNote && (
+                <p className="flex items-start gap-2 text-sm text-amber-700">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" /> {product.preOrderDelayNote}
+                </p>
+              )}
+              {preOrderActive && product.preOrderLimit > 0 && (
+                <p className="text-sm text-amber-700">{product.preOrderSoldCount || 0} / {product.preOrderLimit} reserved</p>
+              )}
+              {preOrderActive && product.preOrderDepositRequired && product.preOrderDepositAmount > 0 && (
                 <p className="text-sm text-amber-700">Deposit: {formatCurrency(product.preOrderDepositAmount)} required to reserve</p>
               )}
-              {product.preOrderPaymentMode === "FULL_PAYMENT" && (
+              {preOrderActive && product.preOrderPaymentMode === "FULL_PAYMENT" && (
                 <p className="text-sm text-amber-700">Full payment required at time of pre-order</p>
               )}
-              {product.preOrderPaymentMode === "DEPOSIT_PAYMENT" && (
+              {preOrderActive && product.preOrderPaymentMode === "DEPOSIT_PAYMENT" && (
                 <p className="text-sm text-amber-700">Deposit payment required, balance due before shipping</p>
               )}
-              {product.preOrderPaymentMode === "NO_PAYMENT" && (
+              {preOrderActive && product.preOrderPaymentMode === "NO_PAYMENT" && (
                 <p className="text-sm text-amber-700">No upfront payment required</p>
               )}
               {product.preOrderNotes && (
@@ -189,8 +253,8 @@ const ProductDetailsPage = () => {
           )}
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-            <button disabled={deadlinePassed || (!isPreOrder && activeStock < 1)} onClick={handleAddToCart} className="btn-primary w-full sm:flex-1 disabled:bg-gray-300">
-              <ShoppingCart className="h-4 w-4" /> {deadlinePassed ? "Pre-Order Closed" : isPreOrder ? "Pre-Order Now" : activeStock < 1 ? "Sold out" : "Add to cart"}
+            <button disabled={ctaDisabled} onClick={handleAddToCart} className={`btn-primary w-full sm:flex-1 disabled:bg-gray-300 ${preOrderArrived ? "bg-emerald-600 hover:bg-emerald-700" : ""}`}>
+              <ShoppingCart className="h-4 w-4" /> {ctaLabel}
             </button>
             <button onClick={() => toggle(product)} className="btn-secondary w-full sm:w-auto">
               <Heart className="h-4 w-4" /> Wishlist
@@ -206,11 +270,11 @@ const ProductDetailsPage = () => {
             {product.discountPrice && <p className="text-xs text-gray-500 line-through">{formatCurrency(product.price)}</p>}
           </div>
           <button
-            disabled={deadlinePassed || (!isPreOrder && activeStock < 1)}
+            disabled={ctaDisabled}
             onClick={handleAddToCart}
             className="btn-primary flex-1 disabled:bg-gray-300"
           >
-            <ShoppingCart className="h-4 w-4" /> {deadlinePassed ? "Pre-Order Closed" : isPreOrder ? "Pre-Order Now" : activeStock < 1 ? "Sold out" : "Add to cart"}
+            <ShoppingCart className="h-4 w-4" /> {ctaLabel}
           </button>
         </div>
       </section>

@@ -202,7 +202,11 @@ export const createOrder = asyncHandler(async (req, res) => {
   const hasPreOrder = products.some(p => p.isPreOrder);
   if (hasPreOrder) {
     const preOrderProduct = products.find(p => p.isPreOrder);
-    if (preOrderProduct.preOrderDeadline && new Date() > new Date(preOrderProduct.preOrderDeadline)) {
+    if (preOrderProduct.preOrderStatus === "PRE_ORDER_CLOSED" || preOrderProduct.preOrderStatus === "PRE_ORDER_CANCELLED" || preOrderProduct.preOrderStatus === "PRE_ORDER_DELAYED") {
+      res.status(400);
+      throw new Error("This product is no longer available for pre-order.");
+    }
+    if (preOrderProduct.preOrderDeadline && new Date() > new Date(preOrderProduct.preOrderDeadline) && preOrderProduct.preOrderStatus === "PRE_ORDER_ACTIVE") {
       res.status(400);
       throw new Error("The pre-order period for this product has ended.");
     }

@@ -3,10 +3,24 @@ import { memo } from "react";
 import { Link } from "react-router-dom";
 import { formatCurrency } from "../../utils/formatters.js";
 
+const getStockBadge = (product) => {
+  const s = product.status || "";
+  if (s === "PRE_ORDER_ACTIVE") return { label: "Pre-Order", style: "bg-amber-50 text-amber-800" };
+  if (s === "PRE_ORDER_CLOSED") return { label: "Awaiting Arrival", style: "bg-gray-100 text-gray-600" };
+  if (s === "PRE_ORDER_DELAYED") return { label: "Delayed", style: "bg-amber-50 text-amber-800" };
+  if (s === "PRE_ORDER_CANCELLED") return { label: "Cancelled", style: "bg-red-50 text-red-700" };
+  if (product.productType === "OUT_OF_STOCK") return { label: "Out of Stock", style: "bg-red-50 text-red-700" };
+  if (product.stockStatus === "out_of_stock") return { label: "Sold out", style: "bg-red-50 text-red-700" };
+  if (product.stockStatus === "low_stock") return { label: `${product.stock} left`, style: "bg-amber-50 text-amber-800" };
+  return { label: String(product.stock ?? 0), style: "bg-emerald-50 text-emerald-800" };
+};
+
 const ProductListView = memo(({ products = [], onDelete }) => (
   <>
     <div className="mobile-card-grid">
-      {products.map((product) => (
+      {products.map((product) => {
+        const badge = getStockBadge(product);
+        return (
         <div key={product._id} className="rounded-lg border border-gray-200 bg-white p-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0 flex-1">
@@ -14,18 +28,8 @@ const ProductListView = memo(({ products = [], onDelete }) => (
               <p className="text-xs text-gray-500">{product.category?.name}</p>
               <p className="mt-1 text-sm font-bold text-ember">{formatCurrency(product.discountPrice || product.price)}</p>
             </div>
-            <span className={`shrink-0 self-start rounded-full px-2 py-0.5 text-xs font-bold ${
-              product.productType === "PRE_ORDER" ? "bg-amber-50 text-amber-800" :
-              product.productType === "OUT_OF_STOCK" ? "bg-red-50 text-red-700" :
-              product.stockStatus === "out_of_stock" ? "bg-red-50 text-red-700" :
-              product.stockStatus === "low_stock" ? "bg-amber-50 text-amber-800" :
-              "bg-emerald-50 text-emerald-800"
-            }`}>
-              {product.productType === "PRE_ORDER" ? "Pre-Order" :
-               product.productType === "OUT_OF_STOCK" ? "Out of Stock" :
-               product.stockStatus === "out_of_stock" ? "Sold out" :
-               product.stockStatus === "low_stock" ? `${product.stock} left` :
-               product.stock}
+            <span className={`shrink-0 self-start rounded-full px-2 py-0.5 text-xs font-bold ${badge.style}`}>
+              {badge.label}
             </span>
           </div>
           <div className="mt-3 flex items-center gap-2">
@@ -37,7 +41,8 @@ const ProductListView = memo(({ products = [], onDelete }) => (
             </button>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
 
     <div className="desktop-table overflow-x-auto rounded-lg border border-gray-200 bg-white">
@@ -52,24 +57,16 @@ const ProductListView = memo(({ products = [], onDelete }) => (
           </tr>
         </thead>
         <tbody>
-          {products.map((product) => (
+          {products.map((product) => {
+            const badge = getStockBadge(product);
+            return (
             <tr key={product._id} className="border-t">
               <td className="p-4 font-semibold">{product.name}</td>
               <td className="p-4">{product.category?.name}</td>
               <td className="p-4">{formatCurrency(product.discountPrice || product.price)}</td>
               <td className="p-4">
-                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${
-                  product.productType === "PRE_ORDER" ? "bg-amber-50 text-amber-800" :
-                  product.productType === "OUT_OF_STOCK" ? "bg-red-50 text-red-700" :
-                  product.stockStatus === "out_of_stock" ? "bg-red-50 text-red-700" :
-                  product.stockStatus === "low_stock" ? "bg-amber-50 text-amber-800" :
-                  "bg-emerald-50 text-emerald-800"
-                }`}>
-                  {product.productType === "PRE_ORDER" ? "Pre-Order" :
-                   product.productType === "OUT_OF_STOCK" ? "Out of Stock" :
-                   product.stockStatus === "out_of_stock" ? "Sold out" :
-                   product.stockStatus === "low_stock" ? `${product.stock} left` :
-                   product.stock}
+                <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-bold ${badge.style}`}>
+                  {badge.label}
                 </span>
               </td>
               <td className="flex gap-2 p-4">
@@ -77,7 +74,8 @@ const ProductListView = memo(({ products = [], onDelete }) => (
                 <button aria-label="Delete product" onClick={() => onDelete(product._id)} className="rounded-md p-2 text-red-600 hover:bg-red-50"><Trash2 className="h-4 w-4" /></button>
               </td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

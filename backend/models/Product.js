@@ -69,7 +69,25 @@ const productSchema = new mongoose.Schema(
       default: "FULL_PAYMENT"
     },
     preOrderLimit: { type: Number, default: 0, min: 0 },
-    preOrderSoldCount: { type: Number, default: 0, min: 0 }
+    preOrderSoldCount: { type: Number, default: 0, min: 0 },
+    preOrderStatus: {
+      type: String,
+      enum: ["PRE_ORDER_ACTIVE", "PRE_ORDER_CLOSED", "PRE_ORDER_DELAYED", "PRE_ORDER_ARRIVED", "PRE_ORDER_CANCELLED", "IN_STOCK"],
+      default: "PRE_ORDER_ACTIVE"
+    },
+    preOrderClosedAt: { type: Date },
+    preOrderArrivedAt: { type: Date },
+    preOrderCancelledAt: { type: Date },
+    preOrderDelayedAt: { type: Date },
+    preOrderDelayNote: { type: String, default: "" },
+    preOrderDelayExpectedDate: { type: Date },
+    preOrderLog: [{
+      from: { type: String },
+      to: { type: String, required: true },
+      trigger: { type: String, enum: ["cron", "admin", "system"], default: "admin" },
+      note: { type: String, default: "" },
+      timestamp: { type: Date, default: Date.now }
+    }]
   },
   { timestamps: true }
 );
@@ -80,6 +98,7 @@ productSchema.index({ category: 1, price: 1 });
 productSchema.index({ featured: -1, createdAt: -1 });
 productSchema.index({ stockStatus: 1 });
 productSchema.index({ createdAt: -1 });
+productSchema.index({ preOrderStatus: 1, preOrderDeadline: 1 });
 
 productSchema.pre("save", function makeSlug(next) {
   if (!this.slug || this.isModified("name")) {
@@ -88,19 +107,31 @@ productSchema.pre("save", function makeSlug(next) {
   if (this.hasVariants && this.variants.length > 0) {
     this.stock = this.variants.reduce((sum, v) => sum + (v.stock || 0), 0);
   }
+
   if (this.productType === "PRE_ORDER") {
     this.isPreOrder = true;
-    this.stock = 0;
-    if (this.hasVariants && this.variants.length > 0) {
-      this.variants.forEach(v => { v.stock = 0; });
+    if (!this.preOrderStatus) this.preOrderStatus = "PRE_ORDER_ACTIVE";
+    if (this.preOrderStatus !== "PRE_ORDER_ARRIVED" && this.preOrderStatus !== "IN_STOCK") {
+      this.stock = 0;
+      if (this.hasVariants && this.variants.length > 0) {
+        this.variants.forEach(v => { v.stock = 0; });
+      }
     }
     if (!this.preOrderPaymentMode) this.preOrderPaymentMode = "FULL_PAYMENT";
   } else {
     this.isPreOrder = false;
   }
+
+  if (this.preOrderStatus === "IN_STOCK") {
+    this.productType = "IN_STOCK";
+    this.isPreOrder = false;
+  }
+
   if (this.productType === "OUT_OF_STOCK") {
     this.stockStatus = "out_of_stock";
     this.stock = 0;
+  } else if (this.preOrderStatus === "PRE_ORDER_ARRIVED" || this.preOrderStatus === "IN_STOCK") {
+    this.stockStatus = this.stock > 0 ? "in_stock" : "out_of_stock";
   } else if (this.isPreOrder) {
     this.stockStatus = "in_stock";
   } else if (this.stock <= 0) {
@@ -109,6 +140,10 @@ productSchema.pre("save", function makeSlug(next) {
     this.stockStatus = "low_stock";
   } else {
     this.stockStatus = "in_stock";
+  }
+
+  if (this.isModified("preOrderLog") && this.preOrderLog.length > 50) {
+    this.preOrderLog = this.preOrderLog.slice(-50);
   }
   next();
 });

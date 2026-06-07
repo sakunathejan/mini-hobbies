@@ -2,6 +2,22 @@ import Cart from "../models/Cart.js";
 import Product from "../models/Product.js";
 import Setting from "../models/Setting.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { getProductLifecycleStatus } from "../utils/preOrderStatusResolver.js";
+
+const addStatusToCart = (cart) => {
+  if (!cart) return cart;
+  if (!cart.items || !cart.items.length) return cart;
+  const plain = typeof cart.toObject === "function" ? cart.toObject() : cart;
+  return {
+    ...plain,
+    items: plain.items.map(item => {
+      if (item.product) {
+        return { ...item, product: { ...item.product, status: getProductLifecycleStatus(item.product) } };
+      }
+      return item;
+    })
+  };
+};
 
 const getCartScope = (req) => {
   if (req.customer) return { customerId: req.customer._id };
@@ -14,7 +30,7 @@ export const getCart = asyncHandler(async (req, res) => {
   if (!scope) return res.json({ items: [] });
 
   const cart = await Cart.findOne(scope).populate("items.product");
-  res.json(cart || { items: [] });
+  res.json(addStatusToCart(cart) || { items: [] });
 });
 
 const getOrCreateCart = async (scope) => {
@@ -52,7 +68,11 @@ export const addToCart = asyncHandler(async (req, res) => {
     throw new Error("Product not found.");
   }
 
-  if (product.isPreOrder && product.preOrderDeadline && new Date() > new Date(product.preOrderDeadline)) {
+  if (product.isPreOrder && (product.preOrderStatus === "PRE_ORDER_CLOSED" || product.preOrderStatus === "PRE_ORDER_CANCELLED" || product.preOrderStatus === "PRE_ORDER_DELAYED")) {
+    res.status(400);
+    throw new Error("This product is no longer available for pre-order.");
+  }
+  if (product.isPreOrder && product.preOrderDeadline && new Date() > new Date(product.preOrderDeadline) && product.preOrderStatus === "PRE_ORDER_ACTIVE") {
     res.status(400);
     throw new Error("The pre-order period for this product has ended.");
   }
@@ -88,7 +108,7 @@ export const addToCart = asyncHandler(async (req, res) => {
   }
 
   await cart.save();
-  res.status(201).json(await cart.populate("items.product"));
+  res.status(201).json(addStatusToCart(await cart.populate("items.product")));
 });
 
 export const updateCartItem = asyncHandler(async (req, res) => {
@@ -120,7 +140,7 @@ export const updateCartItem = asyncHandler(async (req, res) => {
 
   item.quantity = Number(req.body.quantity);
   await cart.save();
-  res.json(await cart.populate("items.product"));
+  res.json(addStatusToCart(await cart.populate("items.product")));
 });
 
 export const removeCartItem = asyncHandler(async (req, res) => {
@@ -143,7 +163,7 @@ export const removeCartItem = asyncHandler(async (req, res) => {
 
   if (!target) {
     const current = await Cart.findById(cart._id).populate("items.product");
-    return res.json(current || { items: [] });
+    return res.json(addStatusToCart(current) || { items: [] });
   }
 
   const pullFilter = { product: target.product };
@@ -156,7 +176,7 @@ export const removeCartItem = asyncHandler(async (req, res) => {
   await Cart.updateOne({ _id: cart._id }, { $pull: { items: pullFilter } });
 
   const updated = await Cart.findById(cart._id).populate("items.product");
-  res.json(updated || { items: [] });
+  res.json(addStatusToCart(updated) || { items: [] });
 });
 
 export const mergeCart = asyncHandler(async (req, res) => {
@@ -178,10 +198,10 @@ export const mergeCart = asyncHandler(async (req, res) => {
 
   if (!sessionCart || sessionCart.items.length === 0) {
     if (customerCart) {
-      return res.json(await customerCart.populate("items.product"));
+      return res.json(addStatusToCart(await customerCart.populate("items.product")));
     }
     const cart = await Cart.create({ customerId: req.customer._id, items: [] });
-    return res.json(await cart.populate("items.product"));
+    return res.json(addStatusToCart(await cart.populate("items.product")));
   }
 
   const mergedItems = [...(customerCart?.items || [])];
@@ -204,7 +224,7 @@ export const mergeCart = asyncHandler(async (req, res) => {
 
   await Cart.deleteOne({ sessionId });
 
-  res.json(await cart.populate("items.product"));
+  res.json(addStatusToCart(await cart.populate("items.product")));
 });
 
 export const validateCart = asyncHandler(async (req, res) => {

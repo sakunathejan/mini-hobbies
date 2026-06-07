@@ -1,5 +1,18 @@
 import Wishlist from "../models/Wishlist.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { getProductLifecycleStatus } from "../utils/preOrderStatusResolver.js";
+
+const addStatusToWishlist = (wishlist) => {
+  if (!wishlist) return wishlist;
+  const plain = typeof wishlist.toObject === "function" ? wishlist.toObject() : wishlist;
+  return {
+    ...plain,
+    products: (plain.products || []).map(product => {
+      if (product) return { ...product, status: getProductLifecycleStatus(product) };
+      return product;
+    })
+  };
+};
 
 const getWishlistScope = (req) => {
   if (req.customer) return { customerId: req.customer._id };
@@ -12,7 +25,7 @@ export const getWishlist = asyncHandler(async (req, res) => {
   if (!scope) return res.json({ products: [] });
 
   const wishlist = await Wishlist.findOne(scope).populate("products");
-  res.json(wishlist || { products: [] });
+  res.json(addStatusToWishlist(wishlist) || { products: [] });
 });
 
 export const toggleWishlist = asyncHandler(async (req, res) => {
@@ -35,7 +48,7 @@ export const toggleWishlist = asyncHandler(async (req, res) => {
     : [...wishlist.products, productId];
 
   await wishlist.save();
-  res.json(await wishlist.populate("products"));
+  res.json(addStatusToWishlist(await wishlist.populate("products")));
 });
 
 export const mergeWishlist = asyncHandler(async (req, res) => {
@@ -57,7 +70,7 @@ export const mergeWishlist = asyncHandler(async (req, res) => {
 
   if (!sessionWishlist || sessionWishlist.products.length === 0) {
     const wishlist = customerWishlist || await Wishlist.create({ customerId: req.customer._id, products: [] });
-    return res.json(await wishlist.populate("products"));
+    return res.json(addStatusToWishlist(await wishlist.populate("products")));
   }
 
   const existingIds = new Set(
@@ -76,5 +89,5 @@ export const mergeWishlist = asyncHandler(async (req, res) => {
 
   await Wishlist.deleteOne({ sessionId });
 
-  res.json(await wishlist.populate("products"));
+  res.json(addStatusToWishlist(await wishlist.populate("products")));
 });

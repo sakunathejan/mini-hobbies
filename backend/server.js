@@ -8,6 +8,7 @@ import { startSyncScheduler } from "./services/koombiyo/syncScheduler.js";
 import { seedDefaultPaymentMethods } from "./controllers/paymentMethodController.js";
 import { preloadLogo } from "./services/emailService.js";
 import { startScheduler } from "./moderation/scheduler.js";
+import { startPreOrderScheduler } from "./services/preOrderScheduler.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: join(__dirname, ".env") });
@@ -33,6 +34,7 @@ const startServer = async () => {
   seedDefaultPaymentMethods();
   preloadLogo();
   startScheduler();
+  startPreOrderScheduler();
 
   const server = app.listen(PORT, () => {
     console.log(`Mini Hobbies API running on port ${PORT}`);

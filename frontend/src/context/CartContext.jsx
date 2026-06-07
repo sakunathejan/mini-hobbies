@@ -125,7 +125,7 @@ export const CartProvider = ({ children }) => {
     const existingItem = currentItems.find((item) => item._cartId === id);
 
     const currentQty = existingItem ? existingItem.quantity : 0;
-    const isPreOrder = product.productType === "PRE_ORDER";
+    const isPreOrder = product.status === "PRE_ORDER_ACTIVE";
     const maxStock = isPreOrder ? 999999 : (variant ? variant.stock : (product.stock || 0));
     const newQty = currentQty + quantity;
 
@@ -166,7 +166,7 @@ export const CartProvider = ({ children }) => {
     const item = currentItems.find((i) => i._cartId === cartId);
     if (!item) return;
 
-    const isPreOrder = item.productType === "PRE_ORDER";
+    const isPreOrder = item.status === "PRE_ORDER_ACTIVE";
     let maxStock = 0;
     if (isPreOrder) {
       maxStock = 999999;
